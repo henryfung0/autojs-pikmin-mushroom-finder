@@ -101,7 +101,7 @@ function _matchOne(screenImage, tpl, threshold) {
  *   1. close1 / close2  → click to dismiss overlays
  *   2. go_to_map         → click to enter map
  *   3. map_view          → find map_view2 and click it
- *   4. no match          → assume we're on the game map, return true
+ *   4. no match          → keep waiting, continue loop
  *
  * Returns false if the timeout is reached without reaching the map.
  *
@@ -176,17 +176,24 @@ function navigateToMap(navTemplates, config) {
       }
       if (match) {
         console.info("navigateToMap: found close button, tapping at (" + match.x + "," + match.y + ")");
-        click(match.x, match.y);
+        var tapped = click(match.x, match.y);
+        if (!tapped) {
+          console.warn("navigateToMap: click() returned false, trying gesture fallback");
+          gesture(50, [match.x, match.y], [match.x, match.y]);
+        } else {
+          console.info("navigateToMap: click() succeeded");
+        }
         sleep(1500);
         continue;
       }
 
-      // Priority 2: Go to map button
+      // Priority 2: Go to map button (longer press required)
       if (goToMapTpl) {
         match = _matchOne(img, goToMapTpl, 0.7);
         if (match) {
-          console.info("navigateToMap: found go_to_map, tapping at (" + match.x + "," + match.y + ")");
-          click(match.x, match.y);
+          console.info("navigateToMap: found go_to_map, long-pressing at (" + match.x + "," + match.y + ")");
+          press(match.x, match.y, 300);
+          console.info("navigateToMap: press() executed");
           sleep(2000);
           continue;
         }
@@ -200,22 +207,36 @@ function navigateToMap(navTemplates, config) {
             var clickTarget = _matchOne(img, mapView2Tpl, 0.7);
             if (clickTarget) {
               console.info("navigateToMap: found map_view, clicking map_view2 at (" + clickTarget.x + "," + clickTarget.y + ")");
-              click(clickTarget.x, clickTarget.y);
+              var tapped = click(clickTarget.x, clickTarget.y);
+              if (!tapped) {
+                console.warn("navigateToMap: click() returned false, trying gesture fallback");
+                gesture(50, [clickTarget.x, clickTarget.y], [clickTarget.x, clickTarget.y]);
+              } else {
+                console.info("navigateToMap: click() succeeded");
+              }
               sleep(2000);
               continue;
             }
           }
           // Fallback: click the center of the screen
-          console.info("navigateToMap: found map_view but no map_view2 match, clicking center");
-          click(device.width / 2, device.height / 2);
+          console.info("navigateToMap: found map_view but no map_view2 match, tapping center");
+          var centerX = device.width / 2;
+          var centerY = device.height / 2;
+          var tapped = click(centerX, centerY);
+          if (!tapped) {
+            console.warn("navigateToMap: click() returned false, trying gesture fallback");
+            gesture(50, [centerX, centerY], [centerX, centerY]);
+          } else {
+            console.info("navigateToMap: click() succeeded");
+          }
           sleep(2000);
           continue;
         }
       }
 
-      // Priority 4: No match — assume we're on the game map
-      console.info("navigateToMap: no navigation template matched — map reached");
-      return true;
+      // Priority 4: No template matched — keep waiting
+      console.info("navigateToMap: no template matched (elapsed " +
+        (new Date().getTime() - start) + "ms), continuing...");
 
     } finally {
       if (img) {
@@ -226,7 +247,7 @@ function navigateToMap(navTemplates, config) {
     sleep(1000);
   }
 
-  console.warn("navigateToMap: timeout (" + timeout + "ms) reached without reaching map");
+  console.warn("navigateToMap: timeout (" + timeout + "ms) — never found map_view on screen");
   return false;
 }
 

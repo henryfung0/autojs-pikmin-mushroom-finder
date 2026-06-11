@@ -1,0 +1,30 @@
+Task 2: config.js — verification
+=================================
+File: /home/henry/code/autojs/config.js
+Date: 2026-06-11
+
+module loaded via require() successfully.
+
+Parameter values verified:
+  app.packageName         = "com.nianticlabs.pikmin"
+  app.launchTimeout       = 30000
+  app.mapTransitionTimeout = 15000
+  scan.settleDelay        = 1000
+  scan.swipeDuration      = 600
+  scan.overlapPercent     = 0.4
+  scan.verticalShiftPercent = 0.6
+  detection.threshold     = 0.85
+  detection.maxMatches    = 5
+  detection.nmsOverlap    = 0.3
+  detection.breakOnFirstMatch = true
+  detection.templateDir   = "/sdcard/autojs/templates/"
+  detection.templatePattern = "*.png"
+  ui.statusBarHeight      = 50
+  ui.navBarHeight         = 60
+  screenshot.outputDir    = "/sdcard/DCIM/PikminMushroomFinder/"
+  debug.enabled           = false
+  debug.logToFloaty       = true
+
+Groups present: app, scan, detection, ui, screenshot, debug
+Each parameter has JSDoc with @type, @default, @unit where applicable.
+module.exports = config  —  require()-able without errors.

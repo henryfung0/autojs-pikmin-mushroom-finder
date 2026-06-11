@@ -1,0 +1,223 @@
+{
+  "schema_version": 2,
+  "active_work_id": "pikmin-bloom-mushroom-finder-1ef0ea5c",
+  "works": {
+    "pikmin-bloom-mushroom-finder-1ef0ea5c": {
+      "work_id": "pikmin-bloom-mushroom-finder-1ef0ea5c",
+      "active_plan": "/home/henry/code/autojs/.omo/plans/pikmin-bloom-mushroom-finder.md",
+      "plan_name": "pikmin-bloom-mushroom-finder",
+      "status": "completed",
+      "started_at": "2026-06-11T13:13:52.706Z",
+      "updated_at": "2026-06-11T15:08:10.199Z",
+      "session_ids": [
+        "opencode:ses_1494bb2d1ffehmtJdNlpumPc9P"
+      ],
+      "session_origins": {
+        "opencode:ses_1494bb2d1ffehmtJdNlpumPc9P": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "`config.js:14` used `const` instead of `var` — NOW FIXED (changed to `var`)",
+          "session_id": "opencode:ses_149203b66ffeot8Wv24fbbKKVd",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "started_at": "2026-06-11T13:15:20.259Z",
+          "ended_at": "2026-06-11T13:30:32.248Z",
+          "elapsed_ms": 911989,
+          "status": "completed",
+          "updated_at": "2026-06-11T13:30:32.248Z"
+        },
+        "todo:6": {
+          "task_key": "todo:6",
+          "task_label": "6",
+          "task_title": "**scanner.js — Scan Loop with Zigzag Scroll**",
+          "session_id": "opencode:ses_1492a9ce0ffeLElk0sHu8gKZoz",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "started_at": "2026-06-11T13:18:02.804Z",
+          "status": "completed",
+          "updated_at": "2026-06-11T13:21:00.897Z",
+          "ended_at": "2026-06-11T13:21:00.897Z",
+          "elapsed_ms": 178093
+        },
+        "todo:7": {
+          "task_key": "todo:7",
+          "task_label": "7",
+          "task_title": "**main.js — Entry Point Orchestration**",
+          "session_id": "opencode:ses_1492785fdffe08ZvKefsiIlWFa",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-11T13:23:29.546Z",
+          "started_at": "2026-06-11T13:23:12.578Z",
+          "status": "completed",
+          "ended_at": "2026-06-11T13:23:29.546Z",
+          "elapsed_ms": 16968
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "**Plan Compliance Audit** — `oracle`",
+          "session_id": "opencode:ses_14920b709ffezP9fU64pqvcBWR",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "started_at": "2026-06-11T13:25:35.573Z",
+          "status": "completed",
+          "updated_at": "2026-06-11T13:30:37.265Z",
+          "ended_at": "2026-06-11T13:30:37.265Z",
+          "elapsed_ms": 301692
+        },
+        "final-wave:f4": {
+          "task_key": "final-wave:f4",
+          "task_label": "F4",
+          "task_title": "**Scope Fidelity Check (Re-run)** — Verify that previously rejected issues have been fixed and re-evaluate for APPROVAL.",
+          "session_id": "opencode:ses_148c74ea4ffeE5cXoci0YGEO6N",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "started_at": "2026-06-11T15:01:59.589Z",
+          "ended_at": "2026-06-11T15:08:10.199Z",
+          "elapsed_ms": 370610,
+          "status": "completed",
+          "updated_at": "2026-06-11T15:08:10.199Z"
+        },
+        "final-wave:f3": {
+          "task_key": "final-wave:f3",
+          "task_label": "F3",
+          "task_title": "**Real Manual QA on Device** — Verify all scripts are syntactically valid and structured correctly for AutoJs6 execution on Android.",
+          "session_id": "opencode:ses_148cbcd13ffeFZtoiXYFTtoGAz",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-11T15:03:38.824Z",
+          "started_at": "2026-06-11T15:03:38.824Z",
+          "status": "completed",
+          "ended_at": "2026-06-11T15:03:38.824Z",
+          "elapsed_ms": 0
+        },
+        "final-wave:f2": {
+          "task_key": "final-wave:f2",
+          "task_label": "F2",
+          "task_title": "**Code Quality Review** — Run through ALL `.js` files checking for quality issues.",
+          "session_id": "opencode:ses_148cbdeb6ffeQFQp8qiF8sF3CY",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-11T15:03:45.215Z",
+          "started_at": "2026-06-11T15:03:45.214Z",
+          "status": "completed",
+          "ended_at": "2026-06-11T15:03:45.215Z",
+          "elapsed_ms": 1
+        }
+      },
+      "ended_at": "2026-06-11T13:31:18.897Z",
+      "elapsed_ms": 1046191
+    }
+  },
+  "active_plan": "/home/henry/code/autojs/.omo/plans/pikmin-bloom-mushroom-finder.md",
+  "started_at": "2026-06-11T13:13:52.706Z",
+  "status": "completed",
+  "updated_at": "2026-06-11T15:08:10.199Z",
+  "session_ids": [
+    "opencode:ses_1494bb2d1ffehmtJdNlpumPc9P"
+  ],
+  "session_origins": {
+    "opencode:ses_1494bb2d1ffehmtJdNlpumPc9P": "direct"
+  },
+  "plan_name": "pikmin-bloom-mushroom-finder",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "`config.js:14` used `const` instead of `var` — NOW FIXED (changed to `var`)",
+      "session_id": "opencode:ses_149203b66ffeot8Wv24fbbKKVd",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "started_at": "2026-06-11T13:15:20.259Z",
+      "ended_at": "2026-06-11T13:30:32.248Z",
+      "elapsed_ms": 911989,
+      "status": "completed",
+      "updated_at": "2026-06-11T13:30:32.248Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "**scanner.js — Scan Loop with Zigzag Scroll**",
+      "session_id": "opencode:ses_1492a9ce0ffeLElk0sHu8gKZoz",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "started_at": "2026-06-11T13:18:02.804Z",
+      "status": "completed",
+      "updated_at": "2026-06-11T13:21:00.897Z",
+      "ended_at": "2026-06-11T13:21:00.897Z",
+      "elapsed_ms": 178093
+    },
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "**main.js — Entry Point Orchestration**",
+      "session_id": "opencode:ses_1492785fdffe08ZvKefsiIlWFa",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-11T13:23:29.546Z",
+      "started_at": "2026-06-11T13:23:12.578Z",
+      "status": "completed",
+      "ended_at": "2026-06-11T13:23:29.546Z",
+      "elapsed_ms": 16968
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "opencode:ses_14920b709ffezP9fU64pqvcBWR",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "started_at": "2026-06-11T13:25:35.573Z",
+      "status": "completed",
+      "updated_at": "2026-06-11T13:30:37.265Z",
+      "ended_at": "2026-06-11T13:30:37.265Z",
+      "elapsed_ms": 301692
+    },
+    "final-wave:f4": {
+      "task_key": "final-wave:f4",
+      "task_label": "F4",
+      "task_title": "**Scope Fidelity Check (Re-run)** — Verify that previously rejected issues have been fixed and re-evaluate for APPROVAL.",
+      "session_id": "opencode:ses_148c74ea4ffeE5cXoci0YGEO6N",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "started_at": "2026-06-11T15:01:59.589Z",
+      "ended_at": "2026-06-11T15:08:10.199Z",
+      "elapsed_ms": 370610,
+      "status": "completed",
+      "updated_at": "2026-06-11T15:08:10.199Z"
+    },
+    "final-wave:f3": {
+      "task_key": "final-wave:f3",
+      "task_label": "F3",
+      "task_title": "**Real Manual QA on Device** — Verify all scripts are syntactically valid and structured correctly for AutoJs6 execution on Android.",
+      "session_id": "opencode:ses_148cbcd13ffeFZtoiXYFTtoGAz",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-11T15:03:38.824Z",
+      "started_at": "2026-06-11T15:03:38.824Z",
+      "status": "completed",
+      "ended_at": "2026-06-11T15:03:38.824Z",
+      "elapsed_ms": 0
+    },
+    "final-wave:f2": {
+      "task_key": "final-wave:f2",
+      "task_label": "F2",
+      "task_title": "**Code Quality Review** — Run through ALL `.js` files checking for quality issues.",
+      "session_id": "opencode:ses_148cbdeb6ffeQFQp8qiF8sF3CY",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-11T15:03:45.215Z",
+      "started_at": "2026-06-11T15:03:45.214Z",
+      "status": "completed",
+      "ended_at": "2026-06-11T15:03:45.215Z",
+      "elapsed_ms": 1
+    }
+  },
+  "agent": "atlas",
+  "ended_at": "2026-06-11T13:31:18.897Z",
+  "elapsed_ms": 1046191
+}

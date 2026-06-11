@@ -1,0 +1,12 @@
+{
+    "name": "Pikmin Bloom Mushroom Finder",
+    "main": "main.js",
+    "ignore": [
+        "build"
+    ],
+    "packageName": "com.example.pikminfinder",
+    "versionName": "1.0.0",
+    "versionCode": 1,
+    "author": "AutoJs6 Developer",
+    "description": "An AutoJs6 script that scans the screen for Pikmin Bloom mushrooms, detects available slots, and provides a floating window overlay for quick joining."
+}

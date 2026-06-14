@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 
 var detection = require("./detection");
-var floatyMod = require("./floaty");
+var floatyMod = require("./ui/floaty");
 var scroll = require("./scroll");
 var navigator = require("./navigator");
 

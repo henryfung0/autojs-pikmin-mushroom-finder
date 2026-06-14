@@ -5,7 +5,7 @@
  * mushroom scanning / detection pipeline.
  *
  * Usage:
- *   const config = require('./config');
+ *   const config = require('./ui/config');
  *   config.scan.swipeDuration   // => 600
  *
  * @module config

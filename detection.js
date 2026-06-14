@@ -17,7 +17,7 @@
 
 "auto";
 
-var config = require("./config");
+var config = require("./ui/config");
 
 // ---------------------------------------------------------------------------
 // Constants

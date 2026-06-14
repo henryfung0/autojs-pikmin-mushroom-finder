@@ -1,6 +1,6 @@
 "auto";
 
-var floatyMod = require("./floaty");
+var floatyMod = require("./ui/floaty");
 
 function scrollLeft(y, swipeDuration, floatyW, label) {
   var startX = Math.round(device.width * 0.2);

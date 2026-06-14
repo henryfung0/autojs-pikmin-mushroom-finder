@@ -31,10 +31,11 @@ autojs/
 ├── navigator.js         Screen template state machine for navigating to the map
 ├── scanner.js           Zigzag swipe + capture + detection loop
 ├── detection.js         Multi-template matching engine (findImage + NMS)
-├── config.js            Centralized configuration values
-├── config_ui.js         Pre-flight settings dialog
-├── floaty.js            Floating log panel (transparent, draggable, scrollable)
 ├── utils.js             Screen state classification, screenshot saving
+├── ui/
+│   ├── config.js        Centralized configuration values
+│   ├── config_ui.js     Pre-flight settings dialog
+│   └── floaty.js        Floating log panel (transparent, draggable, scrollable)
 ├── templates/
 │   ├── navigation/      Templates used by navigator.js to navigate the game UI
 │   │   ├── Close1.jpg      Dismiss popup/overlay (variant 1)

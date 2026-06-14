@@ -17,12 +17,12 @@
 
 "auto";
 
-var config    = require("./config");
+var config    = require("./ui/config");
 var utils     = require("./utils");
 var detection = require("./detection");
 var scanner   = require("./scanner");
-var floatyMod = require("./floaty");
-var configUi  = require("./config_ui");
+var floatyMod = require("./ui/floaty");
+var configUi  = require("./ui/config_ui");
 var navigator = require("./navigator");
 
 function cleanupAndExit(panel, statusText, toastMsg) {

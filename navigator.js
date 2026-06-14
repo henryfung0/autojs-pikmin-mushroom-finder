@@ -17,7 +17,7 @@
 
 "auto";
 
-var floatyMod = require("./floaty");
+var floatyMod = require("./ui/floaty");
 
 // ── Click feedback indicator ─────────────────────────────────────────────
 // A small red dot that appears at the press point for ~800ms so the user

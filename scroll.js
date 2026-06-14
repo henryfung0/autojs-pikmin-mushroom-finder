@@ -25,7 +25,7 @@ function scrollRight(y, swipeDuration, floatyW, label) {
 }
 
 function zoom(direction, times, floatyW) {
-  times = times || 2;
+  times = times || 1;
   var w = device.width;
   var h = device.height;
   var cx = w / 2;

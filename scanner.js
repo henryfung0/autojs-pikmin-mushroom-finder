@@ -107,6 +107,11 @@ function startScanning(config, templates, onFound, floatyW) {
   floatyMod.showDuringScan(floatyW, true);
   floatyMod.updateStatus(floatyW, "Searching...");
 
+  // Pinch-to-zoom-out first so the map shows more area per swipe
+  floatyMod.appendLog(floatyW, "Zooming out...");
+  scroll.zoomOut(1000, floatyW);
+  sleep(2000);
+
   var settleDelay = config.scan.settleDelay;
   var swipeDuration = config.scan.swipeDuration;
   // Swipe duration must never exceed 2000 ms

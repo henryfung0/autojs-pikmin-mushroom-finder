@@ -57,7 +57,39 @@ function scrollRight(y, swipeDuration, floatyW, label) {
   swipe(startX, y, endX, y, swipeDuration);
 }
 
+/**
+ * Perform a pinch-to-zoom-out gesture to show more of the map.
+ * Two fingers start near the center and move outward horizontally.
+ *
+ * @param {number} [duration]     - Gesture duration in ms (default 1000).
+ * @param {Object} [floatyW]     - Floaty window for panel logging (optional).
+ */
+function zoomOut(duration, floatyW) {
+  duration = duration || 1000;
+  var cx = Math.round(device.width / 2);
+  var cy = Math.round(device.height / 2);
+  var offset = Math.round(device.width * 0.08);
+  // Two fingers: left finger moves left, right finger moves right
+  var leftFinger  = [cx - offset, cy, 0,        cy];
+  var rightFinger = [cx + offset, cy, device.width, cy];
+  try {
+    gestures(duration, [leftFinger, rightFinger]);
+    var msg = "Zoomed out";
+    console.info("scroll: " + msg);
+    if (floatyW) {
+      floatyMod.appendLog(floatyW, msg);
+    }
+  } catch (e) {
+    var msg = "Zoom gesture failed: " + e;
+    console.warn("scroll: " + msg);
+    if (floatyW) {
+      floatyMod.appendLog(floatyW, msg);
+    }
+  }
+}
+
 module.exports = {
   scrollLeft:  scrollLeft,
   scrollRight: scrollRight,
+  zoomOut:     zoomOut,
 };

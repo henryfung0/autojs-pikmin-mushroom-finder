@@ -23,6 +23,11 @@
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
+  var autoLaunchChecked = true;
+  var detectLargeColorChecked = true;
+  var detectLargeElementChecked = true;
+  var debugModeChecked = false;
+
   var layout = (
     <frame>
       <vertical padding="16 8">
@@ -66,6 +71,19 @@ function showConfigDialog() {
     </frame>
   );
 
+  layout.autoLaunch.setOnCheckedChangeListener(function(view, isChecked) {
+    autoLaunchChecked = isChecked;
+  });
+  layout.detectLargeColor.setOnCheckedChangeListener(function(view, isChecked) {
+    detectLargeColorChecked = isChecked;
+  });
+  layout.detectLargeElement.setOnCheckedChangeListener(function(view, isChecked) {
+    detectLargeElementChecked = isChecked;
+  });
+  layout.debugMode.setOnCheckedChangeListener(function(view, isChecked) {
+    debugModeChecked = isChecked;
+  });
+
   var dialogResult = { choice: null };
 
   var d = dialogs.build({
@@ -99,10 +117,10 @@ function showConfigDialog() {
 
   // Read final values from the layout
   var threshold = (layout.threshold.progress + 70) / 100;
-  var autoLaunch = layout.autoLaunch.isChecked();
-  var detectLargeColor = layout.detectLargeColor.isChecked();
-  var detectLargeElement = layout.detectLargeElement.isChecked();
-  var debugMode = layout.debugMode.isChecked();
+  var autoLaunch = autoLaunchChecked;
+  var detectLargeColor = detectLargeColorChecked;
+  var detectLargeElement = detectLargeElementChecked;
+  var debugMode = debugModeChecked;
   var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
   var settleDelay = (layout.settleDelay.progress * 500) + 500;
 

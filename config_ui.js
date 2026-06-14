@@ -23,7 +23,12 @@
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
-  var layout = (
+  // Inflate the XML layout into a real Android View hierarchy.
+  // ui.inflate() creates proper CompoundButton/SeekBar Java objects
+  // whose children are accessible by id (view.id).
+  // Passing a raw XML descriptor to dialogs.build() keeps it as a
+  // non-method descriptor — ui.inflate() avoids that limitation.
+  var view = ui.inflate(
     <frame>
       <vertical padding="16 8">
         <text text="Mushroom Finder" textSize="18sp" textColor="#1976D2"
@@ -66,38 +71,29 @@ function showConfigDialog() {
     </frame>
   );
 
-  // Track checkbox state via click listeners.
-  // AutoJS6 checkbox.checked returns the XML attribute string ("true"/"false"),
-  // not the runtime state — so we track runtime state manually via .click().
-  var autoLaunchChecked = (layout.autoLaunch.checked === "true");
-  var detectLargeColorChecked = (layout.detectLargeColor.checked === "true");
-  var detectLargeElementChecked = (layout.detectLargeElement.checked === "true");
-  var debugModeChecked = (layout.debugMode.checked === "true");
-
-  layout.autoLaunch.click(function() {
-    autoLaunchChecked = !autoLaunchChecked;
-  });
-  layout.detectLargeColor.click(function() {
-    detectLargeColorChecked = !detectLargeColorChecked;
-  });
-  layout.detectLargeElement.click(function() {
-    detectLargeElementChecked = !detectLargeElementChecked;
-  });
-  layout.debugMode.click(function() {
-    debugModeChecked = !debugModeChecked;
-  });
-
-  var dialogResult = { choice: null };
+  var dialogResult = { choice: null, values: null };
 
   var d = dialogs.build({
-    customView: layout,
+    customView: view,
     wrapInScrollView: true,
     positiveText: "Start Scan",
     negativeText: "Exit"
   });
 
   d.on("positive", function() {
+    // Read values inside the callback while the view is still attached
+    // to the dialog window. Reading after dismiss may return stale state
+    // due to how AutoJS6's ui.inflate() wrapper handles detached views.
     dialogResult.choice = "start";
+    dialogResult.values = {
+      threshold: (view.threshold.progress + 70) / 100,
+      autoLaunch: view.autoLaunch.isChecked(),
+      detectLargeColor: view.detectLargeColor.isChecked(),
+      detectLargeElement: view.detectLargeElement.isChecked(),
+      debugMode: view.debugMode.isChecked(),
+      sweepCount: Math.max(3, view.sweepCount.progress + 1),
+      settleDelay: (view.settleDelay.progress * 500) + 500
+    };
   });
 
   d.on("negative", function() {
@@ -118,24 +114,7 @@ function showConfigDialog() {
     return null;
   }
 
-  // Read final values from the layout
-  var threshold = (layout.threshold.progress + 70) / 100;
-  var autoLaunch = autoLaunchChecked;
-  var detectLargeColor = detectLargeColorChecked;
-  var detectLargeElement = detectLargeElementChecked;
-  var debugMode = debugModeChecked;
-  var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
-  var settleDelay = (layout.settleDelay.progress * 500) + 500;
-
-  return {
-    threshold: threshold,
-    autoLaunch: autoLaunch,
-    detectLargeColor: detectLargeColor,
-    detectLargeElement: detectLargeElement,
-    debugMode: debugMode,
-    sweepCount: sweepCount,
-    settleDelay: settleDelay
-  };
+  return dialogResult.values;
 }
 
 module.exports = {

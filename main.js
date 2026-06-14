@@ -101,6 +101,9 @@ function main() {
     console.info("Filtered large element templates: " + before + " → " + templates.length);
   }
 
+  console.info("Remaining templates after filtering: " + templates.length);
+  toast("Templates: " + templates.length + " remaining");
+
   var panel = floatyMod.createControlPanel(function() {
     scanner.stopScanning();
     floatyMod.destroy(panel);

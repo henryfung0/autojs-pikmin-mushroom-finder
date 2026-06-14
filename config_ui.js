@@ -99,10 +99,10 @@ function showConfigDialog() {
 
   // Read final values from the layout
   var threshold = (layout.threshold.progress + 70) / 100;
-  var autoLaunch = String(layout.autoLaunch.checked) == "true";
-  var detectLargeColor = String(layout.detectLargeColor.checked) == "true";
-  var detectLargeElement = String(layout.detectLargeElement.checked) == "true";
-  var debugMode = String(layout.debugMode.checked) == "true";
+  var autoLaunch = !!layout.autoLaunch.checked && layout.autoLaunch.checked != "false";
+  var detectLargeColor = !!layout.detectLargeColor.checked && layout.detectLargeColor.checked != "false";
+  var detectLargeElement = !!layout.detectLargeElement.checked && layout.detectLargeElement.checked != "false";
+  var debugMode = !!layout.debugMode.checked && layout.debugMode.checked != "false";
   var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
   var settleDelay = (layout.settleDelay.progress * 500) + 500;
 

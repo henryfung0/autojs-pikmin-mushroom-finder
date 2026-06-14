@@ -58,6 +58,8 @@ function showConfigDialog() {
                   checked="true" margin="8 0 0 0"/>
         <checkbox id="detectLargeColor" text="Include large color mushrooms"
                   checked="true" margin="8 0 0 0"/>
+        <checkbox id="detectLargeElement" text="Include large element mushrooms"
+                  checked="true" margin="8 0 0 0"/>
         <checkbox id="debugMode" text="Debug Mode" checked="false"
                   margin="8 0 0 0"/>
       </vertical>
@@ -99,6 +101,7 @@ function showConfigDialog() {
   var threshold = (layout.threshold.progress + 70) / 100;
   var autoLaunch = layout.autoLaunch.checked;
   var detectLargeColor = layout.detectLargeColor.checked;
+  var detectLargeElement = layout.detectLargeElement.checked;
   var debugMode = layout.debugMode.checked;
   var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
   var settleDelay = (layout.settleDelay.progress * 500) + 500;
@@ -107,6 +110,7 @@ function showConfigDialog() {
     threshold: threshold,
     autoLaunch: autoLaunch,
     detectLargeColor: detectLargeColor,
+    detectLargeElement: detectLargeElement,
     debugMode: debugMode,
     sweepCount: sweepCount,
     settleDelay: settleDelay

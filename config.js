@@ -155,6 +155,14 @@ var config = {
     detectLargeColor: true,
 
     /**
+     * Whether to include "large element" mushroom templates in the scan.
+     * Set to false to only scan for "large color" mushrooms.
+     * @type {boolean}
+     * @default true
+     */
+    detectLargeElement: true,
+
+    /**
      * File extensions to scan for when loading template images.
      * Supports PNG and JPEG formats.
      * @type {string}

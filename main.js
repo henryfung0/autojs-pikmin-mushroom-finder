@@ -54,6 +54,7 @@ function main() {
   config.debug.enabled = settings.debugMode;
   config.scan.settleDelay = settings.settleDelay;
   config.detection.detectLargeColor = settings.detectLargeColor;
+  config.detection.detectLargeElement = settings.detectLargeElement;
 
   console.info("Config: threshold=" + settings.threshold +
     ", sweepCount=" + settings.sweepCount +
@@ -88,6 +89,14 @@ function main() {
       return t.name.indexOf("large color") === -1;
     });
     console.info("Filtered large color templates: " + before + " → " + templates.length);
+  }
+
+  if (!config.detection.detectLargeElement) {
+    var before = templates.length;
+    templates = templates.filter(function(t) {
+      return t.name.indexOf("large element") === -1;
+    });
+    console.info("Filtered large element templates: " + before + " → " + templates.length);
   }
 
   var panel = floatyMod.createControlPanel(function() {

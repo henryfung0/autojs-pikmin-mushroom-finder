@@ -40,6 +40,15 @@ function cleanupAndExit(panel, statusText, toastMsg) {
 }
 
 function main() {
+  // ── Singleton guard: kill any previous instance of this script ─────
+  var _selfId = engines.myEngine().id;
+  engines.all().forEach(function(engine) {
+    if (engine.id !== _selfId) {
+      console.info("main: stopping existing instance (id=" + engine.id + ")");
+      engine.forceStop();
+    }
+  });
+
   // ===================================================================
   // Phase 0 — Pre-flight Configuration Dialog
   // ===================================================================

@@ -18,7 +18,7 @@
 "auto";
 
 var config    = require("./ui/config");
-var utils     = require("./utils/utils");
+var screenSt  = require("./mushroom_finder/screen_state");
 var detection = require("./detection");
 var scanner   = require("./scanner");
 var floatyMod = require("./ui/floaty");
@@ -218,7 +218,7 @@ function main() {
       try {
         img = captureScreen();
         if (img) {
-          var state = utils.classifyScreenState(img);
+          var state = screenSt.classifyScreenState(img);
           if (state === "map_visible") {
             mapReady = true;
             break;

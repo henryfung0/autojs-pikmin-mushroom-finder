@@ -18,7 +18,7 @@
 "auto";
 
 var config    = require("./ui/config");
-var utils     = require("./utils");
+var utils     = require("./utils/utils");
 var detection = require("./detection");
 var scanner   = require("./scanner");
 var floatyMod = require("./ui/floaty");

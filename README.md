@@ -31,7 +31,8 @@ autojs/
 ├── navigator.js         Screen template state machine for navigating to the map
 ├── scanner.js           Zigzag swipe + capture + detection loop
 ├── detection.js         Multi-template matching engine (findImage + NMS)
-├── utils.js             Screen state classification, screenshot saving
+├── utils/
+│   └── utils.js         Screen state classification, screenshot saving
 ├── ui/
 │   ├── config.js        Centralized configuration values
 │   ├── config_ui.js     Pre-flight settings dialog

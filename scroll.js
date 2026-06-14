@@ -24,7 +24,7 @@ function scrollRight(y, swipeDuration, floatyW, label) {
   swipe(startX, y, endX, y, swipeDuration);
 }
 
-function zoomOut(times, floatyW) {
+function zoom(direction, times, floatyW) {
   times = times || 2;
   var w = device.width;
   var h = device.height;
@@ -32,19 +32,26 @@ function zoomOut(times, floatyW) {
   var cy = h / 2;
   try {
     for (var i = 0; i < times; i++) {
-      gestures(
-        [300, [cx - 60, cy - 60], [cx - 220, cy - 220]],
-        [300, [cx + 60, cy + 60], [cx + 220, cy + 220]]
-      );
+      if (direction === "in") {
+        gestures(
+          [300, [cx - 220, cy - 220], [cx - 60, cy - 60]],
+          [300, [cx + 220, cy + 220], [cx + 60, cy + 60]]
+        );
+      } else {
+        gestures(
+          [300, [cx - 60, cy - 60], [cx - 220, cy - 220]],
+          [300, [cx + 60, cy + 60], [cx + 220, cy + 220]]
+        );
+      }
       sleep(300);
     }
-    var msg = "Zoomed out " + times + " levels";
+    var msg = "Zoom " + direction + " " + times + " levels";
     console.info("scroll: " + msg);
     if (floatyW) {
       floatyMod.appendLog(floatyW, msg);
     }
   } catch (e) {
-    var msg = "Zoom out failed: " + e;
+    var msg = "Zoom " + direction + " failed: " + e;
     console.warn("scroll: " + msg);
     if (floatyW) {
       floatyMod.appendLog(floatyW, msg);
@@ -52,8 +59,18 @@ function zoomOut(times, floatyW) {
   }
 }
 
+function zoomOut(times, floatyW) {
+  zoom("out", times, floatyW);
+}
+
+function zoomIn(times, floatyW) {
+  zoom("in", times, floatyW);
+}
+
 module.exports = {
   scrollLeft:  scrollLeft,
   scrollRight: scrollRight,
+  zoom:        zoom,
   zoomOut:     zoomOut,
+  zoomIn:      zoomIn,
 };

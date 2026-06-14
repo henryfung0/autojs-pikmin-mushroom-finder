@@ -95,33 +95,19 @@ function main() {
 
   console.info("Loaded " + templates.length + " template(s)");
 
-  // ---- 1b. Request screen-capture permission -------------------------
-  var captureGranted = false;
-  try {
-    captureGranted = images.requestScreenCapture(false);
-  } catch (e) {
-    console.warn("images.requestScreenCapture threw an exception: " + e);
-  }
-
-  if (!captureGranted) {
-    toast("Screen capture permission denied. Grant permission and restart.");
-    console.error("Screen capture permission denied");
+  // ---- 1b. Minimal log panel (must exist before any logging) -----------
+  var panel = floatyMod.createControlPanel(function() {
+    scanner.stopScanning();
+    floatyMod.destroy(panel);
     exit();
-  }
-
-  // ---- 1c. Create the control panel (for during-scan monitoring) -----
-  var panel = floatyMod.createControlPanel();
-  floatyMod.updateStatus(panel, "Initializing...");
+  });
   floatyMod.appendLog(panel, "Config applied, starting scan");
 
-  // ---- 1d. Wire the Stop button -------------------------------------
-  floatyMod.setButtonText(panel, "Stop");
-  floatyMod.setButtonCallback(panel, function() {
-    scanner.stopScanning();
-    floatyMod.appendLog(panel, "Stop requested by user");
-  });
+  // Stop the script via volume keys (set up in scanner.js).
+  //   Single volume press  → graceful stop
+  //   Double volume press  → force stop
 
-  // ---- 1e. onFound callback ------------------------------------------
+  // ---- 1d. onFound callback --------------------------------------------
   function onFound(match) {
     floatyMod.updateStatus(panel, "Large Mushroom Found!");
     floatyMod.appendLog(panel, "Found \"" + match.templateName + "\" at (" +
@@ -130,7 +116,12 @@ function main() {
 
     // Save screenshot to device gallery
     floatyMod.appendLog(panel, "Saving screenshot...");
-    var screenImg = captureScreen();
+    var screenImg = null;
+    try {
+      screenImg = captureScreen();
+    } catch (e) {
+      screenImg = null;
+    }
     if (screenImg) {
       try {
         var saved = utils.saveScreenshotToGallery(
@@ -152,50 +143,60 @@ function main() {
   // Phase 2 — Launch
   // ===================================================================
 
+  // Load navigation templates early (includes pikmin icon templates
+  // used to visually launch the game from the home screen).
+  var navTemplates = navigator.loadNavigationTemplates(config.detection.templateDir);
+
   // ---- 2a. Launch / bring-to-foreground Pikmin Bloom -----------------
+
   if (settings.autoLaunch) {
     floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
     floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
     app.launchPackage(config.app.packageName);
+
+    // Give the app a few seconds to load — splash/permission screens
+    // often show as com.android.systemui during this window
+    sleep(3000);
+
+    // If system UI is in foreground, try tapping to dismiss overlay dialogs.
+    // Android permission dialogs show as com.android.systemui. We try:
+    //   1. Center tap (might hit a consent button)
+    //   2. Bottom-center tap (common for "Allow" buttons on permission dialogs)
+    var pkg = currentPackage();
+    if (pkg === "com.android.systemui") {
+      floatyMod.appendLog(panel, "System UI in foreground — tapping to dismiss overlay...");
+      var cx = Math.round(device.width / 2);
+      var cy = Math.round(device.height / 2);
+      press(cx, cy, 800);
+      sleep(1500);
+      // Try bottom-center too (where "Allow" buttons often appear)
+      var botCy = Math.round(device.height * 0.85);
+      press(cx, botCy, 800);
+      sleep(2000);
+    }
+
+    floatyMod.appendLog(panel, "App is in foreground");
   } else {
+    // Manual launch — wait for user to open the game
     floatyMod.updateStatus(panel, "Open the game manually...");
     floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
+    sleep(5000);
+    floatyMod.appendLog(panel, "Assuming game is open, proceeding to navigation...");
   }
-
-  // Chunked polling: check every 2 s until the app is in the foreground
-  var launched = false;
-  var launchStart = new Date().getTime();
-
-  while (new Date().getTime() - launchStart < config.app.launchTimeout) {
-    var pkg = currentPackage();
-    if (pkg === config.app.packageName) {
-      launched = true;
-      break;
-    }
-    sleep(2000);
-  }
-
-  if (!launched) {
-    cleanupAndExit(
-      panel,
-      "Error: Launch failed",
-      "Pikmin Bloom did not come to the foreground. " +
-        "Please launch it manually and restart."
-    );
-  }
-
-  floatyMod.appendLog(panel, "App is in foreground");
 
   // ---- 2b. Navigate to map using visual templates -------------------
   floatyMod.updateStatus(panel, "Navigating to map...");
-  floatyMod.appendLog(panel, "Loading navigation templates...");
-
-  // Load templates from ./templates/navigation/ subfolder (if any)
-  var navTemplates = navigator.loadNavigationTemplates(config.detection.templateDir);
 
   if (navTemplates.length > 0) {
     floatyMod.appendLog(panel, "Navigating (" + navTemplates.length + " guides)...");
-    var mapReached = navigator.navigateToMap(navTemplates, config);
+
+    var mapReached = false;
+    try {
+      mapReached = navigator.navigateToMap(navTemplates, config, panel);
+    } catch (e) {
+      console.error("navigateToMap threw: " + e);
+      floatyMod.appendLog(panel, "Navigation error: " + e);
+    }
     if (!mapReached) {
       cleanupAndExit(
         panel,
@@ -204,7 +205,7 @@ function main() {
           "Check your navigation templates and restart."
       );
     }
-    floatyMod.appendLog(panel, "Map reached via navigation");
+    floatyMod.appendLog(panel, "=== Map view reached! Starting scan... ===");
 
     // Recycle navigation templates — no longer needed
     detection.recycleAllTemplates(navTemplates);
@@ -250,6 +251,23 @@ function main() {
   // Phase 3 — Scan
   // ===================================================================
 
+  // Re-establish screen capture NOW (game is in foreground, navigation
+  // just completed).  Requesting it earlier (before the app launched)
+  // may result in an expired session by this point.
+  var captureGranted = false;
+  try {
+    captureGranted = images.requestScreenCapture(false);
+  } catch (e) {
+    console.warn("images.requestScreenCapture threw: " + e);
+  }
+  if (!captureGranted) {
+    cleanupAndExit(
+      panel,
+      "Error: Capture denied",
+      "Screen capture permission denied. Grant permission and restart."
+    );
+  }
+
   floatyMod.updateStatus(panel, "Searching...");
   floatyMod.appendLog(panel, "Starting scan loop");
 
@@ -260,20 +278,15 @@ function main() {
   // Phase 4 — Cleanup
   // ===================================================================
 
-  floatyMod.updateStatus(panel, "Scan complete");
-  floatyMod.appendLog(panel, "Scan finished");
-  floatyMod.setButtonText(panel, "Exit");
-  floatyMod.setButtonCallback(panel, function() {
-    userExiting = true;
-  });
-
-  // Wait so user can read final status, or tap Exit
-  var userExiting = false;
-  var cleanupStart = new Date().getTime();
-  while (!userExiting && (new Date().getTime() - cleanupStart < 5000)) {
-    sleep(200);
+  if (scanner.wasUserStop()) {
+    floatyMod.appendLog(panel, "Scan stopped by user");
+    floatyMod.destroy(panel);
+    return;
   }
 
+  // Mushroom found — keep panel visible briefly so user can read the log
+  floatyMod.appendLog(panel, "Scan finished");
+  sleep(3000);
   floatyMod.destroy(panel);
 }
 

@@ -1,108 +1,120 @@
 /**
  * floaty.js
  *
- * Persistent floating control panel for Pikmin Bloom Mushroom Finder.
- * Provides status display, scrolling log, and Start/Stop button.
+ * Minimal floating log panel for Pikmin Bloom Mushroom Finder.
+ * Transparent background, red log text, scrollable,
+ * draggable via title bar, close button on top-right.
  *
- * The panel auto-hides during swipe gestures (via showDuringScan)
- * to avoid blocking game touches. Positioned at the top-right edge
- * where the game map has minimal interactive elements.
+ * The panel is hidden off-screen during the scan loop so it never
+ * interferes with screen capture or image detection.
  *
  * Exports:
- *   createControlPanel()     - Create and return the control panel window
- *   updateStatus(w, text)    - Update the status text
- *   appendLog(w, message)    - Append a timestamped line to the log area
- *   setButtonText(w, text)   - Change the control button label
- *   setButtonCallback(w, fn) - Set the control button click handler
- *   showDuringScan(w, show)  - Hide/restore during scanning
- *   destroy(w)               - Close the panel
+ *   createControlPanel(fn) - Create and return the panel
+ *   updateStatus(w, text)  - No-op (kept for call-site compatibility)
+ *   appendLog(w, message)  - Append a timestamped line
+ *   setButtonText(w, text) - No-op
+ *   setButtonCallback(...) - No-op
+ *   setCloseCallback(w, fn)- Wire close-button handler
+ *   showDuringScan(w, show)- Hide/restore during scanning
+ *   destroy(w)             - Close the panel
  */
 
-var config = require("./config");
-
 /**
- * Create the persistent control panel.
+ * Create the minimal floating log panel.
  *
- * Layout: 220px wide, positioned top-right.
- * Contains title, status, scrollable log area, and control button.
+ * No background — transparent, red log text, scrollable.
+ * Close button on the top-right; drag via the title bar.
+ *
+ * @param {Function} [closeCallback] - Called when × is tapped
  *
  * @returns {Object} The floaty raw window object
  */
-function createControlPanel() {
+function createControlPanel(closeCallback) {
   var w = floaty.rawWindow(
-    <vertical padding="4" bg="#DD000000" w="220px">
-      <text text="Mushroom Finder" textColor="#1976D2" textSize="14sp"
-            gravity="center" margin="0 2 4 2"/>
-      <text id="status" text="Tap Start to begin" textColor="white"
-            textSize="11sp" gravity="center" margin="0 0 4 0"/>
-      <frame h="90px" bg="#33000000" margin="0 0 4 0">
-        <text id="logArea" text="" textColor="#AAFFAA" textSize="9sp"
-              padding="2" maxLines="5"/>
-      </frame>
-      <horizontal gravity="center" margin="0 0 4 0">
-        <text text="Settle:" textColor="#AAAAAA" textSize="10sp"
-              gravity="center" margin="0 0 2 0"/>
-        <button id="settleMinus" text="−" textSize="14sp" textColor="white"
-                bg="#555555" w="30px" h="28px" margin="2 0 2 0"/>
-        <text id="settleValue" text="2500ms" textColor="white" textSize="10sp"
-              w="55px" gravity="center"/>
-        <button id="settlePlus" text="+" textSize="14sp" textColor="white"
-                bg="#555555" w="30px" h="28px" margin="2 0 0 0"/>
+    <vertical w="300dp">
+      <horizontal id="titleBar" gravity="center_vertical">
+        <text layout_weight="1" />
+        <text id="closeBtn" text="×" textColor="#FF6666" textSize="18sp"
+              w="28dp" h="28dp" gravity="center" />
       </horizontal>
-      <button id="ctrlBtn" text="Start Scan" textSize="13sp" textColor="white"
-              bg="#4CAF50" h="38px" margin="0 0 2 0"/>
+      <scroll id="logScroll" w="*" h="70dp">
+        <text id="logArea" text="" textColor="#FF5555" textSize="10sp"
+              padding="4" lineSpacingExtra="2sp" clickable="false"
+              focusable="false" />
+      </scroll>
     </vertical>
   );
 
-  w.setPosition(device.width - 240, 80);
-  w.setSize(220, 230);
+  w.setPosition(20, 80);
   w.setTouchable(true);
 
-  w.settleMinus.click(function() {
-    config.scan.settleDelay = Math.max(
-      config.scan.settleDelayMin,
-      config.scan.settleDelay - config.scan.settleDelayStep
-    );
-    ui.run(function() {
-      w.settleValue.setText(config.scan.settleDelay + "ms");
-    });
+  // ── Drag support ──────────────────────────────────────────────────────
+  // Touch-and-drag on the title bar (including close button) to reposition.
+  var winX = 20;
+  var winY = 80;
+  var startX = 0;
+  var startY = 0;
+  var dragging = false;
+
+  w.titleBar.setOnTouchListener(function(view, event) {
+    switch (event.getAction()) {
+      case event.ACTION_DOWN:
+        startX = event.getRawX();
+        startY = event.getRawY();
+        winX = w.getX();
+        winY = w.getY();
+        dragging = false;
+        return true;
+      case event.ACTION_MOVE:
+        var dx = event.getRawX() - startX;
+        var dy = event.getRawY() - startY;
+        if (!dragging) {
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return true;
+          dragging = true;
+        }
+        w.setPosition(winX + dx, winY + dy);
+        return true;
+      case event.ACTION_UP:
+        dragging = false;
+        return true;
+    }
+    return true;
   });
 
-  w.settlePlus.click(function() {
-    config.scan.settleDelay = Math.min(
-      config.scan.settleDelayMax,
-      config.scan.settleDelay + config.scan.settleDelayStep
-    );
-    ui.run(function() {
-      w.settleValue.setText(config.scan.settleDelay + "ms");
-    });
+  // ── Close button ──────────────────────────────────────────────────────
+  w.closeBtn.click(function() {
+    if (closeCallback) {
+      closeCallback();
+    } else {
+      w.close();
+    }
   });
 
   return w;
 }
 
 /**
- * Update the status text on the control panel.
+ * Update the status text — no-op since the panel no longer has a
+ * status line.  Kept for call-site compatibility.
  *
  * @param {Object} w    - The control panel window
- * @param {string} text - New status text
+ * @param {string} text - Ignored
  */
 function updateStatus(w, text) {
-  if (!w || !w.status) return;
-  ui.run(function() {
-    w.status.setText(text);
-  });
+  // No status line in the minimal panel — nothing to do.
 }
 
 /**
  * Append a timestamped log line to the log area.
  * Keeps at most ~500 characters (scrolling history).
+ * Also prints to console.info so the VSCode plugin sees the same log.
  *
  * @param {Object} w       - The control panel window
  * @param {string} message - Log message to append
  */
 function appendLog(w, message) {
   if (!w || !w.logArea) return;
+  console.info(message);
   ui.run(function() {
     var timestamp = new Date();
     var timeStr =
@@ -112,7 +124,6 @@ function appendLog(w, message) {
     var line = "[" + timeStr + "] " + message;
     var current = w.logArea.text();
     var updated = current ? current + "\n" + line : line;
-    // Keep only the last ~500 characters
     if (updated.length > 500) {
       updated = updated.slice(-500);
     }
@@ -121,28 +132,34 @@ function appendLog(w, message) {
 }
 
 /**
- * Change the control button label (e.g. "Start" vs "Stop").
+ * No-op — panel no longer has a button.
  *
- * @param {Object} w    - The control panel window
- * @param {string} text - New button text
+ * @param {Object} w    - Ignored
+ * @param {string} text - Ignored
  */
 function setButtonText(w, text) {
-  if (!w || !w.ctrlBtn) return;
-  ui.run(function() {
-    w.ctrlBtn.setText(text);
-  });
+  // No button in the minimal panel.
 }
 
 /**
- * Set the click handler for the control button.
- * Call this once during setup to wire up Start/Stop logic.
+ * No-op — panel no longer has a button.
  *
- * @param {Object}   w        - The control panel window
- * @param {Function} callback - Function to call on button click
+ * @param {Object}   w        - Ignored
+ * @param {Function} callback - Ignored
  */
 function setButtonCallback(w, callback) {
-  if (!w || !w.ctrlBtn) return;
-  w.ctrlBtn.click(function() {
+  // No button in the minimal panel.
+}
+
+/**
+ * Set the handler for the close (×) button.
+ *
+ * @param {Object}   w        - The control panel window
+ * @param {Function} callback - Function to call when × is tapped
+ */
+function setCloseCallback(w, callback) {
+  if (!w || !w.closeBtn) return;
+  w.closeBtn.click(function() {
     callback();
   });
 }
@@ -158,7 +175,7 @@ function showDuringScan(w, show) {
   if (show === false) {
     w.setPosition(-999, -999);
   } else {
-    w.setPosition(device.width - 240, 80);
+    w.setPosition(20, 80);
   }
 }
 
@@ -169,7 +186,11 @@ function showDuringScan(w, show) {
  */
 function destroy(w) {
   if (!w) return;
-  w.close();
+  try {
+    w.close();
+  } catch (e) {
+    // Ignore — window may already be closed
+  }
 }
 
 module.exports = {
@@ -178,6 +199,7 @@ module.exports = {
   appendLog: appendLog,
   setButtonText: setButtonText,
   setButtonCallback: setButtonCallback,
+  setCloseCallback: setCloseCallback,
   showDuringScan: showDuringScan,
   destroy: destroy
 };

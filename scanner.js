@@ -20,18 +20,18 @@
 // Dependencies
 // ---------------------------------------------------------------------------
 
-var utils = require("./utils");
 var detection = require("./detection");
 var floatyMod = require("./floaty");
+var scroll = require("./scroll");
 
 // ---------------------------------------------------------------------------
 // Module-level state
 // ---------------------------------------------------------------------------
 
 var _shutdownRequested = false;
+var _userStopped = false;       // true when user explicitly pressed Stop
 var _sweepCount = 0;
 var _totalSwipes = 0;
-var _consecutiveBadState = 0;
 var _scanning = false;
 var _lastKeyTime = 0;
 var _doublePressTimeout = 500;
@@ -87,13 +87,25 @@ function startScanning(config, templates, onFound, floatyW) {
 
   // ── Reset state for a fresh scan ─────────────────────────────────────
   _shutdownRequested = false;
+  _userStopped = false;
   _sweepCount = 0;
   _totalSwipes = 0;
-  _consecutiveBadState = 0;
   _scanning = true;
 
-  // Hide floaty during scan so it does not interfere with swipe gestures
-  floatyMod.showDuringScan(floatyW, false);
+  floatyMod.appendLog(floatyW, "Scan engine started");
+  console.info("startScanning: entered scan loop");
+
+  // Refresh capture session — the original session may have expired
+  // during the long navigation phase.  Silently re-acquire so that
+  // captureScreen() works in the scan loop.
+  try {
+    images.requestScreenCapture(false);
+  } catch (e) {
+    // Non-fatal — the existing session might still work.
+  }
+
+  // Keep the floaty panel visible during scan (user request)
+  floatyMod.showDuringScan(floatyW, true);
   floatyMod.updateStatus(floatyW, "Searching...");
 
   var settleDelay = config.scan.settleDelay;
@@ -102,39 +114,34 @@ function startScanning(config, templates, onFound, floatyW) {
   if (swipeDuration > 2000) {
     swipeDuration = 2000;
   }
-  var verticalShift = config.scan.verticalShiftPercent * device.height;
+  // Vertical shift per row — 12 % of screen height keeps the swipe
+  // comfortably within the visible display.
+  var verticalShift = Math.round(device.height * 0.12);
 
-  // ── Main scan loop — vertical zigzag pattern ─────────────────────────
+  // ── Main scan loop — sweep left, shift down, repeat ─────────────────
   //
-  // Pattern: left sweep × 3 → shift down → right sweep × 3 → shift down
-  // Even _sweepCount → left sweep; odd _sweepCount → right sweep.
+  // All swipes scroll left so the visible area moves progressively
+  // westward.  After sweepsPerRow swipes the Y shifts down a row.
   //
   while (!_shutdownRequested && _scanning) {
-    var isLeftSweep = (_sweepCount % 2 === 0);
-    // Y coordinate shifts after each complete sweep
+    // Y coordinate shifts down each row.  Start at 45 % screen height
+    // and cap at 82 % so the swipe never goes off-screen.
     var currentY = Math.round(
-      device.height * 0.5 + _sweepCount * verticalShift
+      device.height * 0.45 + _sweepCount * verticalShift
     );
+    if (currentY > device.height * 0.82) {
+      currentY = Math.round(device.height * 0.82);
+    }
 
-    // Each sweep = 3 consecutive swipes in one direction
+    // Each sweep = 3 consecutive swipes — always scrolling left
     var sweepsPerRow = config.scan.sweepCountPerRow || 3;
     for (var i = 0; i < sweepsPerRow; i++) {
       if (_shutdownRequested) {
         break;
       }
 
-      // ── Compute swipe endpoints ──────────────────────────────────
-      var startX, endX;
-      if (isLeftSweep) {
-        startX = Math.round(device.width * 0.8);
-        endX  = Math.round(device.width * 0.2);
-      } else {
-        startX = Math.round(device.width * 0.2);
-        endX  = Math.round(device.width * 0.8);
-      }
-
-      // Execute the swipe gesture
-      swipe(startX, currentY, endX, currentY, swipeDuration);
+      scroll.scrollLeft(currentY, swipeDuration, floatyW,
+        "Sweep " + (_sweepCount + 1) + "." + (i + 1));
       _totalSwipes++;
 
       // Let the map settle / render after the swipe
@@ -147,62 +154,50 @@ function startScanning(config, templates, onFound, floatyW) {
 
       // ── Capture → detect cycle ───────────────────────────────────
       //
-      // 1. captureScreen() with one retry on failure
-      // 2. classifyScreenState() — skip detection if not map_visible
-      // 3. findMushrooms() — stop on first match
+      // 1. captureScreen() with multiple retries on failure
+      // 2. findMushrooms() — stop on first match
       //
 
       var screenImage = null;
-      try {
-        screenImage = captureScreen();
-      } catch (e) {
-        screenImage = null;
-      }
+      var captureAttempts = 0;
+      var maxCaptureAttempts = 3;
 
-      // Retry once after a short delay if capture returned null
-      if (!screenImage) {
-        sleep(2000);
+      while (captureAttempts < maxCaptureAttempts && !screenImage) {
+        captureAttempts++;
+
         try {
           screenImage = captureScreen();
         } catch (e) {
           screenImage = null;
         }
+
+        if (!screenImage && captureAttempts < maxCaptureAttempts) {
+          // Session may have expired — refresh and retry
+          try {
+            images.requestScreenCapture(false);
+          } catch (e) {
+            // Non-fatal
+          }
+          sleep(2000);
+        }
       }
 
       if (!screenImage) {
         console.error(
-          "startScanning: captureScreen failed after retry"
+          "startScanning: captureScreen failed after " +
+          maxCaptureAttempts + " attempts — skipping frame"
         );
-        floatyMod.updateStatus(floatyW, "Error: Capture failed");
-        floatyMod.showDuringScan(floatyW, true);
-        _scanning = false;
-        return;
+        floatyMod.appendLog(floatyW,
+          "Capture failed, skipping frame");
+        // Do NOT abort the scan — just skip this frame and swipe again
+        continue;
       }
 
       // Process the captured image — ALWAYS recycled in finally
       try {
-        var state = utils.classifyScreenState(screenImage);
-
-        if (state !== "map_visible") {
-          _consecutiveBadState++;
-          console.warn(
-            "startScanning: screen state \"" + state +
-            "\" (consecutive bad: " + _consecutiveBadState + ")"
-          );
-          if (_consecutiveBadState >= 3) {
-            console.warn(
-              "startScanning: 3 consecutive non-map_visible " +
-              "states — continuing scan"
-            );
-          }
-          // Skip detection for this frame; go to next swipe
-          continue;
-        }
-
-        // Screen shows the game map — reset bad-state counter
-        _consecutiveBadState = 0;
-
-        // Run template matching on the captured frame
+        // Run template matching on every frame regardless of screen state.
+        // classifyScreenState is unreliable for some map views (e.g. map_view3),
+        // so we always try detection and let the template matching sort it out.
         var matches = detection.findMushrooms(
           screenImage, templates, config
         );
@@ -244,6 +239,17 @@ function startScanning(config, templates, onFound, floatyW) {
  */
 function stopScanning() {
   _shutdownRequested = true;
+  _userStopped = true;
+}
+
+/**
+ * Check whether the last scan stop was triggered by the user pressing Stop
+ * (as opposed to finding a mushroom or an error).
+ *
+ * @returns {boolean} true if the user explicitly stopped the scan
+ */
+function wasUserStop() {
+  return _userStopped;
 }
 
 /**
@@ -263,4 +269,5 @@ module.exports = {
   startScanning: startScanning,
   stopScanning: stopScanning,
   isScanning: isScanning,
+  wasUserStop: wasUserStop,
 };

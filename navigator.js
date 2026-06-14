@@ -17,6 +17,31 @@
 
 "auto";
 
+var floatyMod = require("./floaty");
+
+// ── Click feedback indicator ─────────────────────────────────────────────
+// A small red dot that appears at the press point for ~800ms so the user
+// can see exactly where the script is tapping on screen.
+var _clickDot = null;
+
+function _showTap(x, y) {
+  if (!_clickDot) {
+    _clickDot = floaty.rawWindow(
+      <frame bg="#FF4444" w="18dp" h="18dp" />
+    );
+    _clickDot.setTouchable(false);
+  }
+  // Center the dot on (x, y). setPosition uses display-area coords (below status bar),
+  // while press() uses absolute screen coords — subtract status bar height to align.
+  var halfPx = Math.round(9 * device.density);
+  var sbH = device.statusBarHeight || 0;
+  _clickDot.setPosition(x - halfPx, y - halfPx - sbH);
+  if (_clickDot._hideTimer) clearTimeout(_clickDot._hideTimer);
+  _clickDot._hideTimer = setTimeout(function() {
+    _clickDot.setPosition(-999, -999);
+  }, 800);
+}
+
 /**
  * Load navigation templates from ./templates/navigation/ subdirectory.
  *
@@ -67,8 +92,91 @@ function loadNavigationTemplates(templateDir) {
 }
 
 /**
- * Try to match a single template against the screen image.
+ * Pre-navigation phase: check for and dismiss the post-launch Pikmin icon
+ * that sometimes appears after the game opens.
  *
+ * Scans for pikmin icon1.jpg / pikmin icon2.jpg for up to 10 seconds.
+ * If found → taps it, logs to panel, and returns true.
+ * If timeout expires with no match → returns false (navigation continues
+ * regardless).
+ *
+ * @param {{name: string, image: Image, w: number, h: number}[]} navTemplates
+ *   Navigation templates (pikmin icon files are identified by filename).
+ * @param {Object} floatyW - Floaty window for panel logging.
+ * @returns {boolean} true if a pikmin icon was found and tapped.
+ */
+function dismissPikminIcon(navTemplates, floatyW) {
+  // Locate pikmin icon templates by filename
+  var pikminIcon1Tpl = null;
+  var pikminIcon2Tpl = null;
+  for (var i = 0; i < navTemplates.length; i++) {
+    var name = navTemplates[i].name.toLowerCase();
+    if (name.indexOf("pikmin icon1") !== -1 || name.indexOf("pikmin_icon1") !== -1) pikminIcon1Tpl = navTemplates[i];
+    else if (name.indexOf("pikmin icon2") !== -1 || name.indexOf("pikmin_icon2") !== -1) pikminIcon2Tpl = navTemplates[i];
+  }
+  if (!pikminIcon1Tpl && !pikminIcon2Tpl) {
+    console.info("dismissPikminIcon: no pikmin icon templates found, skipping");
+    return false;
+  }
+  console.info("dismissPikminIcon: pikmin_icon1=" + (pikminIcon1Tpl ? "yes" : "no") +
+    ", pikmin_icon2=" + (pikminIcon2Tpl ? "yes" : "no"));
+  floatyMod.appendLog(floatyW, "Pikmin icon detection active (10s)");
+
+  var timeout = 10000;
+  var start = new Date().getTime();
+
+  while (new Date().getTime() - start < timeout) {
+    var img = null;
+    try {
+      try {
+        img = captureScreen();
+      } catch (e) {
+        img = null;
+      }
+      if (!img) {
+        sleep(500);
+        continue;
+      }
+
+      // Check icon1 first, then icon2
+      // Threshold 0.5 is used because home-screen app icons are small
+      // (~125×125px) and their appearance can vary between launchers,
+      // icon packs, and adaptive-icon shapes.  If you still get false
+      // negatives, recapture the template or lower this further.
+      var match = null;
+      if (pikminIcon1Tpl) {
+        match = _matchOne(img, pikminIcon1Tpl, 0.5);
+      }
+      if (!match && pikminIcon2Tpl) {
+        match = _matchOne(img, pikminIcon2Tpl, 0.5);
+      }
+
+      if (match) {
+        var tapX = match.x + Math.round(match.w / 2);
+        var tapY = match.y + Math.round(match.h / 2);
+        var iconName = match.name || "pikmin icon";
+        console.info("dismissPikminIcon: \"" + iconName + "\" detected at (" + tapX + "," + tapY + ") — tapping");
+        floatyMod.appendLog(floatyW, "Pikmin icon \"" + iconName + "\" detected! Clicking at (" + tapX + "," + tapY + ")");
+        _showTap(tapX, tapY);
+        press(tapX, tapY, 1000);
+        sleep(1500);
+        return true;
+      }
+    } finally {
+      if (img) {
+        img.recycle();
+      }
+    }
+    sleep(500);
+  }
+
+  console.info("dismissPikminIcon: no pikmin icon detected within 10s, continuing");
+  floatyMod.appendLog(floatyW, "No pikmin icon found, continuing");
+  return false;
+}
+
+/**
+ * Try to match a single template against the screen image.
  * @param {Image} screenImage - Current screenshot.
  * @param {{name: string, image: Image}} tpl - Template descriptor.
  * @param {number} [threshold=0.8] - Match confidence threshold.
@@ -77,19 +185,30 @@ function loadNavigationTemplates(templateDir) {
 function _matchOne(screenImage, tpl, threshold) {
   if (!screenImage || !tpl || !tpl.image) return null;
   try {
+    console.info("_matchOne: searching for \"" + tpl.name + "\" (tpl " + tpl.w + "x" + tpl.h +
+      ", threshold=" + (threshold || 0.8) + ")");
     var result = images.findImage(screenImage, tpl.image, {
       threshold: threshold || 0.8,
       region: [0, 0, screenImage.getWidth(), screenImage.getHeight()]
     });
     if (result) {
+      var confidence = result.confidence !== undefined ? result.confidence : threshold;
+      console.info("_matchOne: found \"" + tpl.name + "\" at (" + result.x + "," + result.y +
+        ") confidence=" + confidence);
       return {
         x: result.x,
         y: result.y,
-        confidence: result.confidence !== undefined ? result.confidence : threshold
+        w: tpl.w,
+        h: tpl.h,
+        name: tpl.name,
+        confidence: confidence
       };
+    } else {
+      console.info("_matchOne: no match for \"" + tpl.name + "\" — below threshold");
     }
   } catch (e) {
-    // Silently skip match errors
+    console.warn("_matchOne: error matching \"" + tpl.name + "\": " + e +
+      (e.stack ? "\n" + e.stack : ""));
   }
   return null;
 }
@@ -111,9 +230,10 @@ function _matchOne(screenImage, tpl, threshold) {
  * @param {{name: string, image: Image, w: number, h: number}[]} navTemplates
  *   Navigation templates from loadNavigationTemplates().
  * @param {Object} config - Configuration object (uses config.app.navTimeout).
+ * @param {Object} floatyW - Floaty window for panel logging.
  * @returns {boolean} true when the game map is reached, false on timeout.
  */
-function navigateToMap(navTemplates, config) {
+function navigateToMap(navTemplates, config, floatyW) {
   if (!navTemplates || navTemplates.length === 0) {
     console.warn("navigateToMap: no navigation templates — skipping navigation");
     return true;
@@ -128,16 +248,30 @@ function navigateToMap(navTemplates, config) {
   // Identify templates by filename keywords
   var close1Tpl = null;
   var close2Tpl = null;
+  var close3Tpl = null;
+  var backTpl = null;
   var goToMapTpl = null;
   var mapViewTpl = null;
   var mapView2Tpl = null;
+  var mapView3Tpl = null;
 
   for (var i = 0; i < navTemplates.length; i++) {
     var name = navTemplates[i].name.toLowerCase();
     if (name.indexOf("close1") !== -1) close1Tpl = navTemplates[i];
     else if (name.indexOf("close2") !== -1) close2Tpl = navTemplates[i];
-    else if (name.indexOf("go_to_map") !== -1 || name.indexOf("go to map") !== -1) goToMapTpl = navTemplates[i];
-    else if (name.indexOf("map_view2") !== -1) mapView2Tpl = navTemplates[i];
+    else if (name.indexOf("close3") !== -1) close3Tpl = navTemplates[i];
+    else if (name.indexOf("back") !== -1) backTpl = navTemplates[i];
+    else if (name.indexOf("go_to_map") !== -1 || name.indexOf("go to map") !== -1) {
+      // Only match exact "go to map" to avoid "go to map2" overriding it
+      var base = name.replace(/\.[^.]+$/, "");
+      if (base === "go to map" || base === "go_to_map" || base === "gotomap") goToMapTpl = navTemplates[i];
+    }
+    else if (name.indexOf("map_view2") !== -1 || name.indexOf("map view2") !== -1) {
+      // Skip — user only wants map_view.jpg
+    }
+    else if (name.indexOf("map_view3") !== -1 || name.indexOf("map view3") !== -1) {
+      mapView3Tpl = navTemplates[i];
+    }
     else if (name.indexOf("map_view") !== -1 || name.indexOf("map view") !== -1) mapViewTpl = navTemplates[i];
   }
 
@@ -146,27 +280,37 @@ function navigateToMap(navTemplates, config) {
     var base = navTemplates[i].name.toLowerCase().replace(/\.[^.]+$/, "");
     if (!close1Tpl && (base === "close1" || base === "close_1")) close1Tpl = navTemplates[i];
     if (!close2Tpl && (base === "close2" || base === "close_2")) close2Tpl = navTemplates[i];
+    if (!close3Tpl && (base === "close3" || base === "close_3")) close3Tpl = navTemplates[i];
+    if (!backTpl && (base === "back")) backTpl = navTemplates[i];
     if (!goToMapTpl && (base === "go_to_map" || base === "go to map" || base === "gotomap")) goToMapTpl = navTemplates[i];
-    if (!mapView2Tpl && (base === "map_view2" || base === "map view2" || base === "mapview2")) mapView2Tpl = navTemplates[i];
+    if (!mapView3Tpl && (base === "map_view3" || base === "map view3" || base === "mapview3")) mapView3Tpl = navTemplates[i];
     if (!mapViewTpl && (base === "map_view" || base === "map view" || base === "mapview")) mapViewTpl = navTemplates[i];
   }
 
   console.info("navigateToMap: close1=" + (close1Tpl ? "yes" : "no") +
     ", close2=" + (close2Tpl ? "yes" : "no") +
+    ", close3=" + (close3Tpl ? "yes" : "no") +
+    ", back=" + (backTpl ? "yes" : "no") +
     ", go_to_map=" + (goToMapTpl ? "yes" : "no") +
     ", map_view=" + (mapViewTpl ? "yes" : "no") +
-    ", map_view2=" + (mapView2Tpl ? "yes" : "no"));
+    ", map_view2=" + (mapView2Tpl ? "yes" : "no") +
+    ", map_view3=" + (mapView3Tpl ? "yes" : "no"));
 
   while (new Date().getTime() - start < timeout) {
     var img = null;
     try {
-      img = captureScreen();
+      try {
+        img = captureScreen();
+      } catch (e) {
+        // captureScreen can throw if the session expired — treat as null
+        img = null;
+      }
       if (!img) {
         sleep(1000);
         continue;
       }
 
-      // Priority 1: Dismiss overlays (close buttons)
+      // Priority 1: Dismiss overlays (close buttons / back)
       var match = null;
       if (close1Tpl) {
         match = _matchOne(img, close1Tpl, 0.7);
@@ -174,15 +318,20 @@ function navigateToMap(navTemplates, config) {
       if (!match && close2Tpl) {
         match = _matchOne(img, close2Tpl, 0.7);
       }
+      if (!match && close3Tpl) {
+        match = _matchOne(img, close3Tpl, 0.7);
+      }
+      if (!match && backTpl) {
+        match = _matchOne(img, backTpl, 0.7);
+      }
       if (match) {
-        console.info("navigateToMap: found close button, tapping at (" + match.x + "," + match.y + ")");
-        var tapped = click(match.x, match.y);
-        if (!tapped) {
-          console.warn("navigateToMap: click() returned false, trying gesture fallback");
-          gesture(50, [match.x, match.y], [match.x, match.y]);
-        } else {
-          console.info("navigateToMap: click() succeeded");
-        }
+        var tapX = match.x + Math.round(match.w / 2);
+        var tapY = match.y + Math.round(match.h / 2);
+        console.info("navigateToMap: found dismiss button, pressing at (" + tapX + "," + tapY + ")");
+        floatyMod.appendLog(floatyW, "Dismiss popup at (" + tapX + "," + tapY + ")");
+        _showTap(tapX, tapY);
+        press(tapX, tapY, 1000);
+        console.info("navigateToMap: press() executed");
         sleep(1500);
         continue;
       }
@@ -191,50 +340,45 @@ function navigateToMap(navTemplates, config) {
       if (goToMapTpl) {
         match = _matchOne(img, goToMapTpl, 0.7);
         if (match) {
-          console.info("navigateToMap: found go_to_map, long-pressing at (" + match.x + "," + match.y + ")");
-          press(match.x, match.y, 300);
+          var tapX = match.x + Math.round(match.w / 2);
+          var tapY = match.y + Math.round(match.h / 2);
+          console.info("navigateToMap: found go_to_map, pressing at (" + tapX + "," + tapY + ")");
+          floatyMod.appendLog(floatyW, "Tap 'Go to map' at (" + tapX + "," + tapY + ")");
+          _showTap(tapX, tapY);
+          press(tapX, tapY, 1000);
           console.info("navigateToMap: press() executed");
           sleep(2000);
           continue;
         }
       }
 
-      // Priority 3: Map view — click map_view2
+      // Priority 3: Already on map — map_view3 detected
+      if (mapView3Tpl) {
+        match = _matchOne(img, mapView3Tpl, 0.7);
+        if (match) {
+          console.info("navigateToMap: found map_view3 — already on map, navigation complete");
+          floatyMod.appendLog(floatyW, "Map view3 detected — already on map!");
+          return true;
+        }
+      }
+
+      // Priority 4: Click map_view (the matched image itself)
       if (mapViewTpl) {
         match = _matchOne(img, mapViewTpl, 0.7);
         if (match) {
-          if (mapView2Tpl) {
-            var clickTarget = _matchOne(img, mapView2Tpl, 0.7);
-            if (clickTarget) {
-              console.info("navigateToMap: found map_view, clicking map_view2 at (" + clickTarget.x + "," + clickTarget.y + ")");
-              var tapped = click(clickTarget.x, clickTarget.y);
-              if (!tapped) {
-                console.warn("navigateToMap: click() returned false, trying gesture fallback");
-                gesture(50, [clickTarget.x, clickTarget.y], [clickTarget.x, clickTarget.y]);
-              } else {
-                console.info("navigateToMap: click() succeeded");
-              }
-              sleep(2000);
-              continue;
-            }
-          }
-          // Fallback: click the center of the screen
-          console.info("navigateToMap: found map_view but no map_view2 match, tapping center");
-          var centerX = device.width / 2;
-          var centerY = device.height / 2;
-          var tapped = click(centerX, centerY);
-          if (!tapped) {
-            console.warn("navigateToMap: click() returned false, trying gesture fallback");
-            gesture(50, [centerX, centerY], [centerX, centerY]);
-          } else {
-            console.info("navigateToMap: click() succeeded");
-          }
+          var tapX = match.x + Math.round(match.w / 2);
+          var tapY = match.y + Math.round(match.h / 2);
+          console.info("navigateToMap: pressing map_view at (" + tapX + "," + tapY + ")");
+          floatyMod.appendLog(floatyW, "Tap map view at (" + tapX + "," + tapY + ")");
+          _showTap(tapX, tapY);
+          press(tapX, tapY, 1000);
+          console.info("navigateToMap: press() executed");
           sleep(2000);
           continue;
         }
       }
 
-      // Priority 4: No template matched — keep waiting
+      // Priority 5: No template matched — keep waiting
       console.info("navigateToMap: no template matched (elapsed " +
         (new Date().getTime() - start) + "ms), continuing...");
 
@@ -248,10 +392,12 @@ function navigateToMap(navTemplates, config) {
   }
 
   console.warn("navigateToMap: timeout (" + timeout + "ms) — never found map_view on screen");
+  floatyMod.appendLog(floatyW, "Navigation timeout — map not reached");
   return false;
 }
 
 module.exports = {
   loadNavigationTemplates: loadNavigationTemplates,
+  dismissPikminIcon: dismissPikminIcon,
   navigateToMap: navigateToMap
 };

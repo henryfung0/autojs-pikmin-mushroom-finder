@@ -134,7 +134,6 @@ function main() {
 
   var navTemplates = navigator.loadNavigationTemplates(config.detection.templateDir);
 
-  console.info("settings.autoLaunch=" + settings.autoLaunch + " type=" + typeof settings.autoLaunch);
   if (settings.autoLaunch) {
     floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
     floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");

@@ -174,7 +174,7 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
     }
 
     try {
-      var matches = detection.findMushrooms(screenImage, templates, config);
+      var matches = detection.findTemplates(screenImage, templates, config);
       if (matches && matches.length > 0) {
         var match = matches[0];
         console.info("startScanning: found \"" + match.templateName +
@@ -192,7 +192,7 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
       // and we reset the empty-scroll counter.  If none match for N consecutive
       // scrolls, the map area is empty — reposition by clicking own position.
       if (othersTemplates.length > 0) {
-        var othersResult = detection.findMushrooms(screenImage, othersTemplates, config);
+        var othersResult = detection.findTemplates(screenImage, othersTemplates, config);
         if (othersResult && othersResult.length > 0) {
           _emptyScrollCount = 0;
         } else {

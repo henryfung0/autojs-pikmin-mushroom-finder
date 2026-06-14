@@ -1,5 +1,5 @@
 /**
- * navigator.js
+ * mushroom_finder/01_navigate_to_map.js — Navigation phase (Phase 1)
  *
  * Navigates through Pikmin Bloom screens using template matching.
  * State machine handles: close buttons → menu → map view → game map.
@@ -17,7 +17,7 @@
 
 "auto";
 
-var floatyMod = require("./ui/floaty");
+var floatyMod = require("../ui/floaty");
 
 // ── Click feedback indicator ─────────────────────────────────────────────
 // A small red dot that appears at the press point for ~800ms so the user

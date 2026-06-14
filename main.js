@@ -56,10 +56,15 @@ function main() {
   config.detection.detectLargeColor = settings.detectLargeColor;
   config.detection.detectLargeElement = settings.detectLargeElement;
 
+  console.info("Config: detectLargeColor=" + config.detection.detectLargeColor +
+    ", detectLargeElement=" + config.detection.detectLargeElement);
+
   console.info("Config: threshold=" + settings.threshold +
     ", sweepCount=" + settings.sweepCount +
     ", settleDelay=" + settings.settleDelay +
     ", autoLaunch=" + settings.autoLaunch +
+    ", detectLargeColor=" + settings.detectLargeColor +
+    ", detectLargeElement=" + settings.detectLargeElement +
     ", debug=" + settings.debugMode);
 
   // ===================================================================
@@ -97,6 +102,8 @@ function main() {
       return t.name.indexOf("large element") === -1;
     });
     console.info("Filtered large element templates: " + before + " → " + templates.length);
+  } else {
+    console.info("detectLargeElement=true, keeping all templates");
   }
 
   var panel = floatyMod.createControlPanel(function() {

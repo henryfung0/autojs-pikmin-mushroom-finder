@@ -396,8 +396,58 @@ function navigateToMap(navTemplates, config, floatyW) {
   return false;
 }
 
+function waitForAndClickLarge(navTemplates, floatyW, timeout) {
+  timeout = timeout || 15000;
+  var start = new Date().getTime();
+  var largeTpl = null;
+  for (var i = 0; i < navTemplates.length; i++) {
+    if (navTemplates[i].name === "Large.jpg") {
+      largeTpl = navTemplates[i];
+      break;
+    }
+  }
+  if (!largeTpl) {
+    console.info("waitForAndClickLarge: Large.jpg not found in nav templates, skipping");
+    return false;
+  }
+  console.info("waitForAndClickLarge: waiting for Large.jpg (timeout=" + timeout + "ms)");
+  while (new Date().getTime() - start < timeout) {
+    var img = null;
+    try {
+      img = captureScreen();
+    } catch (e) {
+      img = null;
+    }
+    if (!img) {
+      sleep(500);
+      continue;
+    }
+    try {
+      var match = images.findImage(img, largeTpl.image, {
+        threshold: 0.7,
+        region: [0, 0, img.getWidth(), img.getHeight()]
+      });
+      if (match) {
+        var tapX = match.x + Math.round(largeTpl.w / 2);
+        var tapY = match.y + Math.round(largeTpl.h / 2);
+        console.info("waitForAndClickLarge: Large.jpg found at (" + tapX + "," + tapY + ") — clicking");
+        floatyMod.appendLog(floatyW, "Clicking Large at (" + tapX + "," + tapY + ")");
+        press(tapX, tapY, 1000);
+        img.recycle();
+        return true;
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+    sleep(500);
+  }
+  console.info("waitForAndClickLarge: timeout, Large.jpg not found");
+  return false;
+}
+
 module.exports = {
   loadNavigationTemplates: loadNavigationTemplates,
   dismissPikminIcon: dismissPikminIcon,
-  navigateToMap: navigateToMap
+  navigateToMap: navigateToMap,
+  waitForAndClickLarge: waitForAndClickLarge
 };

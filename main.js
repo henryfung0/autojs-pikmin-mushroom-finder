@@ -25,13 +25,6 @@ var floatyMod = require("./floaty");
 var configUi  = require("./config_ui");
 var navigator = require("./navigator");
 
-// ---------------------------------------------------------------------------
-// cleanupAndExit — shared error/exit helper
-//
-// Every error path after the panel is created MUST call this instead
-// of calling exit() directly, so the panel is always cleaned up.
-// ---------------------------------------------------------------------------
-
 function cleanupAndExit(panel, statusText, toastMsg) {
   if (panel) {
     floatyMod.updateStatus(panel, statusText);
@@ -46,10 +39,6 @@ function cleanupAndExit(panel, statusText, toastMsg) {
   exit();
 }
 
-// ---------------------------------------------------------------------------
-// main — entry point
-// ---------------------------------------------------------------------------
-
 function main() {
   // ===================================================================
   // Phase 0 — Pre-flight Configuration Dialog
@@ -57,11 +46,9 @@ function main() {
 
   var settings = configUi.showConfigDialog();
   if (!settings) {
-    // User clicked Exit or cancelled
     exit();
   }
 
-  // Apply dialog settings to config
   config.detection.threshold = settings.threshold;
   config.scan.sweepCountPerRow = settings.sweepCount;
   config.debug.enabled = settings.debugMode;
@@ -78,7 +65,6 @@ function main() {
   // Phase 1 — Setup
   // ===================================================================
 
-  // ---- 1a. Load templates -------------------------------------------
   console.info(
     "Loading templates from '" + config.detection.templateDir + "' ..."
   );
@@ -96,7 +82,6 @@ function main() {
 
   console.info("Loaded " + templates.length + " template(s)");
 
-  // Filter out "large color" templates if user disabled them
   if (!config.detection.detectLargeColor) {
     var before = templates.length;
     templates = templates.filter(function(t) {
@@ -105,7 +90,6 @@ function main() {
     console.info("Filtered large color templates: " + before + " → " + templates.length);
   }
 
-  // ---- 1b. Minimal log panel (must exist before any logging) -----------
   var panel = floatyMod.createControlPanel(function() {
     scanner.stopScanning();
     floatyMod.destroy(panel);
@@ -113,11 +97,7 @@ function main() {
   });
   floatyMod.appendLog(panel, "Config applied, starting scan");
 
-  // Stop the script via volume keys (set up in scanner.js).
-  //   Single volume press  → graceful stop
-  //   Double volume press  → force stop
-
-  // ---- 1d. onFound callback --------------------------------------------
+  // ---- onFound callback --------------------------------------------
   function onFound(match) {
     floatyMod.updateStatus(panel, "Large Mushroom Found!");
     floatyMod.appendLog(panel, "Found \"" + match.templateName + "\" at (" +
@@ -128,31 +108,23 @@ function main() {
     var tapY = match.y + Math.round(match.height / 2);
     floatyMod.appendLog(panel, "Clicking mushroom at (" + tapX + "," + tapY + ")");
     press(tapX, tapY, 1000);
+    sleep(2000);
+    navigator.waitForAndClickLarge(navTemplates, panel);
   }
 
   // ===================================================================
   // Phase 2 — Launch
   // ===================================================================
 
-  // Load navigation templates early (includes pikmin icon templates
-  // used to visually launch the game from the home screen).
   var navTemplates = navigator.loadNavigationTemplates(config.detection.templateDir);
-
-  // ---- 2a. Launch / bring-to-foreground Pikmin Bloom -----------------
 
   if (settings.autoLaunch) {
     floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
     floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
     app.launchPackage(config.app.packageName);
 
-    // Give the app a few seconds to load — splash/permission screens
-    // often show as com.android.systemui during this window
     sleep(3000);
 
-    // If system UI is in foreground, try tapping to dismiss overlay dialogs.
-    // Android permission dialogs show as com.android.systemui. We try:
-    //   1. Center tap (might hit a consent button)
-    //   2. Bottom-center tap (common for "Allow" buttons on permission dialogs)
     var pkg = currentPackage();
     if (pkg === "com.android.systemui") {
       floatyMod.appendLog(panel, "System UI in foreground — tapping to dismiss overlay...");
@@ -160,7 +132,6 @@ function main() {
       var cy = Math.round(device.height / 2);
       press(cx, cy, 800);
       sleep(1500);
-      // Try bottom-center too (where "Allow" buttons often appear)
       var botCy = Math.round(device.height * 0.85);
       press(cx, botCy, 800);
       sleep(2000);
@@ -168,7 +139,6 @@ function main() {
 
     floatyMod.appendLog(panel, "App is in foreground");
   } else {
-    // Manual launch — wait for user to open the game
     floatyMod.updateStatus(panel, "Open the game manually...");
     floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
     sleep(5000);
@@ -197,11 +167,7 @@ function main() {
       );
     }
     floatyMod.appendLog(panel, "=== Map view reached! Starting scan... ===");
-
-    // Recycle navigation templates — no longer needed
-    detection.recycleAllTemplates(navTemplates);
   } else {
-    // No navigation templates — fall back to heuristics-based detection
     floatyMod.appendLog(panel, "No navigation guides — polling for map...");
 
     var mapReady = false;
@@ -242,9 +208,6 @@ function main() {
   // Phase 3 — Scan
   // ===================================================================
 
-  // Re-establish screen capture NOW (game is in foreground, navigation
-  // just completed).  Requesting it earlier (before the app launched)
-  // may result in an expired session by this point.
   var captureGranted = false;
   try {
     captureGranted = images.requestScreenCapture(false);
@@ -262,7 +225,6 @@ function main() {
   floatyMod.updateStatus(panel, "Searching...");
   floatyMod.appendLog(panel, "Starting scan loop");
 
-  // BLOCKING — runs the full scan loop until mushroom found or Stop.
   scanner.startScanning(config, templates, onFound, panel);
 
   // ===================================================================
@@ -275,11 +237,9 @@ function main() {
     return;
   }
 
-  // Mushroom found — keep panel visible briefly so user can read the log
   floatyMod.appendLog(panel, "Scan finished");
   sleep(3000);
   floatyMod.destroy(panel);
 }
 
-// Auto-execute
 main();

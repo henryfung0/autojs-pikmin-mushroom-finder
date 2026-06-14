@@ -124,8 +124,8 @@ function main() {
       match.x + "," + match.y + ")");
     floatyMod.showDuringScan(panel, true);
 
-    var tapX = match.x + Math.round(match.w / 2);
-    var tapY = match.y + Math.round(match.h / 2);
+    var tapX = match.x + Math.round(match.width / 2);
+    var tapY = match.y + Math.round(match.height / 2);
     floatyMod.appendLog(panel, "Clicking mushroom at (" + tapX + "," + tapY + ")");
     press(tapX, tapY, 1000);
   }

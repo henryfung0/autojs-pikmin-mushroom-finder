@@ -114,29 +114,10 @@ function main() {
       match.x + "," + match.y + ")");
     floatyMod.showDuringScan(panel, true);
 
-    // Save screenshot to device gallery
-    floatyMod.appendLog(panel, "Saving screenshot...");
-    var screenImg = null;
-    try {
-      screenImg = captureScreen();
-    } catch (e) {
-      screenImg = null;
-    }
-    if (screenImg) {
-      try {
-        var saved = utils.saveScreenshotToGallery(
-          screenImg,
-          "mushroom_found_" + new Date().toISOString().replace(/[:.]/g, "-")
-        );
-        if (saved) {
-          floatyMod.appendLog(panel, "Screenshot saved");
-        } else {
-          floatyMod.appendLog(panel, "Warning: screenshot may not have saved");
-        }
-      } finally {
-        screenImg.recycle();
-      }
-    }
+    var tapX = match.x + Math.round(match.w / 2);
+    var tapY = match.y + Math.round(match.h / 2);
+    floatyMod.appendLog(panel, "Clicking mushroom at (" + tapX + "," + tapY + ")");
+    press(tapX, tapY, 1000);
   }
 
   // ===================================================================

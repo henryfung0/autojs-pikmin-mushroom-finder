@@ -41,7 +41,7 @@ function showConfigDialog() {
         <text text="Swipes per row" textSize="13sp" margin="8 0 0 0"/>
         <text id="sweepCountValue" text="3" textSize="11sp"
               textColor="#888888" margin="4 0 0 0"/>
-        <seekbar id="sweepCount" progress="2" max="5" margin="0 0 4 0"/>
+        <seekbar id="sweepCount" progress="2" max="4" margin="0 0 4 0"/>
         <text text="Horizontal passes per row. More = wider coverage, slower scan."
               textSize="9sp" textColor="#666666" margin="4 0 4 0"/>
 
@@ -97,7 +97,7 @@ function showConfigDialog() {
   var threshold = (layout.threshold.progress + 70) / 100;
   var autoLaunch = layout.autoLaunch.checked;
   var debugMode = layout.debugMode.checked;
-  var sweepCount = layout.sweepCount.progress + 1;
+  var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
   var settleDelay = (layout.settleDelay.progress * 500) + 500;
 
   return {

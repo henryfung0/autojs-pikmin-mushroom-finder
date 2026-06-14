@@ -5,8 +5,7 @@
  * compile results, and fire callbacks when mushrooms with free
  * slots are found.
  *
- * Scan pattern: vertical zigzag — left sweep × 3 → shift down →
- * right sweep × 3 → shift down → repeat.
+ * Scan pattern: always scroll left, shift down per row.
  *
  * Module-level exports:
  *   startScanning(config, templates, onFound, floatyW)
@@ -114,9 +113,22 @@ function startScanning(config, templates, onFound, floatyW) {
   if (swipeDuration > 2000) {
     swipeDuration = 2000;
   }
+  // Enforce a minimum settle delay — 500ms is too short for the map
+  // to render new tiles after a swipe.
+  if (settleDelay < 1500) {
+    floatyMod.appendLog(floatyW, "Note: settleDelay was " + settleDelay + "ms, raising to 1500ms for reliability");
+    settleDelay = 1500;
+  }
+
   // Vertical shift per row — 12 % of screen height keeps the swipe
   // comfortably within the visible display.
   var verticalShift = Math.round(device.height * 0.12);
+
+  // Sweeps per row from config (default 3 if not set)
+  var sweepsPerRow = config.scan.sweepCountPerRow || 3;
+
+  console.info("DEBUG: device.width=" + device.width + ", device.height=" + device.height);
+  console.info("DEBUG: verticalShift=" + verticalShift + ", settleDelay=" + settleDelay + ", sweepsPerRow=" + sweepsPerRow);
 
   // ── Main scan loop — sweep left, shift down, repeat ─────────────────
   //
@@ -124,21 +136,27 @@ function startScanning(config, templates, onFound, floatyW) {
   // westward.  After sweepsPerRow swipes the Y shifts down a row.
   //
   while (!_shutdownRequested && _scanning) {
-    // Y coordinate shifts down each row.  Start at 45 % screen height
-    // and cap at 82 % so the swipe never goes off-screen.
+    // Y coordinate shifts down each row.  Start at 30% of screen height
+    // (middle of visible map content area) and cap at 97% so the swipe
+    // covers the full map height including the bottom edge.
     var currentY = Math.round(
-      device.height * 0.45 + _sweepCount * verticalShift
+      device.height * 0.30 + _sweepCount * verticalShift
     );
-    if (currentY > device.height * 0.82) {
-      currentY = Math.round(device.height * 0.82);
+    if (currentY > device.height * 0.97) {
+      currentY = Math.round(device.height * 0.97);
     }
 
-    // Each sweep = 3 consecutive swipes — always scrolling left
-    var sweepsPerRow = config.scan.sweepCountPerRow || 3;
+    console.info("DEBUG ROW: _sweepCount=" + _sweepCount + ", currentY=" + currentY +
+      ", sweepsPerRow=" + sweepsPerRow);
+
     for (var i = 0; i < sweepsPerRow; i++) {
       if (_shutdownRequested) {
         break;
       }
+
+      console.info("DEBUG SWIPE: i=" + i + ", currentY=" + currentY +
+        ", startX=" + Math.round(device.width * 0.2) +
+        ", endX=" + Math.round(device.width * 0.8));
 
       scroll.scrollLeft(currentY, swipeDuration, floatyW,
         "Sweep " + (_sweepCount + 1) + "." + (i + 1));

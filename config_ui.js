@@ -18,8 +18,9 @@
  *   {number}  threshold    - Confidence threshold (0.70-0.99)
  *   {boolean} autoLaunch   - Auto-launch Pikmin Bloom
  *   {boolean} debugMode    - Enable debug logging
- *   {number}  sweepCount   - Swipes per row (1-6)
- *   {number}  settleDelay  - Delay after each swipe (500-10000 ms)
+ *   {number}  sweepCount      - Swipes per row (1-6)
+ *   {number}  settleDelay     - Delay after each swipe (500-10000 ms)
+ *   {number}  maxEmptyScrolls - Max empty scrolls before reposition (1-15)
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
@@ -58,6 +59,14 @@ function showConfigDialog() {
         <text text="Wait time after each swipe for map tiles. Increase if map is blurry."
               textSize="9sp" textColor="#666666" margin="4 0 8 0"/>
 
+        {/* Max Empty Scrolls */}
+        <text text="Max empty scrolls" textSize="13sp" margin="8 0 0 0"/>
+        <text id="maxEmptyScrollsValue" text="5" textSize="11sp"
+              textColor="#888888" margin="4 0 0 0"/>
+        <seekbar id="maxEmptyScrolls" progress="4" max="14" margin="0 0 4 0"/>
+        <text text="Consecutive scrolls without any map content before reposition."
+              textSize="9sp" textColor="#666666" margin="4 0 8 0"/>
+
         {/* Checkboxes */}
         <checkbox id="autoLaunch" text="Auto-launch Pikmin Bloom"
                   checked="true" margin="8 0 0 0"/>
@@ -92,7 +101,8 @@ function showConfigDialog() {
       detectLargeElement: view.detectLargeElement.isChecked(),
       debugMode: view.debugMode.isChecked(),
       sweepCount: Math.max(3, view.sweepCount.progress + 1),
-      settleDelay: (view.settleDelay.progress * 500) + 500
+      settleDelay: (view.settleDelay.progress * 500) + 500,
+      maxEmptyScrolls: view.maxEmptyScrolls.progress + 1
     };
   });
 

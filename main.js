@@ -55,6 +55,7 @@ function main() {
   config.scan.settleDelay = settings.settleDelay;
   config.detection.detectLargeColor = settings.detectLargeColor;
   config.detection.detectLargeElement = settings.detectLargeElement;
+  config.scan.maxEmptyScrolls = settings.maxEmptyScrolls;
 
   console.info("Config: threshold=" + settings.threshold +
     ", sweepCount=" + settings.sweepCount +
@@ -62,6 +63,7 @@ function main() {
     ", autoLaunch=" + settings.autoLaunch +
     ", detectLargeColor=" + settings.detectLargeColor +
     ", detectLargeElement=" + settings.detectLargeElement +
+    ", maxEmptyScrolls=" + settings.maxEmptyScrolls +
     ", debug=" + settings.debugMode);
 
   // ===================================================================
@@ -84,6 +86,23 @@ function main() {
   }
 
   console.info("Loaded " + templates.length + " template(s)");
+
+  // Separate "others" indicator templates (map-content markers like seeds/decor)
+  // from mushroom detection templates.
+  var othersTemplates = [];
+  var mushroomTemplates = [];
+  for (var i = 0; i < templates.length; i++) {
+    if (templates[i].name.indexOf("/others/") !== -1) {
+      othersTemplates.push(templates[i]);
+    } else {
+      mushroomTemplates.push(templates[i]);
+    }
+  }
+  console.info("Mushroom templates: " + mushroomTemplates.length + ", Others templates: " + othersTemplates.length);
+  if (othersTemplates.length === 0) {
+    console.warn("No 'others' templates found — empty-scroll detection disabled");
+  }
+  templates = mushroomTemplates;
 
   if (!config.detection.detectLargeColor) {
     var before = templates.length;
@@ -239,7 +258,11 @@ function main() {
   floatyMod.updateStatus(panel, "Searching...");
   floatyMod.appendLog(panel, "Starting scan loop");
 
-  scanner.startScanning(config, templates, onFound, panel);
+  scanner.startScanning(config, templates, onFound, panel, {
+    othersTemplates: othersTemplates,
+    navTemplates: navTemplates,
+    maxEmptyScrolls: config.scan.maxEmptyScrolls
+  });
 
   // ===================================================================
   // Phase 4 — Cleanup

@@ -97,6 +97,17 @@ var config = {
      * @unit count (1–6)
      */
     sweepCountPerRow: 3,
+
+    /**
+     * Maximum consecutive empty scrolls before repositioning the map.
+     * When no "others" templates (seeds, decor) match for this many
+     * consecutive captures, the scanner clicks the player's own position
+     * to re-center the map and continues scanning.
+     * @type {number}
+     * @default 5
+     * @unit count (1–15)
+     */
+    maxEmptyScrolls: 5,
   },
 
   // ──────────────────────────────────────────────

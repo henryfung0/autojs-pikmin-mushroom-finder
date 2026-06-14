@@ -22,6 +22,7 @@
 var detection = require("./detection");
 var floatyMod = require("./floaty");
 var scroll = require("./scroll");
+var navigator = require("./navigator");
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -30,9 +31,11 @@ var scroll = require("./scroll");
 var _shutdownRequested = false;
 var _userStopped = false;
 var _totalSwipes = 0;
+var _emptyScrollCount = 0;
 var _scanning = false;
 var _lastKeyTime = 0;
 var _doublePressTimeout = 500;
+var _scrollDirection = -1; // -1 = left, 1 = right
 
 // ---------------------------------------------------------------------------
 // Volume key interrupt
@@ -70,7 +73,7 @@ events.onKeyDown("volume_up", function(event) {
  *     when a mushroom is detected.
  * @param {Object}   floatyW   - Floaty window instance from createFloaty().
  */
-function startScanning(config, templates, onFound, floatyW) {
+function startScanning(config, templates, onFound, floatyW, extraOptions) {
   if (!templates || templates.length === 0) {
     console.error("startScanning: templates array is empty, cannot scan");
     floatyMod.updateStatus(floatyW, "Error: No templates");
@@ -80,7 +83,12 @@ function startScanning(config, templates, onFound, floatyW) {
   _shutdownRequested = false;
   _userStopped = false;
   _totalSwipes = 0;
+  _emptyScrollCount = 0;
   _scanning = true;
+
+  var othersTemplates = (extraOptions && extraOptions.othersTemplates) || [];
+  var navTemplates = (extraOptions && extraOptions.navTemplates) || [];
+  var maxEmptyScrolls = (extraOptions && extraOptions.maxEmptyScrolls) || config.scan.maxEmptyScrolls || 5;
 
   floatyMod.appendLog(floatyW, "Scan engine started");
   console.info("startScanning: entered scan loop");
@@ -123,8 +131,13 @@ function startScanning(config, templates, onFound, floatyW) {
       ", startX=" + Math.round(device.width * 0.2) +
       ", endX=" + Math.round(device.width * 0.8));
 
-    scroll.scrollLeft(currentY, swipeDuration, floatyW,
-      "Swipe " + _totalSwipes);
+    if (_scrollDirection === -1) {
+      scroll.scrollLeft(currentY, swipeDuration, floatyW,
+        "Swipe " + _totalSwipes + " ←");
+    } else {
+      scroll.scrollRight(currentY, swipeDuration, floatyW,
+        "Swipe " + _totalSwipes + " →");
+    }
 
     sleep(settleDelay);
 
@@ -172,6 +185,29 @@ function startScanning(config, templates, onFound, floatyW) {
         _scanning = false;
         onFound(match);
         return;
+      }
+
+      // No mushroom found — check "others" map-content indicator templates.
+      // If any match, the map still has potential content (seeds, decor, etc.)
+      // and we reset the empty-scroll counter.  If none match for N consecutive
+      // scrolls, the map area is empty — reposition by clicking own position.
+      if (othersTemplates.length > 0) {
+        var othersResult = detection.findMushrooms(screenImage, othersTemplates, config);
+        if (othersResult && othersResult.length > 0) {
+          _emptyScrollCount = 0;
+        } else {
+          _emptyScrollCount++;
+          floatyMod.appendLog(floatyW, "Empty scroll #" + _emptyScrollCount + "/" + maxEmptyScrolls);
+        }
+
+        if (_emptyScrollCount >= maxEmptyScrolls) {
+          floatyMod.appendLog(floatyW, "Map area empty — repositioning to own position");
+          _emptyScrollCount = 0;
+          navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+          _scrollDirection *= -1;
+          floatyMod.appendLog(floatyW, "Switched direction: now scrolling " +
+            (_scrollDirection === -1 ? "LEFT" : "RIGHT"));
+        }
       }
     } finally {
       screenImage.recycle();

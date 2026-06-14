@@ -29,7 +29,7 @@ function zoomOut(duration, floatyW) {
   var cy = Math.round(device.height / 2);
   try {
     press(cx, cy, 50);
-    sleep(80);
+    sleep(20);
     swipe(cx, cy, cx, Math.round(device.height * 0.25), 800);
     var msg = "Zoom out: tap + scroll-up";
     console.info("scroll: " + msg);

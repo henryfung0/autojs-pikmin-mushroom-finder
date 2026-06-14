@@ -23,11 +23,6 @@
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
-  var autoLaunchChecked = true;
-  var detectLargeColorChecked = true;
-  var detectLargeElementChecked = true;
-  var debugModeChecked = false;
-
   var layout = (
     <frame>
       <vertical padding="16 8">
@@ -71,17 +66,25 @@ function showConfigDialog() {
     </frame>
   );
 
-  layout.autoLaunch.setOnCheckedChangeListener(function(view, isChecked) {
-    autoLaunchChecked = isChecked;
+  // Track checkbox state via click listeners.
+  // AutoJS6 checkbox.checked returns the XML attribute string ("true"/"false"),
+  // not the runtime state — so we track runtime state manually via .click().
+  var autoLaunchChecked = (layout.autoLaunch.checked === "true");
+  var detectLargeColorChecked = (layout.detectLargeColor.checked === "true");
+  var detectLargeElementChecked = (layout.detectLargeElement.checked === "true");
+  var debugModeChecked = (layout.debugMode.checked === "true");
+
+  layout.autoLaunch.click(function() {
+    autoLaunchChecked = !autoLaunchChecked;
   });
-  layout.detectLargeColor.setOnCheckedChangeListener(function(view, isChecked) {
-    detectLargeColorChecked = isChecked;
+  layout.detectLargeColor.click(function() {
+    detectLargeColorChecked = !detectLargeColorChecked;
   });
-  layout.detectLargeElement.setOnCheckedChangeListener(function(view, isChecked) {
-    detectLargeElementChecked = isChecked;
+  layout.detectLargeElement.click(function() {
+    detectLargeElementChecked = !detectLargeElementChecked;
   });
-  layout.debugMode.setOnCheckedChangeListener(function(view, isChecked) {
-    debugModeChecked = isChecked;
+  layout.debugMode.click(function() {
+    debugModeChecked = !debugModeChecked;
   });
 
   var dialogResult = { choice: null };

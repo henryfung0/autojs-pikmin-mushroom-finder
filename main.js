@@ -66,6 +66,7 @@ function main() {
   config.scan.sweepCountPerRow = settings.sweepCount;
   config.debug.enabled = settings.debugMode;
   config.scan.settleDelay = settings.settleDelay;
+  config.detection.detectLargeColor = settings.detectLargeColor;
 
   console.info("Config: threshold=" + settings.threshold +
     ", sweepCount=" + settings.sweepCount +
@@ -94,6 +95,15 @@ function main() {
   }
 
   console.info("Loaded " + templates.length + " template(s)");
+
+  // Filter out "large color" templates if user disabled them
+  if (!config.detection.detectLargeColor) {
+    var before = templates.length;
+    templates = templates.filter(function(t) {
+      return t.name.indexOf("large color") === -1;
+    });
+    console.info("Filtered large color templates: " + before + " → " + templates.length);
+  }
 
   // ---- 1b. Minimal log panel (must exist before any logging) -----------
   var panel = floatyMod.createControlPanel(function() {

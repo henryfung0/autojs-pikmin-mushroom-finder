@@ -56,6 +56,8 @@ function showConfigDialog() {
         {/* Checkboxes */}
         <checkbox id="autoLaunch" text="Auto-launch Pikmin Bloom"
                   checked="true" margin="8 0 0 0"/>
+        <checkbox id="detectLargeColor" text="Include large color mushrooms"
+                  checked="true" margin="8 0 0 0"/>
         <checkbox id="debugMode" text="Debug Mode" checked="false"
                   margin="8 0 0 0"/>
       </vertical>
@@ -96,6 +98,7 @@ function showConfigDialog() {
   // Read final values from the layout
   var threshold = (layout.threshold.progress + 70) / 100;
   var autoLaunch = layout.autoLaunch.checked;
+  var detectLargeColor = layout.detectLargeColor.checked;
   var debugMode = layout.debugMode.checked;
   var sweepCount = Math.max(3, layout.sweepCount.progress + 1);
   var settleDelay = (layout.settleDelay.progress * 500) + 500;
@@ -103,6 +106,7 @@ function showConfigDialog() {
   return {
     threshold: threshold,
     autoLaunch: autoLaunch,
+    detectLargeColor: detectLargeColor,
     debugMode: debugMode,
     sweepCount: sweepCount,
     settleDelay: settleDelay

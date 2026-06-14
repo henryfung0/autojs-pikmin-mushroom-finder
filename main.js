@@ -50,7 +50,6 @@ function main() {
   }
 
   config.detection.threshold = settings.threshold;
-  config.scan.sweepCountPerRow = settings.sweepCount;
   config.debug.enabled = settings.debugMode;
   config.scan.settleDelay = settings.settleDelay;
   config.detection.detectLargeColor = settings.detectLargeColor;
@@ -58,7 +57,6 @@ function main() {
   config.scan.maxEmptyScrolls = settings.maxEmptyScrolls;
 
   console.info("Config: threshold=" + settings.threshold +
-    ", sweepCount=" + settings.sweepCount +
     ", settleDelay=" + settings.settleDelay +
     ", autoLaunch=" + settings.autoLaunch +
     ", detectLargeColor=" + settings.detectLargeColor +

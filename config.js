@@ -90,15 +90,6 @@ var config = {
     verticalShiftPercent: 0.6,
 
     /**
-     * Number of consecutive swipes per horizontal row before shifting vertically.
-     * Adjustable via the pre-flight config dialog (range 1-6).
-     * @type {number}
-     * @default 3
-     * @unit count (1–6)
-     */
-    sweepCountPerRow: 3,
-
-    /**
      * Maximum consecutive empty scrolls before repositioning the map.
      * When no "others" templates (seeds, decor) match for this many
      * consecutive captures, the scanner clicks the player's own position

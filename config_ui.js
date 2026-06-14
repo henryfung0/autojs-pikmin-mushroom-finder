@@ -18,7 +18,6 @@
  *   {number}  threshold    - Confidence threshold (0.70-0.99)
  *   {boolean} autoLaunch   - Auto-launch Pikmin Bloom
  *   {boolean} debugMode    - Enable debug logging
- *   {number}  sweepCount      - Swipes per row (1-6)
  *   {number}  settleDelay     - Delay after each swipe (500-10000 ms)
  *   {number}  maxEmptyScrolls - Max empty scrolls before reposition (1-15)
  *   Returns null if the user pressed Exit or cancelled.
@@ -43,17 +42,9 @@ function showConfigDialog() {
         <text text="Match sensitivity. Lower = more matches (more false positives)."
               textSize="9sp" textColor="#666666" margin="4 0 4 0"/>
 
-        {/* Swipes per Row */}
-        <text text="Swipes per row" textSize="13sp" margin="8 0 0 0"/>
-        <text id="sweepCountValue" text="3" textSize="11sp"
-              textColor="#888888" margin="4 0 0 0"/>
-        <seekbar id="sweepCount" progress="2" max="4" margin="0 0 4 0"/>
-        <text text="Horizontal passes per row. More = wider coverage, slower scan."
-              textSize="9sp" textColor="#666666" margin="4 0 4 0"/>
-
         {/* Settle Delay */}
-        <text text="Settle delay (ms)" textSize="13sp" margin="8 0 0 0"/>
-        <text id="settleDelayValue" text="2500" textSize="11sp"
+        <text text="Settle delay (seconds)" textSize="13sp" margin="8 0 0 0"/>
+        <text id="settleDelayValue" text="2.5" textSize="11sp"
               textColor="#888888" margin="4 0 0 0"/>
         <seekbar id="settleDelay" progress="4" max="19" margin="0 0 4 0"/>
         <text text="Wait time after each swipe for map tiles. Increase if map is blurry."
@@ -76,23 +67,48 @@ function showConfigDialog() {
                   checked="true" margin="8 0 0 0"/>
         <checkbox id="debugMode" text="Debug Mode" checked="false"
                   margin="8 0 0 0"/>
+
+        {/* Button row */}
+        <horizontal gravity="center" margin="12 0 0 0">
+          <button id="resetBtn" text="Reset" textSize="13sp"
+                  style="Widget.AppCompat.Button.ButtonBar.AlertDialog"
+                  layout_weight="1"/>
+          <button id="exitBtn" text="Exit" textSize="13sp"
+                  style="Widget.AppCompat.Button.ButtonBar.AlertDialog"
+                  layout_weight="1"/>
+          <button id="startBtn" text="Start" textSize="13sp"
+                  style="Widget.AppCompat.Button.ButtonBar.AlertDialog"
+                  layout_weight="1"/>
+        </horizontal>
       </vertical>
     </frame>
   );
 
-  var dialogResult = { choice: null, values: null };
-
-  var d = dialogs.build({
-    customView: view,
-    wrapInScrollView: true,
-    positiveText: "Start Scan",
-    negativeText: "Exit"
+  view.threshold.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      if (fromUser) view.thresholdValue.setText(((progress + 70) / 100).toFixed(2));
+    },
+    onStartTrackingTouch: function(seekBar) {},
+    onStopTrackingTouch: function(seekBar) {}
+  });
+  view.settleDelay.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      if (fromUser) view.settleDelayValue.setText(String(((progress * 500) + 500) / 1000));
+    },
+    onStartTrackingTouch: function(seekBar) {},
+    onStopTrackingTouch: function(seekBar) {}
+  });
+  view.maxEmptyScrolls.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      if (fromUser) view.maxEmptyScrollsValue.setText(String(progress + 1));
+    },
+    onStartTrackingTouch: function(seekBar) {},
+    onStopTrackingTouch: function(seekBar) {}
   });
 
-  d.on("positive", function() {
-    // Read values inside the callback while the view is still attached
-    // to the dialog window. Reading after dismiss may return stale state
-    // due to how AutoJS6's ui.inflate() wrapper handles detached views.
+  var dialogResult = { choice: null, values: null };
+
+  view.startBtn.on("click", function() {
     dialogResult.choice = "start";
     dialogResult.values = {
       threshold: (view.threshold.progress + 70) / 100,
@@ -100,14 +116,33 @@ function showConfigDialog() {
       detectLargeColor: view.detectLargeColor.isChecked(),
       detectLargeElement: view.detectLargeElement.isChecked(),
       debugMode: view.debugMode.isChecked(),
-      sweepCount: Math.max(3, view.sweepCount.progress + 1),
       settleDelay: (view.settleDelay.progress * 500) + 500,
       maxEmptyScrolls: view.maxEmptyScrolls.progress + 1
     };
+    d.dismiss();
   });
 
-  d.on("negative", function() {
+  view.exitBtn.on("click", function() {
     dialogResult.choice = "exit";
+    d.dismiss();
+  });
+
+  view.resetBtn.on("click", function() {
+    view.threshold.setProgress(15);
+    view.thresholdValue.setText("0.85");
+    view.settleDelay.setProgress(4);
+    view.settleDelayValue.setText("2.5");
+    view.maxEmptyScrolls.setProgress(4);
+    view.maxEmptyScrollsValue.setText("5");
+    view.autoLaunch.setChecked(true);
+    view.detectLargeColor.setChecked(true);
+    view.detectLargeElement.setChecked(true);
+    view.debugMode.setChecked(false);
+  });
+
+  var d = dialogs.build({
+    customView: view,
+    wrapInScrollView: true
   });
 
   d.on("cancel", function() {

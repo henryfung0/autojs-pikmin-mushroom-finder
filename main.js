@@ -56,9 +56,6 @@ function main() {
   config.detection.detectLargeColor = settings.detectLargeColor;
   config.detection.detectLargeElement = settings.detectLargeElement;
 
-  console.info("Config: detectLargeColor=" + config.detection.detectLargeColor +
-    ", detectLargeElement=" + config.detection.detectLargeElement);
-
   console.info("Config: threshold=" + settings.threshold +
     ", sweepCount=" + settings.sweepCount +
     ", settleDelay=" + settings.settleDelay +
@@ -102,8 +99,6 @@ function main() {
       return t.name.indexOf("large element") === -1;
     });
     console.info("Filtered large element templates: " + before + " → " + templates.length);
-  } else {
-    console.info("detectLargeElement=true, keeping all templates");
   }
 
   var panel = floatyMod.createControlPanel(function() {
@@ -134,6 +129,7 @@ function main() {
 
   var navTemplates = navigator.loadNavigationTemplates(config.detection.templateDir);
 
+  toast("autoLaunch=" + settings.autoLaunch);
   if (settings.autoLaunch) {
     floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
     floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");

@@ -30,12 +30,8 @@ function zoomOut(duration, floatyW) {
   try {
     press(cx, cy, 50);
     sleep(80);
-    press(cx, cy, 50);
-    sleep(300);
-    var startY = Math.round(device.height * 0.75);
-    var endY   = Math.round(device.height * 0.25);
-    swipe(cx, startY, cx, endY, 800);
-    var msg = "Zoom out: double-click + scroll-up";
+    swipe(cx, cy, cx, Math.round(device.height * 0.25), 800);
+    var msg = "Zoom out: tap + scroll-up";
     console.info("scroll: " + msg);
     if (floatyW) {
       floatyMod.appendLog(floatyW, msg);

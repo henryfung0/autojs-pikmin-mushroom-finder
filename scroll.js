@@ -24,14 +24,21 @@ function scrollRight(y, swipeDuration, floatyW, label) {
   swipe(startX, y, endX, y, swipeDuration);
 }
 
-function zoomOut(duration, floatyW) {
-  var cx = Math.round(device.width / 2);
-  var cy = Math.round(device.height / 2);
+function zoomOut(times, floatyW) {
+  times = times || 2;
+  var w = device.width;
+  var h = device.height;
+  var cx = w / 2;
+  var cy = h / 2;
   try {
-    press(cx, cy, 50);
-    sleep(300);
-    swipe(cx, cy, cx, Math.round(device.height * 0.25), 800);
-    var msg = "Zoom out: tap + scroll-up";
+    for (var i = 0; i < times; i++) {
+      gestures(
+        [300, [cx - 60, cy - 60], [cx - 220, cy - 220]],
+        [300, [cx + 60, cy + 60], [cx + 220, cy + 220]]
+      );
+      sleep(300);
+    }
+    var msg = "Zoomed out " + times + " levels";
     console.info("scroll: " + msg);
     if (floatyW) {
       floatyMod.appendLog(floatyW, msg);

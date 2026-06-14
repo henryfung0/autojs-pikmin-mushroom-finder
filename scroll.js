@@ -32,7 +32,7 @@ function zoom(direction, times, floatyW) {
   var cy = h / 2;
   try {
     for (var i = 0; i < times; i++) {
-      if (direction === "in") {
+      if (direction === "out") {
         gestures(
           [300, [cx - 220, cy - 220], [cx - 60, cy - 60]],
           [300, [cx + 220, cy + 220], [cx + 60, cy + 60]]

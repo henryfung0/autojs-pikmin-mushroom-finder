@@ -1,5 +1,5 @@
 /**
- * scanner.js
+ * mushroom_finder/02_scan_map.js — Scan loop (Phase 2)
  *
  * Orchestrates the full scan cycle: capture screen, run detection,
  * compile results, and fire callbacks when mushrooms with free
@@ -19,10 +19,10 @@
 // Dependencies
 // ---------------------------------------------------------------------------
 
-var detection = require("./detection");
-var floatyMod = require("./ui/floaty");
-var scroll = require("./scroll");
-var navigator = require("./navigator");
+var detection = require("../lib/matcher");
+var floatyMod = require("../ui/floaty");
+var scroll = require("../lib/gestures");
+var navigator = require("./01_navigate_to_map");
 
 // ---------------------------------------------------------------------------
 // Module-level state

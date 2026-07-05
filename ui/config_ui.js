@@ -78,6 +78,14 @@ function showConfigDialog() {
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
           <checkbox id="enablePlant" text="Plant" checked="true" textSize="14sp" margin="0 0 0 4"/>
           <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" margin="0 0 0 4"/>
+
+          {/* Max Empty Loops */}
+          <text text="Max Empty Loops: 10" textSize="13sp"
+                margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
+          <text text="10" textSize="12sp" textColor="#666666"
+                gravity="end" id="maxEmptyLoopsValue"/>
+          <seekbar id="maxEmptyLoops" progress="9" max="29"
+                   margin="0 0 0 8"/>
         </vertical>
 
         {/* Button row */}
@@ -137,6 +145,14 @@ function showConfigDialog() {
     }
   });
 
+  // Max empty loops for advanture (progress 0-29 → value 1-30)
+  view.maxEmptyLoops.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = progress + 1;
+      view.maxEmptyLoopsValue.setText(String(value));
+    }
+  });
+
   // ── Start button ─────────────────────────────────
   view.startBtn.on("click", function() {
     dialogResult.choice = "start";
@@ -150,7 +166,8 @@ function showConfigDialog() {
       maxEmptyScrolls: view.maxEmptyScrolls.progress + 1,
       enableGift: view.enableGift.isChecked(),
       enablePlant: view.enablePlant.isChecked(),
-      enableFruit: view.enableFruit.isChecked()
+      enableFruit: view.enableFruit.isChecked(),
+      maxEmptyLoops: view.maxEmptyLoops.progress + 1
     };
     d.dismiss();
   });
@@ -169,6 +186,8 @@ function showConfigDialog() {
     view.enableGift.setChecked(true);
     view.enablePlant.setChecked(true);
     view.enableFruit.setChecked(true);
+    view.maxEmptyLoops.setProgress(9);
+    view.maxEmptyLoopsValue.setText("10");
   });
 
   // ── Exit button ──────────────────────────────────

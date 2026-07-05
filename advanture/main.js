@@ -51,11 +51,15 @@ function run(settings) {
     if (settings.enableFruit !== undefined) {
       config.advanture.enableFruit = settings.enableFruit;
     }
+    if (settings.maxEmptyLoops !== undefined) {
+      config.advanture.maxEmptyLoops = settings.maxEmptyLoops;
+    }
     console.info("Adventure settings merged — threshold=" + config.detection.threshold +
       ", settleDelay=" + config.scan.settleDelay +
       ", collect gift=" + config.advanture.enableGift +
       " plant=" + config.advanture.enablePlant +
-      " fruit=" + config.advanture.enableFruit);
+      " fruit=" + config.advanture.enableFruit +
+      ", maxEmptyLoops=" + config.advanture.maxEmptyLoops);
   }
 
   // ===================================================================

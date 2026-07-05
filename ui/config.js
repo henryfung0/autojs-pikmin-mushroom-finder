@@ -181,6 +181,16 @@ var config = {
     enableGift: true,
     enablePlant: true,
     enableFruit: true,
+
+    /**
+     * Maximum consecutive empty scan loops before giving up and returning
+     * to the main page.  When no fruit / gift / plant is found for this
+     * many loops in a row, the advanture scan exits gracefully.
+     * @type {number}
+     * @default 10
+     * @unit count (1–30)
+     */
+    maxEmptyLoops: 10,
   },
 
   // ──────────────────────────────────────────────

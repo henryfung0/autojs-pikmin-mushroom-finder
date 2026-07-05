@@ -340,6 +340,8 @@ function runAdvantureFlow(config, panel) {
   floatyMod.appendLog(panel, "Starting adventure scan loop");
 
   var loopCount = 0;
+  var emptyLoopCount = 0;
+  var maxEmptyLoops = (config && config.advanture && config.advanture.maxEmptyLoops) || 10;
 
   while (!_shutdownRequested) {
     loopCount++;
@@ -397,6 +399,7 @@ function runAdvantureFlow(config, panel) {
     try {
       var match = findBestItem(screenImage, templates, config);
       if (match) {
+        emptyLoopCount = 0;
         floatyMod.updateStatus(panel, match.category.toUpperCase() + " Found!");
         floatyMod.appendLog(panel, "Found " + match.category + " — starting adventure...");
         var ok = startAdventureItem(match, templates.nav, panel);
@@ -416,7 +419,12 @@ function runAdvantureFlow(config, panel) {
           backAttempts++;
         }
       } else {
-        floatyMod.appendLog(panel, "No item found on this scroll (#" + loopCount + ")");
+        emptyLoopCount++;
+        floatyMod.appendLog(panel, "No item found on this scroll (#" + loopCount + ", emptyLoops=" + emptyLoopCount + ")");
+        if (emptyLoopCount >= maxEmptyLoops) {
+          floatyMod.appendLog(panel, "Reached " + maxEmptyLoops + " empty loops — returning to main page");
+          break;
+        }
       }
     } finally {
       screenImage.recycle();

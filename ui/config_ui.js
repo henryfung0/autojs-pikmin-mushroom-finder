@@ -1,72 +1,84 @@
 /**
  * config_ui.js
  *
- * Pre-flight configuration dialog for Pikmin Bloom Mushroom Finder.
- * Shows a floating settings dialog before the scan starts, allowing
- * the user to adjust detection parameters and toggle options.
- *
- * Values are read from the layout when the dialog closes.
+ * Combined settings dialog for Pikmin Bloom automation (Mushroom Finder / Advanture modes).
+ * Shows a single dialog with mode selection, common settings, and mode-specific
+ * configuration sections that toggle based on the selected mode.
  *
  * Exports:
- *   showConfigDialog() - Show dialog, return settings or null
+ *   showConfigDialog() - Show the combined dialog, return settings object or null
  */
 
 /**
- * Show the pre-flight configuration dialog.
+ * Show the combined config dialog.
  *
  * @returns {Object|null} Settings object with keys:
- *   {number}  threshold    - Confidence threshold (0.70-0.99)
- *   {boolean} autoLaunch   - Auto-launch Pikmin Bloom
- *   {boolean} debugMode    - Enable debug logging
- *   {number}  settleDelay     - Delay after each swipe (500-10000 ms)
- *   {number}  maxEmptyScrolls - Max empty scrolls before reposition (1-15)
+ *   {string}  mode             - Selected automation mode ("Mushroom Finder" or "Advanture")
+ *   {boolean} autoLaunch       - Auto-launch Pikmin Bloom
+ *   {number}  threshold        - Confidence threshold (0.70 – 0.99)
+ *   {boolean} detectLargeColor - Include large color mushrooms
+ *   {boolean} detectLargeElement - Include large element mushrooms
+ *   {number}  settleDelay      - Post-swipe settle delay in ms (500 – 10000)
+ *   {number}  maxEmptyScrolls  - Max empty scrolls before re-centering (1 – 15)
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
   // Inflate the XML layout into a real Android View hierarchy.
-  // ui.inflate() creates proper CompoundButton/SeekBar Java objects
-  // whose children are accessible by id (view.id).
-  // Passing a raw XML descriptor to dialogs.build() keeps it as a
-  // non-method descriptor — ui.inflate() avoids that limitation.
   var view = ui.inflate(
     <frame>
       <vertical padding="16 8">
-        <text text="Mushroom Finder" textSize="18sp" textColor="#1976D2"
-              gravity="center" margin="0 0 0 16"/>
+        <text text="Pikmin Bloom" textSize="18sp" textColor="#1976D2"
+              gravity="center" margin="0 0 0 8"/>
 
-        {/* Confidence Threshold */}
-        <text text="Confidence Threshold" textSize="13sp" margin="4 0 0 0"/>
-        <text id="thresholdValue" text="0.85" textSize="11sp"
-              textColor="#888888" margin="4 0 0 0"/>
-        <seekbar id="threshold" progress="15" max="29" margin="0 0 4 0"/>
-        <text text="Match sensitivity. Lower = more matches (more false positives)."
-              textSize="9sp" textColor="#666666" margin="4 0 4 0"/>
+        {/* Mode Selection */}
+        <spinner id="modeSelector" entries="Mushroom Finder|Advanture"
+                 textSize="14sp" gravity="center" margin="0 0 16 0"/>
 
-        {/* Settle Delay */}
-        <text text="Settle delay (seconds)" textSize="13sp" margin="8 0 0 0"/>
-        <text id="settleDelayValue" text="2.5" textSize="11sp"
-              textColor="#888888" margin="4 0 0 0"/>
-        <seekbar id="settleDelay" progress="4" max="19" margin="0 0 4 0"/>
-        <text text="Wait time after each swipe for map tiles. Increase if map is blurry."
-              textSize="9sp" textColor="#666666" margin="4 0 8 0"/>
-
-        {/* Max Empty Scrolls */}
-        <text text="Max empty scrolls" textSize="13sp" margin="8 0 0 0"/>
-        <text id="maxEmptyScrollsValue" text="5" textSize="11sp"
-              textColor="#888888" margin="4 0 0 0"/>
-        <seekbar id="maxEmptyScrolls" progress="4" max="14" margin="0 0 4 0"/>
-        <text text="Consecutive scrolls without any map content before reposition."
-              textSize="9sp" textColor="#666666" margin="4 0 8 0"/>
-
-        {/* Checkboxes */}
+        {/* Common checkboxes (always visible) */}
         <checkbox id="autoLaunch" text="Auto-launch Pikmin Bloom"
-                  checked="true" margin="8 0 0 0"/>
-        <checkbox id="detectLargeColor" text="Include large color mushrooms"
-                  checked="true" margin="8 0 0 0"/>
-        <checkbox id="detectLargeElement" text="Include large element mushrooms"
-                  checked="true" margin="8 0 0 0"/>
-        <checkbox id="debugMode" text="Debug Mode" checked="false"
-                  margin="8 0 0 0"/>
+                  checked="true" textSize="14sp" margin="0 0 0 4"/>
+        <text text="Mushroom Finder Settings" textSize="15sp"
+              textColor="#1976D2" margin="0 0 0 4"/>
+
+        {/* Mushroom-specific settings (visible by default) */}
+        <vertical id="mushroomSettings">
+          {/* Confidence Threshold */}
+          <text text="Confidence Threshold: 0.85" textSize="13sp"
+                margin="0 4 0 0" id="thresholdLabel"/>
+          <text text="0.85" textSize="12sp" textColor="#666666"
+                gravity="end" id="thresholdValue"/>
+          <seekbar id="threshold" progress="15" max="29"
+                   margin="0 0 0 8"/>
+
+          {/* Settle Delay */}
+          <text text="Settle Delay: 2.5s" textSize="13sp"
+                margin="0 4 0 0" id="settleDelayLabel"/>
+          <text text="2.5" textSize="12sp" textColor="#666666"
+                gravity="end" id="settleDelayValue"/>
+          <seekbar id="settleDelay" progress="4" max="19"
+                   margin="0 0 0 8"/>
+
+          {/* Max Empty Scrolls */}
+          <text text="Max Empty Scrolls: 5" textSize="13sp"
+                margin="0 4 0 0" id="maxEmptyScrollsLabel"/>
+          <text text="5" textSize="12sp" textColor="#666666"
+                gravity="end" id="maxEmptyScrollsValue"/>
+          <seekbar id="maxEmptyScrolls" progress="4" max="14"
+                   margin="0 0 0 8"/>
+
+          <checkbox id="detectLargeColor" text="Include large color mushrooms"
+                    checked="true" textSize="14sp" margin="0 4 0 4"/>
+          <checkbox id="detectLargeElement" text="Include large element mushrooms"
+                    checked="true" textSize="14sp" margin="0 0 0 4"/>
+        </vertical>
+
+        {/* Advanture-specific settings (hidden by default) */}
+        <vertical id="advantureSettings" visibility="gone">
+          <text text="Collect:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
+          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
+          <checkbox id="enablePlant" text="Plant" checked="true" textSize="14sp" margin="0 0 0 4"/>
+          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" margin="0 0 0 4"/>
+        </vertical>
 
         {/* Button row */}
         <horizontal gravity="center" margin="12 0 0 0">
@@ -84,49 +96,66 @@ function showConfigDialog() {
     </frame>
   );
 
-  view.threshold.setOnSeekBarChangeListener({
-    onProgressChanged: function(seekBar, progress, fromUser) {
-      if (fromUser) view.thresholdValue.setText(((progress + 70) / 100).toFixed(2));
-    },
-    onStartTrackingTouch: function(seekBar) {},
-    onStopTrackingTouch: function(seekBar) {}
-  });
-  view.settleDelay.setOnSeekBarChangeListener({
-    onProgressChanged: function(seekBar, progress, fromUser) {
-      if (fromUser) view.settleDelayValue.setText(String(((progress * 500) + 500) / 1000));
-    },
-    onStartTrackingTouch: function(seekBar) {},
-    onStopTrackingTouch: function(seekBar) {}
-  });
-  view.maxEmptyScrolls.setOnSeekBarChangeListener({
-    onProgressChanged: function(seekBar, progress, fromUser) {
-      if (fromUser) view.maxEmptyScrollsValue.setText(String(progress + 1));
-    },
-    onStartTrackingTouch: function(seekBar) {},
-    onStopTrackingTouch: function(seekBar) {}
-  });
-
   var dialogResult = { choice: null, values: null };
 
+  // ── Mode spinner listener ────────────────────────
+  view.modeSelector.setOnItemSelectedListener({
+    onItemSelected: function(parent, viewRef, position, id) {
+      if (position === 0) {  // Mushroom Finder selected
+        view.mushroomSettings.visibility = android.view.View.VISIBLE;
+        view.advantureSettings.visibility = android.view.View.GONE;
+      } else {  // Advanture selected
+        view.mushroomSettings.visibility = android.view.View.GONE;
+        view.advantureSettings.visibility = android.view.View.VISIBLE;
+      }
+    }
+  });
+
+  // ── Seekbar listeners ────────────────────────────
+
+  // Confidence threshold (progress 0-29 → value 0.70-0.99)
+  view.threshold.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = ((progress + 70) / 100).toFixed(2);
+      view.thresholdValue.setText(value);
+    }
+  });
+
+  // Settle delay (progress 0-19 → value 500-10000 ms)
+  view.settleDelay.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = ((progress * 500) + 500) / 1000;
+      view.settleDelayValue.setText(String(value));
+    }
+  });
+
+  // Max empty scrolls (progress 0-14 → value 1-15)
+  view.maxEmptyScrolls.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = progress + 1;
+      view.maxEmptyScrollsValue.setText(String(value));
+    }
+  });
+
+  // ── Start button ─────────────────────────────────
   view.startBtn.on("click", function() {
     dialogResult.choice = "start";
     dialogResult.values = {
-      threshold: (view.threshold.progress + 70) / 100,
+      mode: view.modeSelector.getSelectedItem(),
       autoLaunch: view.autoLaunch.isChecked(),
+      threshold: (view.threshold.progress + 70) / 100,
       detectLargeColor: view.detectLargeColor.isChecked(),
       detectLargeElement: view.detectLargeElement.isChecked(),
-      debugMode: view.debugMode.isChecked(),
       settleDelay: (view.settleDelay.progress * 500) + 500,
-      maxEmptyScrolls: view.maxEmptyScrolls.progress + 1
+      maxEmptyScrolls: view.maxEmptyScrolls.progress + 1,
+      enableGift: view.enableGift.isChecked(),
+      enablePlant: view.enablePlant.isChecked(),
+      enableFruit: view.enableFruit.isChecked()
     };
     d.dismiss();
   });
 
-  view.exitBtn.on("click", function() {
-    dialogResult.choice = "exit";
-    d.dismiss();
-  });
-
+  // ── Reset button ─────────────────────────────────
   view.resetBtn.on("click", function() {
     view.threshold.setProgress(15);
     view.thresholdValue.setText("0.85");
@@ -137,7 +166,15 @@ function showConfigDialog() {
     view.autoLaunch.setChecked(true);
     view.detectLargeColor.setChecked(true);
     view.detectLargeElement.setChecked(true);
-    view.debugMode.setChecked(false);
+    view.enableGift.setChecked(true);
+    view.enablePlant.setChecked(true);
+    view.enableFruit.setChecked(true);
+  });
+
+  // ── Exit button ──────────────────────────────────
+  view.exitBtn.on("click", function() {
+    dialogResult.choice = "exit";
+    d.dismiss();
   });
 
   var d = dialogs.build({

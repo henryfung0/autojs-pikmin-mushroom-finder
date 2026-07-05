@@ -180,6 +180,32 @@ function showDuringScan(w, show) {
 }
 
 /**
+ * Hide the panel, execute a click callback, then show it again.
+ * Prevents the floaty panel from blocking taps underneath it.
+ *
+ * @param {Object}   w        - The control panel window (can be null/undefined)
+ * @param {Function} callback - The click function to execute while panel is hidden
+ */
+function withPanelHidden(w, callback) {
+  if (!w) {
+    if (callback) callback();
+    return;
+  }
+  // Save current position
+  var savedX = w.getX();
+  var savedY = w.getY();
+  // Hide off-screen
+  w.setPosition(-999, -999);
+  sleep(100);
+  try {
+    if (callback) callback();
+  } finally {
+    // Restore to saved position
+    w.setPosition(savedX, savedY);
+  }
+}
+
+/**
  * Close and destroy the control panel.
  *
  * @param {Object} w - The control panel window to close
@@ -201,5 +227,6 @@ module.exports = {
   setButtonCallback: setButtonCallback,
   setCloseCallback: setCloseCallback,
   showDuringScan: showDuringScan,
+  withPanelHidden: withPanelHidden,
   destroy: destroy
 };

@@ -1,10 +1,10 @@
 "auto";
 
 /**
- * main.js — Entry point for the AutoJS6 Pikmin Bloom Mushroom Finder.
+ * main.js — Entry point for AutoJS6 Pikmin Bloom automation.
  *
- * Ultra-thin dispatcher: singleton guard → config dialog →
- * dispatch to mushroom_finder/main.js.
+ * Ultra-thin dispatcher: singleton guard → combined config dialog →
+ * dispatch to selected mode module.
  */
 
 var configUi = require("./ui/config_ui");
@@ -17,8 +17,15 @@ engines.all().forEach(function(engine) {
   }
 });
 
-// ── Show config dialog, then dispatch ────────────────────────────
+// ── Show combined config dialog ────────────────────────────
 var settings = configUi.showConfigDialog();
-if (settings) {
+if (!settings) {
+  exit();
+}
+
+// ── Dispatch ─────────────────────────────────────────
+if (settings.mode === "Advanture") {
+  require("./advanture/main").run(settings);
+} else {
   require("./mushroom_finder/main").run(settings);
 }

@@ -174,6 +174,16 @@ var config = {
   },
 
   // ──────────────────────────────────────────────
+  // Advanture Settings
+  // ──────────────────────────────────────────────
+  /** @namespace advanture - Item collection preferences for advanture mode. */
+  advanture: {
+    enableGift: true,
+    enablePlant: true,
+    enableFruit: true,
+  },
+
+  // ──────────────────────────────────────────────
   // UI Constants
   // ──────────────────────────────────────────────
   /** @namespace ui - Known system-bar heights used to offset touch coordinates. */

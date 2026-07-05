@@ -36,6 +36,30 @@ function cleanupAndExit(panel, statusText, toastMsg) {
 
 function run(settings) {
 
+  // ── Merge UI dialog settings into config ──────────────────────────
+  // The config dialog returns values that must be written into the
+  // config object so the detection pipeline actually uses them.
+  if (settings) {
+    if (settings.threshold !== undefined) {
+      config.detection.threshold = settings.threshold;
+    }
+    if (settings.settleDelay !== undefined) {
+      config.scan.settleDelay = settings.settleDelay;
+    }
+    if (settings.maxEmptyScrolls !== undefined) {
+      config.scan.maxEmptyScrolls = settings.maxEmptyScrolls;
+    }
+    if (settings.detectLargeColor !== undefined) {
+      config.detection.detectLargeColor = settings.detectLargeColor;
+    }
+    if (settings.detectLargeElement !== undefined) {
+      config.detection.detectLargeElement = settings.detectLargeElement;
+    }
+    console.info("Settings merged — threshold=" + config.detection.threshold +
+      ", settleDelay=" + config.scan.settleDelay +
+      ", maxEmptyScrolls=" + config.scan.maxEmptyScrolls);
+  }
+
   // ===================================================================
   // Phase 1 — Setup
   // ===================================================================

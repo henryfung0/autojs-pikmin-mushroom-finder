@@ -5,7 +5,11 @@
  * compile results, and fire callbacks when mushrooms with free
  * slots are found.
  *
- * Scan pattern: always scroll left at a fixed Y, forever.
+ * Scan pattern: always scroll left at a fixed Y, forever.  When the map
+ * area runs out of content the viewport is re-centered around the player
+ * icon and sweeping resumes in the same direction.  No vertical scrolling
+ * is performed — horizontal sweep only.  This mirrors the original
+ * scanner.js logic that was proven to work.
  *
  * Module-level exports:
  *   startScanning(config, templates, onFound, floatyW)
@@ -35,7 +39,6 @@ var _emptyScrollCount = 0;
 var _scanning = false;
 var _lastKeyTime = 0;
 var _doublePressTimeout = 500;
-var _scrollDirection = -1; // -1 = left, 1 = right
 
 // ---------------------------------------------------------------------------
 // Volume key interrupt
@@ -84,6 +87,7 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
   _userStopped = false;
   _totalSwipes = 0;
   _emptyScrollCount = 0;
+
   _scanning = true;
 
   var othersTemplates = (extraOptions && extraOptions.othersTemplates) || [];
@@ -117,7 +121,10 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
     settleDelay = 1500;
   }
 
-  // Fixed Y for all swipes — 42% of screen height (approx 1008 on 2400px screen)
+  // Scan Y coordinate — 42% of screen height (approx 1008 on 2400px screen).
+  // Y never changes during the scan.  The map is swept horizontally at this
+  // fixed Y, and when the area runs out of content the viewport is re-centered
+  // around the player icon before sweeping resumes.
   var currentY = Math.round(device.height * 0.42);
 
   console.info("DEBUG: device.width=" + device.width + ", device.height=" + device.height);
@@ -131,13 +138,8 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
       ", startX=" + Math.round(device.width * 0.2) +
       ", endX=" + Math.round(device.width * 0.8));
 
-    if (_scrollDirection === -1) {
-      scroll.scrollLeft(currentY, swipeDuration, floatyW,
-        "Swipe " + _totalSwipes + " ←");
-    } else {
-      scroll.scrollRight(currentY, swipeDuration, floatyW,
-        "Swipe " + _totalSwipes + " →");
-    }
+    scroll.scrollLeft(currentY, swipeDuration, floatyW,
+      "Swipe " + _totalSwipes + " ←");
 
     sleep(settleDelay);
 
@@ -204,9 +206,9 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
           floatyMod.appendLog(floatyW, "Map area empty — repositioning to own position");
           _emptyScrollCount = 0;
           navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
-          _scrollDirection *= -1;
-          floatyMod.appendLog(floatyW, "Switched direction: now scrolling " +
-            (_scrollDirection === -1 ? "LEFT" : "RIGHT"));
+          floatyMod.appendLog(floatyW, "Waiting 2s for map to recenter after own position click");
+          sleep(2000);
+          floatyMod.appendLog(floatyW, "Resuming leftward sweep at fixed Y");
         }
       }
     } finally {

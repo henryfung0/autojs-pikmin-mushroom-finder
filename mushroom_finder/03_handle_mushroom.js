@@ -18,7 +18,10 @@ function handleMushroomFound(panel, match, navTemplates, navigatorMod) {
   var tapX = match.x + Math.round(match.width / 2);
   var tapY = match.y + Math.round(match.height / 2);
   floatyMod.appendLog(panel, "Clicking mushroom at (" + tapX + "," + tapY + ")");
-  press(tapX, tapY, 1000);
+  if (typeof navigatorMod.showTap === "function") {
+    navigatorMod.showTap(tapX, tapY);
+  }
+  press(tapX, tapY, 200);
   sleep(2000);
   navigatorMod.waitForAndClickLarge(navTemplates, panel);
 }

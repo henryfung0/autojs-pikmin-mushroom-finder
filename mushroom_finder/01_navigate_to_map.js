@@ -43,51 +43,76 @@ function _showTap(x, y) {
 }
 
 /**
- * Load navigation templates from ./templates/navigation/ subdirectory.
+ * List image files in a directory.
+ * @param {string} dir - Directory path.
+ * @returns {string[]} Array of image filenames, or empty array on error.
+ */
+function _listImages(dir) {
+  try {
+    var entries = files.listDir(dir, function(name) {
+      if (typeof name !== "string") return false;
+      var lower = name.toLowerCase();
+      return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+    });
+    return entries || [];
+  } catch (e) {
+    console.warn("_listImages: cannot list '" + dir + "': " + e);
+    return [];
+  }
+}
+
+/**
+ * Read an image file and return a template descriptor.
+ * @param {string} dir - Directory path.
+ * @param {string} fileName - Image filename.
+ * @returns {{name: string, image: Image, w: number, h: number}|null}
+ */
+function _readImage(dir, fileName) {
+  var filePath = files.join(dir, fileName);
+  try {
+    var img = images.read(filePath);
+    if (!img) return null;
+    var w = img.getWidth();
+    var h = img.getHeight();
+    if (w > 0 && h > 0) {
+      return { name: fileName, image: img, w: w, h: h };
+    } else {
+      img.recycle();
+      return null;
+    }
+  } catch (e) {
+    console.warn("_readImage: error reading '" + filePath + "': " + e);
+    return null;
+  }
+}
+
+/**
+ * Load navigation templates from ./templates/navigation/ subdirectory
+ * and common templates from ./templates/common/ subdirectory.
  *
  * @param {string} templateDir - Base template directory (e.g. "./templates").
  * @returns {{name: string, image: Image, w: number, h: number}[]}
  */
 function loadNavigationTemplates(templateDir) {
-  var navDir = files.join(templateDir, "navigation");
-
-  var entries = [];
-  try {
-    entries = files.listDir(navDir, function(name) {
-      if (typeof name !== "string") return false;
-      var lower = name.toLowerCase();
-      return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
-    });
-  } catch (e) {
-    console.warn("loadNavigationTemplates: cannot list '" + navDir + "': " + e);
-    return [];
-  }
-
-  if (!entries || entries.length === 0) {
-    console.warn("loadNavigationTemplates: no images found in '" + navDir + "'");
-    return [];
-  }
-
   var templates = [];
-  for (var i = 0; i < entries.length; i++) {
-    var fileName = entries[i];
-    var filePath = files.join(navDir, fileName);
-    try {
-      var img = images.read(filePath);
-      if (!img) continue;
-      var w = img.getWidth();
-      var h = img.getHeight();
-      if (w > 0 && h > 0) {
-        templates.push({ name: fileName, image: img, w: w, h: h });
-      } else {
-        img.recycle();
-      }
-    } catch (e) {
-      console.warn("loadNavigationTemplates: error reading '" + filePath + "': " + e);
-    }
+
+  // Load from navigation/ subdirectory
+  var navDir = files.join(templateDir, "navigation");
+  var navEntries = _listImages(navDir);
+  for (var i = 0; i < navEntries.length; i++) {
+    var tpl = _readImage(navDir, navEntries[i]);
+    if (tpl) templates.push(tpl);
   }
 
-  console.info("loadNavigationTemplates: loaded " + templates.length + " template(s) from '" + navDir + "'");
+  // Also load from common/ subdirectory (dismiss buttons, confirm, etc.)
+  var commonDir = files.join(templateDir, "common");
+  var commonEntries = _listImages(commonDir);
+  for (var i = 0; i < commonEntries.length; i++) {
+    var tpl = _readImage(commonDir, commonEntries[i]);
+    if (tpl) templates.push(tpl);
+  }
+
+  console.info("loadNavigationTemplates: loaded " + templates.length + " template(s) (nav:" + navEntries.length + " + common:" + commonEntries.length + ")");
   return templates;
 }
 
@@ -217,15 +242,13 @@ function _matchOne(screenImage, tpl, threshold) {
  * Navigate through game screens until the main map is reached.
  *
  * State machine priority:
- *   1. close1 / close2  → click to dismiss overlays
+ *   1. dismiss any non-navigation-specific template (close buttons, etc.)
  *   2. go_to_map         → click to enter map
- *   3. map_view          → find map_view2 and click it
- *   4. no match          → keep waiting, continue loop
+ *   3. map_view3         → already on map, navigation complete
+ *   4. map_view          → click to enter map
+ *   5. no match          → keep waiting, continue loop
  *
  * Returns false if the timeout is reached without reaching the map.
- *
- * Templates are identified by filename keywords (close1, close2,
- * go_to_map, map_view, map_view2) — the names can have any extension.
  *
  * @param {{name: string, image: Image, w: number, h: number}[]} navTemplates
  *   Navigation templates from loadNavigationTemplates().
@@ -246,10 +269,6 @@ function navigateToMap(navTemplates, config, floatyW) {
   var start = new Date().getTime();
 
   // Identify templates by filename keywords
-  var close1Tpl = null;
-  var close2Tpl = null;
-  var close3Tpl = null;
-  var backTpl = null;
   var goToMapTpl = null;
   var mapViewTpl = null;
   var mapView2Tpl = null;
@@ -257,11 +276,7 @@ function navigateToMap(navTemplates, config, floatyW) {
 
   for (var i = 0; i < navTemplates.length; i++) {
     var name = navTemplates[i].name.toLowerCase();
-    if (name.indexOf("close1") !== -1) close1Tpl = navTemplates[i];
-    else if (name.indexOf("close2") !== -1) close2Tpl = navTemplates[i];
-    else if (name.indexOf("close3") !== -1) close3Tpl = navTemplates[i];
-    else if (name.indexOf("back") !== -1) backTpl = navTemplates[i];
-    else if (name.indexOf("go_to_map") !== -1 || name.indexOf("go to map") !== -1) {
+    if (name.indexOf("go_to_map") !== -1 || name.indexOf("go to map") !== -1) {
       // Only match exact "go to map" to avoid "go to map2" overriding it
       var base = name.replace(/\.[^.]+$/, "");
       if (base === "go to map" || base === "go_to_map" || base === "gotomap") goToMapTpl = navTemplates[i];
@@ -278,19 +293,36 @@ function navigateToMap(navTemplates, config, floatyW) {
   // Also handle template name without extension
   for (var i = 0; i < navTemplates.length; i++) {
     var base = navTemplates[i].name.toLowerCase().replace(/\.[^.]+$/, "");
-    if (!close1Tpl && (base === "close1" || base === "close_1")) close1Tpl = navTemplates[i];
-    if (!close2Tpl && (base === "close2" || base === "close_2")) close2Tpl = navTemplates[i];
-    if (!close3Tpl && (base === "close3" || base === "close_3")) close3Tpl = navTemplates[i];
-    if (!backTpl && (base === "back")) backTpl = navTemplates[i];
     if (!goToMapTpl && (base === "go_to_map" || base === "go to map" || base === "gotomap")) goToMapTpl = navTemplates[i];
     if (!mapView3Tpl && (base === "map_view3" || base === "map view3" || base === "mapview3")) mapView3Tpl = navTemplates[i];
     if (!mapViewTpl && (base === "map_view" || base === "map view" || base === "mapview")) mapViewTpl = navTemplates[i];
   }
 
-  console.info("navigateToMap: close1=" + (close1Tpl ? "yes" : "no") +
-    ", close2=" + (close2Tpl ? "yes" : "no") +
-    ", close3=" + (close3Tpl ? "yes" : "no") +
-    ", back=" + (backTpl ? "yes" : "no") +
+  // Build dismiss template array — any template that isn't navigation-specific
+  var navKeywords = ["go_to_map", "go to map", "gotomap",
+                     "map_view", "map view", "mapview",
+                     "map_view2", "map view2", "mapview2",
+                     "map_view3", "map view3", "mapview3",
+                     "large", "own position", "own_position",
+                     "pikmin icon", "pikmin_icon",
+                     "advanture page", "advanture_page",
+                     "store"];
+  var dismissTemplates = [];
+  for (var i = 0; i < navTemplates.length; i++) {
+    var name = navTemplates[i].name.toLowerCase();
+    var isNavSpecific = false;
+    for (var k = 0; k < navKeywords.length; k++) {
+      if (name.indexOf(navKeywords[k]) !== -1) {
+        isNavSpecific = true;
+        break;
+      }
+    }
+    if (!isNavSpecific) {
+      dismissTemplates.push(navTemplates[i]);
+    }
+  }
+
+  console.info("navigateToMap: dismiss=" + dismissTemplates.length + " template(s)" +
     ", go_to_map=" + (goToMapTpl ? "yes" : "no") +
     ", map_view=" + (mapViewTpl ? "yes" : "no") +
     ", map_view2=" + (mapView2Tpl ? "yes" : "no") +
@@ -310,28 +342,18 @@ function navigateToMap(navTemplates, config, floatyW) {
         continue;
       }
 
-      // Priority 1: Dismiss overlays (close buttons / back)
+      // Priority 1: Dismiss overlays — try any common/dismiss template
       var match = null;
-      if (close1Tpl) {
-        match = _matchOne(img, close1Tpl, 0.7);
-      }
-      if (!match && close2Tpl) {
-        match = _matchOne(img, close2Tpl, 0.7);
-      }
-      if (!match && close3Tpl) {
-        match = _matchOne(img, close3Tpl, 0.7);
-      }
-      if (!match && backTpl) {
-        match = _matchOne(img, backTpl, 0.7);
+      for (var d = 0; d < dismissTemplates.length && !match; d++) {
+        match = _matchOne(img, dismissTemplates[d], 0.7);
       }
       if (match) {
         var tapX = match.x + Math.round(match.w / 2);
         var tapY = match.y + Math.round(match.h / 2);
-        console.info("navigateToMap: found dismiss button, pressing at (" + tapX + "," + tapY + ")");
-        floatyMod.appendLog(floatyW, "Dismiss popup at (" + tapX + "," + tapY + ")");
+        console.info("navigateToMap: found dismiss button \"" + match.name + "\", pressing at (" + tapX + "," + tapY + ")");
+        floatyMod.appendLog(floatyW, "Dismiss popup \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
         _showTap(tapX, tapY);
         press(tapX, tapY, 1000);
-        console.info("navigateToMap: press() executed");
         sleep(1500);
         continue;
       }
@@ -432,12 +454,12 @@ function waitForAndClickLarge(navTemplates, floatyW, timeout) {
         var tapY = match.y + Math.round(largeTpl.h / 2);
         console.info("waitForAndClickLarge: Large.jpg found at (" + tapX + "," + tapY + ") — clicking");
         floatyMod.appendLog(floatyW, "Clicking Large at (" + tapX + "," + tapY + ")");
+        _showTap(tapX, tapY);
         press(tapX, tapY, 1000);
-        img.recycle();
         return true;
       }
     } finally {
-      if (img) img.recycle();
+      if (img) { try { img.recycle(); } catch(e) {} }
     }
     sleep(500);
   }
@@ -481,12 +503,12 @@ function waitForAndClickOwnPosition(navTemplates, floatyW, timeout) {
         var tapY = match.y + Math.round(ownTpl.h / 2);
         console.info("waitForAndClickOwnPosition: Own position.jpg found at (" + tapX + "," + tapY + ") — clicking");
         floatyMod.appendLog(floatyW, "Clicking Own position at (" + tapX + "," + tapY + ")");
+        _showTap(tapX, tapY);
         press(tapX, tapY, 500);
-        img.recycle();
         return true;
       }
     } finally {
-      if (img) img.recycle();
+      if (img) { try { img.recycle(); } catch(e) {} }
     }
     sleep(500);
   }
@@ -499,5 +521,6 @@ module.exports = {
   dismissPikminIcon: dismissPikminIcon,
   navigateToMap: navigateToMap,
   waitForAndClickLarge: waitForAndClickLarge,
-  waitForAndClickOwnPosition: waitForAndClickOwnPosition
+  waitForAndClickOwnPosition: waitForAndClickOwnPosition,
+  showTap: _showTap
 };

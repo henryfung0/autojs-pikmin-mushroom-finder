@@ -12,6 +12,7 @@
 "auto";
 
 var floatyMod = require("../ui/floaty");
+var advConfig = require("../ui/config");
 
 // ── Click feedback indicator ─────────────────────────────────────────────
 var _clickDot = null;
@@ -30,6 +31,16 @@ function _showTap(x, y) {
   _clickDot._hideTimer = setTimeout(function() {
     _clickDot.setPosition(-999, -999);
   }, 800);
+}
+
+/**
+ * Clamp Y to stay above navigation bar, then press.
+ */
+function _safePress(x, y, duration) {
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  var maxSafeY = device.height - navBarHeight;
+  if (y > maxSafeY) y = maxSafeY;
+  press(x, y, duration);
 }
 
 /**
@@ -123,7 +134,7 @@ function isOnMainPage(navTemplates, options) {
             if (floaty) floatyMod.appendLog(floaty, "isOnMainPage: clicking " + dismissTemplates[j].name);
             floatyMod.withPanelHidden(floaty, function() {
               _showTap(tapX, tapY);
-              press(tapX, tapY, 1000);
+              _safePress(tapX, tapY, 1000);
             });
             sleep(1500);
             clicked = true;
@@ -252,7 +263,7 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
             if (floaty) floatyMod.appendLog(floaty, "Clicking " + entryList[j].name);
             floatyMod.withPanelHidden(floaty, function() {
               _showTap(tapX, tapY);
-              press(tapX, tapY, 1000);
+              _safePress(tapX, tapY, 1000);
             });
             sleep(2000);
             clicked = true;

@@ -19,6 +19,7 @@ var floatyMod = require("../ui/floaty");
 var scroll = require("../lib/gestures");
 var matcher = require("../lib/matcher");
 var advState = require("./advanture_state");
+var advConfig = require("../ui/config");
 
 // ---------------------------------------------------------------------------
 // Volume key interrupt
@@ -132,6 +133,12 @@ function _loadTemplatesFromDir(baseDir, subDir) {
 function _tapAt(match, label, panel) {
   var tapX = match.x + Math.round(match.w / 2);
   var tapY = match.y + Math.round(match.h / 2);
+  // Clamp Y to stay above the navigation bar so taps land on the app
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  var maxSafeY = device.height - navBarHeight;
+  if (tapY > maxSafeY) {
+    tapY = maxSafeY;
+  }
   floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")");
   floatyMod.withPanelHidden(panel, function() {
     _showTap(tapX, tapY);

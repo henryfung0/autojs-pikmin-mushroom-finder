@@ -67,12 +67,13 @@ function _showTap(x, y) {
   }, 800);
 }
 
-function _matchOne(screenImage, tpl, threshold) {
+function _matchOne(screenImage, tpl, threshold, region) {
   if (!screenImage || !tpl || !tpl.image) return null;
   try {
+    var searchRegion = region || [0, 0, screenImage.getWidth(), screenImage.getHeight()];
     var result = images.findImage(screenImage, tpl.image, {
       threshold: threshold || 0.8,
-      region: [0, 0, screenImage.getWidth(), screenImage.getHeight()]
+      region: searchRegion
     });
     if (result) {
       var confidence = result.confidence !== undefined ? result.confidence : threshold;
@@ -167,6 +168,11 @@ function loadAdventureTemplates(templateDir) {
 function findBestItem(screenImage, templates, config, skipPlant) {
   var threshold = (config && config.detection && config.detection.threshold) || 0.7;
 
+  // Restrict search to area above the navigation bar
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  var safeHeight = screenImage.getHeight() - navBarHeight;
+  var safeRegion = [0, 0, screenImage.getWidth(), safeHeight];
+
   // Priority order: gift, plant, fruit
   // Only check categories enabled in config
   var categories = [];
@@ -185,7 +191,7 @@ function findBestItem(screenImage, templates, config, skipPlant) {
     if (!cat.templates || cat.templates.length === 0) continue;
     for (var i = 0; i < cat.templates.length; i++) {
       var tpl = cat.templates[i];
-      var match = _matchOne(screenImage, tpl, threshold);
+      var match = _matchOne(screenImage, tpl, threshold, safeRegion);
       if (match) {
         match.category = cat.key;
         return match;

@@ -37,7 +37,7 @@ function _showTap(x, y) {
  * Clamp Y to stay above navigation bar, then press.
  */
 function _safePress(x, y, duration) {
-  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
   var maxSafeY = device.height - navBarHeight;
   if (y > maxSafeY) y = maxSafeY;
   press(x, y, duration);

@@ -135,7 +135,7 @@ function _tapAt(match, label, panel) {
   var tapX = match.x + Math.round(match.w / 2);
   var tapY = match.y + Math.round(match.h / 2);
   // Clamp Y to stay above the navigation bar so taps land on the app
-  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
   var maxSafeY = device.height - navBarHeight;
   if (tapY > maxSafeY) {
     tapY = maxSafeY;
@@ -169,7 +169,8 @@ function findBestItem(screenImage, templates, config, skipPlant) {
   var threshold = (config && config.detection && config.detection.threshold) || 0.7;
 
   // Restrict search to area above the navigation bar
-  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || 60;
+  // Use config value, or fall back to 7% of screen height (typical nav bar)
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
   var safeHeight = screenImage.getHeight() - navBarHeight;
   var safeRegion = [0, 0, screenImage.getWidth(), safeHeight];
 

@@ -148,7 +148,8 @@ function loadAdventureTemplates(templateDir) {
     nav:      _loadTemplatesFromDir(templateDir, "advanture/navigation"),
     fruit:    _loadTemplatesFromDir(templateDir, "advanture/fruit"),
     gift:     _loadTemplatesFromDir(templateDir, "advanture/gift"),
-    plant:    _loadTemplatesFromDir(templateDir, "advanture/plant")
+    plant:    _loadTemplatesFromDir(templateDir, "advanture/plant"),
+    fullPlant:_loadTemplatesFromDir(templateDir, "advanture/full plant")
   };
 }
 
@@ -156,7 +157,7 @@ function loadAdventureTemplates(templateDir) {
 // Find best item (gift > plant > fruit) on screen
 // ---------------------------------------------------------------------------
 
-function findBestItem(screenImage, templates, config) {
+function findBestItem(screenImage, templates, config, skipPlant) {
   var threshold = (config && config.detection && config.detection.threshold) || 0.7;
 
   // Priority order: gift, plant, fruit
@@ -165,7 +166,7 @@ function findBestItem(screenImage, templates, config) {
   if (config && config.advanture && config.advanture.enableGift !== false) {
     categories.push({ key: "gift",  templates: templates.gift });
   }
-  if (config && config.advanture && config.advanture.enablePlant !== false) {
+  if (config && config.advanture && config.advanture.enablePlant !== false && !skipPlant) {
     categories.push({ key: "plant", templates: templates.plant });
   }
   if (config && config.advanture && config.advanture.enableFruit !== false) {
@@ -191,10 +192,45 @@ function findBestItem(screenImage, templates, config) {
 // Start an adventure item (tap item, then Start Advanture, then Auto)
 // ---------------------------------------------------------------------------
 
-function startAdventureItem(match, navTemplates, panel) {
+function startAdventureItem(match, navTemplates, panel, fullPlantTemplates, dismissTemplates) {
   // Tap the matched item
   _tapAt(match, "Tap " + match.category + " item", panel);
   sleep(2000);
+
+  // ── If plant, check if it's full ──────────────────────────────
+  if (match.category === "plant" && fullPlantTemplates && fullPlantTemplates.length > 0) {
+    var checkImg = null;
+    try {
+      checkImg = captureScreen();
+      if (checkImg) {
+        for (var i = 0; i < fullPlantTemplates.length; i++) {
+          var fpMatch = _matchOne(checkImg, fullPlantTemplates[i], 0.7);
+          if (fpMatch) {
+            floatyMod.appendLog(panel, "Plant is full — detected " + fullPlantTemplates[i].name);
+            floatyMod.appendLog(panel, "Will skip plants in future loops");
+
+            // Try to click Cancel / Cancel2 from common templates to dismiss popup
+            if (dismissTemplates && dismissTemplates.length > 0) {
+              for (var d = 0; d < dismissTemplates.length; d++) {
+                var dName = dismissTemplates[d].name.toLowerCase();
+                if (dName.indexOf("cancel") !== -1) {
+                  var cancelMatch = _matchOne(checkImg, dismissTemplates[d], 0.7);
+                  if (cancelMatch) {
+                    _tapAt(cancelMatch, "Tap " + dismissTemplates[d].name + " (full plant dismiss)", panel);
+                    sleep(2000);
+                    break;
+                  }
+                }
+              }
+            }
+            return "full";
+          }
+        }
+      }
+    } finally {
+      if (checkImg) checkImg.recycle();
+    }
+  }
 
   // Look for "Start advanture" button
   var img = null;
@@ -328,7 +364,8 @@ function runAdvantureFlow(config, panel) {
   floatyMod.appendLog(panel, "Templates — nav:" + templates.nav.length +
     " fruit:" + templates.fruit.length +
     " gift:" + templates.gift.length +
-    " plant:" + templates.plant.length);
+    " plant:" + templates.plant.length +
+    " fullPlant:" + templates.fullPlant.length);
 
   if (templates.nav.length === 0) {
     floatyMod.appendLog(panel, "Error: no navigation templates found");
@@ -341,6 +378,7 @@ function runAdvantureFlow(config, panel) {
 
   var loopCount = 0;
   var emptyLoopCount = 0;
+  var plantFull = false;
   var maxEmptyLoops = (config && config.advanture && config.advanture.maxEmptyLoops) || 10;
 
   while (!_shutdownRequested) {
@@ -356,22 +394,7 @@ function runAdvantureFlow(config, panel) {
       continue;
     }
 
-    // ── Step 2: Scroll down on adventure page ──────────────────────────
-    floatyMod.appendLog(panel, "Scrolling adventure list...");
-    var scrollY = Math.round(device.height * 0.7);
-    var scrollDuration = (config && config.scan && config.scan.swipeDuration) || 1200;
-    swipe(
-      Math.round(device.width * 0.5),
-      Math.round(device.height * 0.8),
-      Math.round(device.width * 0.5),
-      Math.round(device.height * 0.3),
-      scrollDuration
-    );
-    sleep(settleDelay);
-
-    if (_shutdownRequested) break;
-
-    // ── Step 3: Capture and scan for items ─────────────────────────────
+    // ── Step 2: Capture and scan for items (no scroll first) ───────────
     var img = null;
     var screenImage = null;
     var captureAttempts = 0;
@@ -397,13 +420,16 @@ function runAdvantureFlow(config, panel) {
     }
 
     try {
-      var match = findBestItem(screenImage, templates, config);
+      var match = findBestItem(screenImage, templates, config, plantFull);
       if (match) {
         emptyLoopCount = 0;
         floatyMod.updateStatus(panel, match.category.toUpperCase() + " Found!");
         floatyMod.appendLog(panel, "Found " + match.category + " — starting adventure...");
-        var ok = startAdventureItem(match, templates.nav, panel);
-        if (ok) {
+        var result = startAdventureItem(match, templates.nav, panel, templates.fullPlant, commonTemplates);
+        if (result === "full") {
+          plantFull = true;
+          floatyMod.appendLog(panel, "Plant is full — will skip plants from now on");
+        } else if (result === true) {
           floatyMod.appendLog(panel, "Adventure launched for " + match.category);
         }
         sleep(3000);
@@ -419,6 +445,20 @@ function runAdvantureFlow(config, panel) {
           backAttempts++;
         }
       } else {
+        // Scroll to reveal more items
+        floatyMod.appendLog(panel, "No item found — scrolling...");
+        var scrollDuration = (config && config.scan && config.scan.swipeDuration) || 1200;
+        swipe(
+          Math.round(device.width * 0.5),
+          Math.round(device.height * 0.8),
+          Math.round(device.width * 0.5),
+          Math.round(device.height * 0.3),
+          scrollDuration
+        );
+        sleep(settleDelay);
+
+        if (_shutdownRequested) break;
+
         emptyLoopCount++;
         floatyMod.appendLog(panel, "No item found on this scroll (#" + loopCount + ", emptyLoops=" + emptyLoopCount + ")");
         if (emptyLoopCount >= maxEmptyLoops) {

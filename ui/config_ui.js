@@ -40,8 +40,8 @@ function showConfigDialog() {
         <text text="Mushroom Finder Settings" textSize="15sp"
               textColor="#1976D2" margin="0 0 0 4"/>
 
-        {/* Mushroom-specific settings (visible by default) */}
-        <vertical id="mushroomSettings">
+        {/* Mushroom-specific settings (hidden by default) */}
+        <vertical id="mushroomSettings" visibility="gone">
           {/* Confidence Threshold */}
           <text text="Confidence Threshold: 0.85" textSize="13sp"
                 margin="0 4 0 0" id="thresholdLabel"/>
@@ -72,8 +72,8 @@ function showConfigDialog() {
                     checked="true" textSize="14sp" margin="0 0 0 4"/>
         </vertical>
 
-        {/* Advanture-specific settings (hidden by default) */}
-        <vertical id="advantureSettings" visibility="gone">
+        {/* Advanture-specific settings (visible by default) */}
+        <vertical id="advantureSettings">
           <text text="Collect:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
           <checkbox id="enablePlant" text="Plant" checked="true" textSize="14sp" margin="0 0 0 4"/>
@@ -105,6 +105,9 @@ function showConfigDialog() {
   );
 
   var dialogResult = { choice: null, values: null };
+
+  // Default to Advanture mode
+  view.modeSelector.setSelection(1);
 
   // ── Mode spinner listener ────────────────────────
   view.modeSelector.setOnItemSelectedListener({

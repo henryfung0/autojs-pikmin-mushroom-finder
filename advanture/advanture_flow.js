@@ -194,6 +194,8 @@ function findBestItem(screenImage, templates, config, skipPlant) {
       var tpl = cat.templates[i];
       var match = _matchOne(screenImage, tpl, threshold, safeRegion);
       if (match) {
+        // Double-check: reject if match top-left corner is in nav bar zone
+        if (match.y > safeHeight) continue;
         match.category = cat.key;
         return match;
       }

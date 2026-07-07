@@ -225,37 +225,10 @@ function navigateToSeedlingPage(templates, panel) {
       }
 
       if (!clicked) {
-        // No clicker found — try common dismiss buttons to make progress
-        floatyMod.appendLog(panel, "No seedling page clicker found — trying common dismiss");
-        for (var j = 0; j < templates.common.length; j++) {
-          var cmnName = templates.common[j].name.toLowerCase();
-          if (cmnName.indexOf("close") !== -1 || cmnName.indexOf("back") !== -1) continue;
-          var cmn = _matchOne(img, templates.common[j], threshold);
-          if (cmn) {
-            _tapAt(cmn, "Common dismiss: " + templates.common[j].name, panel);
-            sleep(1500);
-            clicked = true;
-            break;
-          }
-        }
-        if (!clicked) {
-          // Fallback: try close/back
-          for (var j = 0; j < templates.common.length; j++) {
-            var cmnName = templates.common[j].name.toLowerCase();
-            if (cmnName.indexOf("close") === -1 && cmnName.indexOf("back") === -1) continue;
-            var cmn = _matchOne(img, templates.common[j], threshold);
-            if (cmn) {
-              _tapAt(cmn, "Common dismiss (back): " + templates.common[j].name, panel);
-              sleep(1500);
-              clicked = true;
-              break;
-            }
-          }
-        }
-        if (!clicked) {
-          floatyMod.appendLog(panel, "Nothing found on screen — sleeping...");
-          sleep(1000);
-        }
+        // No clicker found — do NOT click common dismiss here, that would navigate away.
+        // Just wait a bit and loop back to re-check checker.
+        floatyMod.appendLog(panel, "No seedling page clicker found — waiting for page to load...");
+        sleep(2000);
       }
 
       totalAttempts++;

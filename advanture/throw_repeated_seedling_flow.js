@@ -1,11 +1,11 @@
 /**
- * advanture/throw_plant_flow.js — Throw Plant scanning flow
+ * advanture/throw_repeated_seedling_flow.js — Throw Repeated Seedling scanning flow
  *
  * Flow:
  *   1. Ensure on main page (isOnMainPage)
  *   2. Navigate to plant page — click "plant page clicker" templates repeatedly
  *      until "plant page checker" is visible on screen (DO NOT click it)
- *   3. On plant page — scan for throw items (templates/throw plant/throw/)
+ *   3. On plant page — scan for throw items (templates/throw_repeated_seedling/throw/)
  *   4. If throw item found → click it → scroll up to 10 times to find flow.jpg
  *      - If flow.jpg found → click it → click confirm.jpg → return to plant page
  *      - If flow.jpg NOT found after 10 scrolls → back to plant page, retry
@@ -14,7 +14,7 @@
  *   7. After max empty loops → back to main page, standby
  *
  * Exports:
- *   runThrowPlantFlow(config, panel)  → void
+ *   runThrowRepeatedSeedlingFlow(config, panel)  → void
  */
 
 "auto";
@@ -150,16 +150,16 @@ function _tapAt(match, label, panel) {
 }
 
 // ---------------------------------------------------------------------------
-// Load throw plant templates
+// Load throw_repeated_seedling templates
 // ---------------------------------------------------------------------------
 
 function loadThrowPlantTemplates(templateDir) {
   return {
-    plantPageClicker: _loadTemplatesFromDir(templateDir, "throw plant/plant page clicker"),
-    plantPageChecker: _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
-    throwItems:       _loadTemplatesFromDir(templateDir, "throw plant/throw"),
-    flow:             _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
-    confirm:           _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
+    plantPageClicker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/plant page clicker"),
+    plantPageChecker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
+    throwItems:       _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/throw"),
+    flow:             _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
+    confirm:           _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
     common:           _loadTemplatesFromDir(templateDir, "common"),
     mainNav:          _loadTemplatesFromDir(templateDir, "navigation")
   };
@@ -399,15 +399,15 @@ function clickConfirmButton(templates, panel) {
 // ---------------------------------------------------------------------------
 
 /**
- * Run the throw plant scanning flow.
+ * Run the throw_repeated_seedling scanning flow.
  *
  * @param {Object} config - Configuration object.
  * @param {Object} panel  - Floaty window for logging.
  */
-function runThrowPlantFlow(config, panel) {
+function runThrowRepeatedSeedlingFlow(config, panel) {
   var templateDir = (config && config.detection && config.detection.templateDir) || "./templates/";
 
-  floatyMod.appendLog(panel, "Loading throw plant templates...");
+  floatyMod.appendLog(panel, "Loading throw_repeated_seedling templates...");
   var templates = loadThrowPlantTemplates(templateDir);
 
   var mainNavTemplates = templates.mainNav.concat(templates.common);
@@ -626,5 +626,5 @@ function runThrowPlantFlow(config, panel) {
 }
 
 module.exports = {
-  runThrowPlantFlow: runThrowPlantFlow
+  runThrowRepeatedSeedlingFlow: runThrowRepeatedSeedlingFlow
 };

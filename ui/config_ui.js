@@ -31,7 +31,7 @@ function showConfigDialog() {
               gravity="center" margin="0 0 0 8"/>
 
         {/* Mode Selection */}
-        <spinner id="modeSelector" entries="Mushroom Finder|Advanture|Throw Plant"
+        <spinner id="modeSelector" entries="Mushroom Finder|Pikmin Daily Task"
                  textSize="14sp" gravity="center" margin="0 0 16 0"/>
 
         {/* Common checkboxes (always visible) */}
@@ -74,6 +74,9 @@ function showConfigDialog() {
 
         {/* Advanture-specific settings (visible by default) */}
         <vertical id="advantureSettings">
+          <text text="Pikmin Daily Task:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
+          <checkbox id="throwRepeatedSeedlingEnabled" text="Throw Repeated Seedling" checked="true"
+                   textSize="14sp" margin="0 0 0 4"/>
           <text text="Collect:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
           <checkbox id="enablePlant" text="Plant" checked="true" textSize="14sp" margin="0 0 0 4"/>
@@ -106,7 +109,7 @@ function showConfigDialog() {
 
   var dialogResult = { choice: null, values: null };
 
-  // Default to Advanture mode
+  // Default to Pikmin Daily Task
   view.modeSelector.setSelection(1);
 
   // ── Mode spinner listener ────────────────────────
@@ -115,12 +118,9 @@ function showConfigDialog() {
       if (position === 0) {  // Mushroom Finder selected
         view.mushroomSettings.visibility = android.view.View.VISIBLE;
         view.advantureSettings.visibility = android.view.View.GONE;
-      } else if (position === 1) {  // Advanture selected
+      } else {  // Pikmin Daily Task selected (position 1)
         view.mushroomSettings.visibility = android.view.View.GONE;
         view.advantureSettings.visibility = android.view.View.VISIBLE;
-      } else {  // Throw Plant selected
-        view.mushroomSettings.visibility = android.view.View.GONE;
-        view.advantureSettings.visibility = android.view.View.GONE;
       }
     }
   });
@@ -170,6 +170,7 @@ function showConfigDialog() {
       detectLargeElement: view.detectLargeElement.isChecked(),
       settleDelay: (view.settleDelay.progress * 500) + 500,
       maxEmptyScrolls: view.maxEmptyScrolls.progress + 1,
+      throwRepeatedSeedlingEnabled: view.throwRepeatedSeedlingEnabled.isChecked(),
       enableGift: view.enableGift.isChecked(),
       enablePlant: view.enablePlant.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
@@ -189,6 +190,7 @@ function showConfigDialog() {
     view.autoLaunch.setChecked(true);
     view.detectLargeColor.setChecked(true);
     view.detectLargeElement.setChecked(true);
+    view.throwRepeatedSeedlingEnabled.setChecked(true);
     view.enableGift.setChecked(true);
     view.enablePlant.setChecked(true);
     view.enableFruit.setChecked(true);

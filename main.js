@@ -26,8 +26,14 @@ if (!settings) {
 // ── Dispatch ─────────────────────────────────────────
 if (settings.mode === "Advanture") {
   require("./advanture/main").run(settings);
-} else if (settings.mode === "Throw Plant") {
-  require("./advanture/throw_plant_main").run(settings);
+} else if (settings.mode === "Pikmin Daily Task") {
+  // Run throw repeated seedling first, then adventure
+  if (settings.throwRepeatedSeedlingEnabled !== false) {
+    require("./advanture/throw_repeated_seedling_main").run(settings);
+  }
+  if (!_shutdownRequested && (settings.enableGift || settings.enablePlant || settings.enableFruit)) {
+    require("./advanture/main").run(settings);
+  }
 } else {
   require("./mushroom_finder/main").run(settings);
 }

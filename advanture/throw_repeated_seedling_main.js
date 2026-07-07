@@ -1,13 +1,13 @@
 /**
- * advanture/throw_plant_main.js — Pipeline orchestrator for Throw Plant mode
+ * advanture/throw_repeated_seedling_main.js — Pipeline orchestrator for Throw Repeated Seedling mode
  *
  * Orchestrates:
  *   Phase 1 — Setup          : Load templates, create panel
  *   Phase 2 — Launch         : Request screen capture, launch app
- *   Phase 3 — Throw Plant Flow: Navigate to plant page, detect throw items
+ *   Phase 3 — Throw Repeated Seedling Flow: Navigate to plant page, detect throw items
  *   Phase 4 — Cleanup        : Destroy panel
  *
- * Called by root main.js when mode === "Throw Plant".
+ * Called by root main.js when mode === "Throw Repeated Seedling".
  */
 
 "auto";
@@ -15,7 +15,7 @@
 var config      = require("../ui/config");
 var matcher     = require("../lib/matcher");
 var floatyMod   = require("../ui/floaty");
-var throwFlow   = require("./throw_plant_flow");
+var throwRepeatedSeedlingFlow   = require("./throw_repeated_seedling_flow");
 
 function cleanupAndExit(panel, statusText, toastMsg) {
   if (panel) {
@@ -41,7 +41,7 @@ function run(settings) {
     if (settings.settleDelay !== undefined) {
       config.scan.settleDelay = settings.settleDelay;
     }
-    console.info("Throw Plant settings merged — threshold=" + config.detection.threshold +
+    console.info("Throw Repeated Seedling settings merged — threshold=" + config.detection.threshold +
       ", settleDelay=" + config.scan.settleDelay);
   }
 
@@ -69,7 +69,7 @@ function run(settings) {
     floatyMod.destroy(panel);
     exit();
   });
-  floatyMod.appendLog(panel, "Throw Plant mode started");
+  floatyMod.appendLog(panel, "Throw Repeated Seedling mode started");
 
   // ===================================================================
   // Phase 2 — Launch
@@ -114,17 +114,17 @@ function run(settings) {
     floatyMod.updateStatus(panel, "Open the game manually...");
     floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
     sleep(5000);
-    floatyMod.appendLog(panel, "Proceeding to throw plant flow...");
+    floatyMod.appendLog(panel, "Proceeding to throw repeated seedling flow...");
   }
 
   // ===================================================================
-  // Phase 3 — Throw Plant Flow
+  // Phase 3 — Throw Repeated Seedling Flow
   // ===================================================================
 
   floatyMod.updateStatus(panel, "Scanning...");
-  floatyMod.appendLog(panel, "Starting throw plant flow");
+  floatyMod.appendLog(panel, "Starting throw repeated seedling flow");
 
-  throwFlow.runThrowPlantFlow(config, panel);
+  throwRepeatedSeedlingFlow.runThrowRepeatedSeedlingFlow(config, panel);
 
   // ===================================================================
   // Phase 4 — Cleanup

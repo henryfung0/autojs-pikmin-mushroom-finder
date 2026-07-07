@@ -304,9 +304,10 @@ function isOnSeedlingPage1(templates, panel) {
 
 function ensureOnSeedlingPage1(templates, panel) {
   var threshold = 0.7;
-  var maxNavAttempts = 3;
+  var deadline = Date.now() + 60000;  // 60 second total timeout
+  var maxNavAttempts = 10;
 
-  for (var navAttempt = 0; navAttempt < maxNavAttempts && !_shutdownRequested; navAttempt++) {
+  for (var navAttempt = 0; navAttempt < maxNavAttempts && !_shutdownRequested && Date.now() < deadline; navAttempt++) {
     if (isOnSeedlingPage1(templates, panel)) {
       return true;
     }
@@ -370,7 +371,7 @@ function ensureOnSeedlingPage1(templates, panel) {
       }
     }
 
-    sleep(1000);
+    sleep(1500);
   }
 
   // Final check
@@ -378,7 +379,7 @@ function ensureOnSeedlingPage1(templates, panel) {
     return true;
   }
 
-  floatyMod.appendLog(panel, "ensureOnSeedlingPage1: gave up");
+  floatyMod.appendLog(panel, "ensureOnSeedlingPage1: gave up after timeout");
   return false;
 }
 

@@ -626,5 +626,6 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
 }
 
 module.exports = {
-  runThrowRepeatedSeedlingFlow: runThrowRepeatedSeedlingFlow
+  runThrowRepeatedSeedlingFlow: runThrowRepeatedSeedlingFlow,
+  isShutdownRequested: function() { return _shutdownRequested; }
 };

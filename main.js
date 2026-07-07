@@ -8,6 +8,7 @@
  */
 
 var configUi = require("./ui/config_ui");
+var throwFlow = require("./advanture/throw_repeated_seedling_flow");
 
 // ── Singleton guard: kill any previous instance of this script ─────
 var thisEngine = engines.myEngine();
@@ -31,7 +32,7 @@ if (settings.mode === "Advanture") {
   if (settings.throwRepeatedSeedlingEnabled !== false) {
     require("./advanture/throw_repeated_seedling_main").run(settings);
   }
-  if (!_shutdownRequested && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
+  if (!throwFlow.isShutdownRequested() && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
     require("./advanture/main").run(settings);
   }
 } else {

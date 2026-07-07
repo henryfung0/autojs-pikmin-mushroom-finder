@@ -130,8 +130,9 @@ function run(settings) {
   // ===================================================================
 
   floatyMod.appendLog(panel, "Throw repeated seedling finished");
-  sleep(3000);
-  floatyMod.destroy(panel);
+  sleep(1000);
+  // Return panel and config so main.js can pass to adventure
+  return { panel: panel, config: config };
 }
 
 module.exports = {

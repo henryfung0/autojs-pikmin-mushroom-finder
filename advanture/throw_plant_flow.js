@@ -6,8 +6,10 @@
  *   2. Navigate to plant page — click "plant page clicker" templates repeatedly
  *      until "plant page checker" is visible on screen (DO NOT click it)
  *   3. On plant page — scan for throw items (templates/throw plant/throw/)
- *   4. If throw item found → click it → scroll down → click flow.jpg
- *   5. After flow.jpg → return to plant page via common dismiss buttons
+ *   4. If throw item found → click it → scroll up to 10 times to find flow.jpg
+ *      - If flow.jpg found → click it → click confirm.jpg → return to plant page
+ *      - If flow.jpg NOT found after 10 scrolls → back to plant page, retry
+ *   5. After flow.jpg + confirm.jpg → return to plant page via common dismiss buttons
  *   6. If no throw item found → scroll down a bit → check again
  *   7. After max empty loops → back to main page, standby
  *
@@ -157,6 +159,7 @@ function loadThrowPlantTemplates(templateDir) {
     plantPageChecker: _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
     throwItems:       _loadTemplatesFromDir(templateDir, "throw plant/throw"),
     flow:             _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
+    confirm:           _loadTemplatesFromDir(templateDir, "throw plant/navigation"),
     common:           _loadTemplatesFromDir(templateDir, "common"),
     mainNav:          _loadTemplatesFromDir(templateDir, "navigation")
   };
@@ -171,8 +174,10 @@ function navigateToPlantPage(templates, panel) {
   var threshold = 0.7;
   var deadline = Date.now() + 60000;
   var clickerIdx = 0;
+  var totalAttempts = 0;
+  var maxAttempts = 30;
 
-  while (!_shutdownRequested && Date.now() < deadline) {
+  while (!_shutdownRequested && Date.now() < deadline && totalAttempts < maxAttempts) {
     var img = null;
     try {
       img = captureScreen();
@@ -228,15 +233,32 @@ function navigateToPlantPage(templates, panel) {
           }
         }
         if (!clicked) {
+          // Fallback: try close/back
+          for (var j = 0; j < templates.common.length; j++) {
+            var cmnName = templates.common[j].name.toLowerCase();
+            if (cmnName.indexOf("close") === -1 && cmnName.indexOf("back") === -1) continue;
+            var cmn = _matchOne(img, templates.common[j], threshold);
+            if (cmn) {
+              _tapAt(cmn, "Common dismiss (back): " + templates.common[j].name, panel);
+              sleep(1500);
+              clicked = true;
+              break;
+            }
+          }
+        }
+        if (!clicked) {
+          floatyMod.appendLog(panel, "Nothing found on screen — sleeping...");
           sleep(1000);
         }
       }
+
+      totalAttempts++;
     } finally {
       if (img) img.recycle();
     }
   }
 
-  floatyMod.appendLog(panel, "navigateToPlantPage: timeout");
+  floatyMod.appendLog(panel, "navigateToPlantPage: gave up after " + totalAttempts + " attempts");
   return false;
 }
 
@@ -351,6 +373,28 @@ function clickFlowButton(templates, panel) {
 }
 
 // ---------------------------------------------------------------------------
+// Click confirm.jpg button
+// ---------------------------------------------------------------------------
+
+function clickConfirmButton(templates, panel) {
+  var threshold = 0.7;
+  var img = null;
+  for (var i = 0; i < templates.confirm.length; i++) {
+    var confirmName = templates.confirm[i].name.toLowerCase();
+    if (confirmName.indexOf("confirm") !== -1) {
+      img = captureScreen();
+      if (!img) return false;
+      var m = _matchOne(img, templates.confirm[i], threshold);
+      if (m) {
+        _tapAt(m, "Click confirm.jpg", panel);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Main flow
 // ---------------------------------------------------------------------------
 
@@ -443,27 +487,14 @@ function runThrowPlantFlow(config, panel) {
         _tapAt(match, "Tap throw item: " + match.name, panel);
         sleep(2000);
 
-        // Scroll down (2/3 scroll)
-        floatyMod.appendLog(panel, "Scrolling to find flow.jpg...");
+        // Scroll and look for flow.jpg — up to 10 times
         var scrollDuration = (config && config.scan && config.scan.swipeDuration) || 600;
-        swipe(
-          Math.round(device.width * 0.5),
-          Math.round(device.height * 0.8),
-          Math.round(device.width * 0.5),
-          Math.round(device.height * 0.47),
-          scrollDuration
-        );
-        sleep(settleDelay);
+        var flowFound = false;
+        var scrollCount = 0;
+        var maxScrolls = 10;
 
-        // Click flow.jpg
-        floatyMod.appendLog(panel, "Looking for flow.jpg...");
-        var flowClicked = clickFlowButton(templates, panel);
-        if (flowClicked) {
-          floatyMod.appendLog(panel, "flow.jpg clicked");
-          sleep(2000);
-        } else {
-          // Scroll more if flow not found
-          floatyMod.appendLog(panel, "flow.jpg not found — scrolling more...");
+        while (scrollCount < maxScrolls && !flowFound && !_shutdownRequested) {
+          floatyMod.appendLog(panel, "Scrolling to find flow.jpg (" + (scrollCount + 1) + "/" + maxScrolls + ")...");
           swipe(
             Math.round(device.width * 0.5),
             Math.round(device.height * 0.8),
@@ -472,7 +503,28 @@ function runThrowPlantFlow(config, panel) {
             scrollDuration
           );
           sleep(settleDelay);
-          clickFlowButton(templates, panel);
+
+          flowFound = clickFlowButton(templates, panel);
+          scrollCount++;
+        }
+
+        if (!flowFound) {
+          // Could not find flow.jpg after max scrolls — go back to plant page
+          floatyMod.appendLog(panel, "flow.jpg not found after " + maxScrolls + " scrolls — back to plant page");
+          returnToPlantPage(templates, panel);
+          sleep(1000);
+          continue;
+        }
+
+        // flow.jpg found — click it
+        floatyMod.appendLog(panel, "flow.jpg clicked");
+        sleep(2000);
+
+        // Click confirm.jpg
+        floatyMod.appendLog(panel, "Looking for confirm.jpg...");
+        var confirmClicked = clickConfirmButton(templates, panel);
+        if (confirmClicked) {
+          floatyMod.appendLog(panel, "confirm.jpg clicked");
           sleep(2000);
         }
 
@@ -480,6 +532,60 @@ function runThrowPlantFlow(config, panel) {
         floatyMod.appendLog(panel, "Returning to plant page...");
         returnToPlantPage(templates, panel);
         sleep(1000);
+
+        // Verify we are actually back on plant page
+        floatyMod.appendLog(panel, "Verifying plant page...");
+        var backVerified = false;
+        var backAttempts = 0;
+        while (backAttempts < 10 && !backVerified && !_shutdownRequested) {
+          var verifyImg = captureScreen();
+          if (!verifyImg) { sleep(500); backAttempts++; continue; }
+          try {
+            for (var vi = 0; vi < templates.plantPageChecker.length; vi++) {
+              var vcName = templates.plantPageChecker[vi].name.toLowerCase();
+              if (vcName.indexOf("plant page checker") !== -1) {
+                var vchk = _matchOne(verifyImg, templates.plantPageChecker[vi], 0.7);
+                if (vchk) {
+                  backVerified = true;
+                  floatyMod.appendLog(panel, "Plant page verified");
+                  break;
+                }
+              }
+            }
+            if (!backVerified) {
+              floatyMod.appendLog(panel, "Not on plant page — tapping common...");
+              // Try non-close/back first
+              var tapped = false;
+              for (var tj = 0; tj < templates.common.length && !tapped; tj++) {
+                var tn = templates.common[tj].name.toLowerCase();
+                if (tn.indexOf("close") !== -1 || tn.indexOf("back") !== -1) continue;
+                var tm = _matchOne(verifyImg, templates.common[tj], 0.7);
+                if (tm) {
+                  _tapAt(tm, "Verify tap common: " + templates.common[tj].name, panel);
+                  sleep(1500);
+                  tapped = true;
+                }
+              }
+              // Fallback close/back
+              if (!tapped) {
+                for (var tj = 0; tj < templates.common.length && !tapped; tj++) {
+                  var tn = templates.common[tj].name.toLowerCase();
+                  if (tn.indexOf("close") === -1 && tn.indexOf("back") === -1) continue;
+                  var tm = _matchOne(verifyImg, templates.common[tj], 0.7);
+                  if (tm) {
+                    _tapAt(tm, "Verify tap dismiss: " + templates.common[tj].name, panel);
+                    sleep(1500);
+                    tapped = true;
+                  }
+                }
+              }
+              if (!tapped) sleep(1000);
+              backAttempts++;
+            }
+          } finally {
+            verifyImg.recycle();
+          }
+        }
 
       } else {
         // No throw item found — scroll down and check again

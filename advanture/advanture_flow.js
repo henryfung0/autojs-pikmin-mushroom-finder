@@ -156,8 +156,8 @@ function loadAdventureTemplates(templateDir) {
     nav:      _loadTemplatesFromDir(templateDir, "advanture/navigation"),
     fruit:    _loadTemplatesFromDir(templateDir, "advanture/fruit"),
     gift:     _loadTemplatesFromDir(templateDir, "advanture/gift"),
-    plant:    _loadTemplatesFromDir(templateDir, "advanture/plant"),
-    fullPlant:_loadTemplatesFromDir(templateDir, "advanture/full plant")
+    seedling:    _loadTemplatesFromDir(templateDir, "advanture/seedling"),
+    fullSeedling:_loadTemplatesFromDir(templateDir, "advanture/full seedling")
   };
 }
 
@@ -174,14 +174,14 @@ function findBestItem(screenImage, templates, config, skipPlant) {
   var safeHeight = screenImage.getHeight() - navBarHeight;
   var safeRegion = [0, 0, screenImage.getWidth(), safeHeight];
 
-  // Priority order: gift, plant, fruit
+  // Priority order: gift, seedling, fruit
   // Only check categories enabled in config
   var categories = [];
   if (config && config.advanture && config.advanture.enableGift !== false) {
     categories.push({ key: "gift",  templates: templates.gift });
   }
-  if (config && config.advanture && config.advanture.enablePlant !== false && !skipPlant) {
-    categories.push({ key: "plant", templates: templates.plant });
+  if (config && config.advanture && config.advanture.enableSeedling !== false && !skipPlant) {
+    categories.push({ key: "seedling", templates: templates.seedling });
   }
   if (config && config.advanture && config.advanture.enableFruit !== false) {
     categories.push({ key: "fruit", templates: templates.fruit });
@@ -208,22 +208,22 @@ function findBestItem(screenImage, templates, config, skipPlant) {
 // Start an adventure item (tap item, then Start Advanture, then Auto)
 // ---------------------------------------------------------------------------
 
-function startAdventureItem(match, navTemplates, panel, fullPlantTemplates, dismissTemplates) {
+function startAdventureItem(match, navTemplates, panel, fullSeedlingTemplates, dismissTemplates) {
   // Tap the matched item
   _tapAt(match, "Tap " + match.category + " item", panel);
   sleep(2000);
 
-  // ── If plant, check if it's full ──────────────────────────────
-  if (match.category === "plant" && fullPlantTemplates && fullPlantTemplates.length > 0) {
+  // ── If seedling, check if it's full ──────────────────────────────
+  if (match.category === "seedling" && fullSeedlingTemplates && fullSeedlingTemplates.length > 0) {
     var checkImg = null;
     try {
       checkImg = captureScreen();
       if (checkImg) {
-        for (var i = 0; i < fullPlantTemplates.length; i++) {
-          var fpMatch = _matchOne(checkImg, fullPlantTemplates[i], 0.7);
+        for (var i = 0; i < fullSeedlingTemplates.length; i++) {
+          var fpMatch = _matchOne(checkImg, fullSeedlingTemplates[i], 0.7);
           if (fpMatch) {
-            floatyMod.appendLog(panel, "Plant is full — detected " + fullPlantTemplates[i].name);
-            floatyMod.appendLog(panel, "Will skip plants in future loops");
+            floatyMod.appendLog(panel, "Seedling is full — detected " + fullSeedlingTemplates[i].name);
+            floatyMod.appendLog(panel, "Will skip seedlings in future loops");
 
             // Try to click Cancel / Cancel2 from common templates to dismiss popup
             if (dismissTemplates && dismissTemplates.length > 0) {
@@ -232,7 +232,7 @@ function startAdventureItem(match, navTemplates, panel, fullPlantTemplates, dism
                 if (dName.indexOf("cancel") !== -1) {
                   var cancelMatch = _matchOne(checkImg, dismissTemplates[d], 0.7);
                   if (cancelMatch) {
-                    _tapAt(cancelMatch, "Tap " + dismissTemplates[d].name + " (full plant dismiss)", panel);
+                    _tapAt(cancelMatch, "Tap " + dismissTemplates[d].name + " (full seedling dismiss)", panel);
                     sleep(2000);
                     break;
                   }
@@ -380,8 +380,8 @@ function runAdvantureFlow(config, panel) {
   floatyMod.appendLog(panel, "Templates — nav:" + templates.nav.length +
     " fruit:" + templates.fruit.length +
     " gift:" + templates.gift.length +
-    " plant:" + templates.plant.length +
-    " fullPlant:" + templates.fullPlant.length);
+    " seedling:" + templates.seedling.length +
+    " fullSeedling:" + templates.fullSeedling.length);
 
   if (templates.nav.length === 0) {
     floatyMod.appendLog(panel, "Error: no navigation templates found");
@@ -394,7 +394,7 @@ function runAdvantureFlow(config, panel) {
 
   var loopCount = 0;
   var emptyLoopCount = 0;
-  var plantFull = false;
+  var seedlingFull = false;
   var maxEmptyLoops = (config && config.advanture && config.advanture.maxEmptyLoops) || 10;
 
   while (!_shutdownRequested) {
@@ -436,15 +436,15 @@ function runAdvantureFlow(config, panel) {
     }
 
     try {
-      var match = findBestItem(screenImage, templates, config, plantFull);
+      var match = findBestItem(screenImage, templates, config, seedlingFull);
       if (match) {
         emptyLoopCount = 0;
         floatyMod.updateStatus(panel, match.category.toUpperCase() + " Found!");
         floatyMod.appendLog(panel, "Found " + match.category + " — starting adventure...");
-        var result = startAdventureItem(match, templates.nav, panel, templates.fullPlant, commonTemplates);
+        var result = startAdventureItem(match, templates.nav, panel, templates.fullSeedling, commonTemplates);
         if (result === "full") {
-          plantFull = true;
-          floatyMod.appendLog(panel, "Plant is full — will skip plants from now on");
+          seedlingFull = true;
+          floatyMod.appendLog(panel, "Seedling is full — will skip seedlings from now on");
         } else if (result === true) {
           floatyMod.appendLog(panel, "Adventure launched for " + match.category);
         }

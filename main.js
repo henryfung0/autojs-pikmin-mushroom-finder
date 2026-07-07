@@ -31,7 +31,7 @@ if (settings.mode === "Advanture") {
   if (settings.throwRepeatedSeedlingEnabled !== false) {
     require("./advanture/throw_repeated_seedling_main").run(settings);
   }
-  if (!_shutdownRequested && (settings.enableGift || settings.enablePlant || settings.enableFruit)) {
+  if (!_shutdownRequested && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
     require("./advanture/main").run(settings);
   }
 } else {

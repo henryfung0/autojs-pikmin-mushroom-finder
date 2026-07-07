@@ -79,7 +79,7 @@ function showConfigDialog() {
                    textSize="14sp" margin="0 0 0 4"/>
           <text text="Collect:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
-          <checkbox id="enablePlant" text="Plant" checked="true" textSize="14sp" margin="0 0 0 4"/>
+          <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" margin="0 0 0 4"/>
           <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" margin="0 0 0 4"/>
 
           {/* Max Empty Loops */}
@@ -172,7 +172,7 @@ function showConfigDialog() {
       maxEmptyScrolls: view.maxEmptyScrolls.progress + 1,
       throwRepeatedSeedlingEnabled: view.throwRepeatedSeedlingEnabled.isChecked(),
       enableGift: view.enableGift.isChecked(),
-      enablePlant: view.enablePlant.isChecked(),
+      enableSeedling: view.enableSeedling.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
       maxEmptyLoops: view.maxEmptyLoops.progress + 1
     };
@@ -192,7 +192,7 @@ function showConfigDialog() {
     view.detectLargeElement.setChecked(true);
     view.throwRepeatedSeedlingEnabled.setChecked(true);
     view.enableGift.setChecked(true);
-    view.enablePlant.setChecked(true);
+    view.enableSeedling.setChecked(true);
     view.enableFruit.setChecked(true);
     view.maxEmptyLoops.setProgress(9);
     view.maxEmptyLoopsValue.setText("10");

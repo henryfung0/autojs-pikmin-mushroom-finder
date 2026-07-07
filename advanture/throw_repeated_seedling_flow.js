@@ -5,6 +5,10 @@
  *   1. Ensure on main page (isOnMainPage)
  *   2. Navigate to seedling page — click "seedling page clicker" templates repeatedly
  *      until "seedling page checker" is visible on screen (DO NOT click it)
+ *   2b. Collect seedlings — if on seedling page 1, check "Collect seedlings.jpg",
+ *       tap-hold + pull up, tap middle until confirm.jpg, click confirm
+ *   2c. Farm seedlings — if on seedling page 1, check "Empty space.jpg",
+ *       click it → special.jpg → Special seedlings.jpg → Confirm seedlings.jpg
  *   3. On seedling page — scan for throw items (templates/throw_repeated_seedling/throw/)
  *   4. If throw item found → click it → scroll up to 10 times to find flow.jpg
  *      - If flow.jpg found → click it → click confirm.jpg → return to seedling page
@@ -160,6 +164,7 @@ function loadThrowRepeatedSeedlingTemplates(templateDir) {
     throwItems:       _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/throw"),
     flow:             _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
     confirm:           _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
+    collect:          _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/collect"),
     common:           _loadTemplatesFromDir(templateDir, "common"),
     mainNav:          _loadTemplatesFromDir(templateDir, "navigation")
   };
@@ -260,6 +265,276 @@ function navigateToSeedlingPage(templates, panel) {
 
   floatyMod.appendLog(panel, "navigateToSeedlingPage: gave up after " + totalAttempts + " attempts");
   return false;
+}
+
+// ---------------------------------------------------------------------------
+// Check if on seedling page 1 (helper) — returns true if "To seedling page.jpg"
+// (in-seedling-page navigator) is visible. DO NOT click it.
+// ---------------------------------------------------------------------------
+
+function isOnSeedlingPage1(templates, panel) {
+  var threshold = 0.7;
+  var img = null;
+  try {
+    img = captureScreen();
+    if (!img) return false;
+    for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
+      var name = templates.seedlingPageClicker[i].name.toLowerCase();
+      if (name.indexOf("to seedling page") !== -1) {
+        var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
+        if (m) return true;
+      }
+    }
+  } finally {
+    if (img) img.recycle();
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Collect seedlings — check if on seedling page 1, then look for
+// "Collect seedlings.jpg", tap-hold and pull up, tap middle until
+// confirm.jpg appears, click it, return to page.
+// ---------------------------------------------------------------------------
+
+function collectSeedlings(templates, panel) {
+  var threshold = 0.7;
+
+  // Step 1: Check if on seedling page 1
+  if (!isOnSeedlingPage1(templates, panel)) {
+    floatyMod.appendLog(panel, "collectSeedlings: not on seedling page 1, skipping");
+    return false;
+  }
+
+  floatyMod.appendLog(panel, "Collect seedlings: on seedling page 1");
+
+  // Step 2: Look for "Collect seedlings.jpg"
+  var img = null;
+  var collectMatch = null;
+  var collectAttempts = 0;
+  while (collectAttempts < 5 && !collectMatch && !_shutdownRequested) {
+    img = captureScreen();
+    if (!img) { sleep(500); collectAttempts++; continue; }
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn.indexOf("collect seedlings") !== -1) {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            collectMatch = m;
+            break;
+          }
+        }
+      }
+      if (!collectMatch) {
+        sleep(1000);
+        collectAttempts++;
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (!collectMatch) {
+    floatyMod.appendLog(panel, "Collect seedlings: nothing to collect");
+    return false;
+  }
+
+  // Step 3: Tap-hold at collect position and pull up
+  var tapX = collectMatch.x + Math.round(collectMatch.w / 2);
+  var tapY = collectMatch.y + Math.round(collectMatch.h / 2);
+  floatyMod.appendLog(panel, "Collect seedlings: tap-hold at (" + tapX + "," + tapY + ") and pull up");
+  floatyMod.withPanelHidden(panel, function() {
+    press(tapX, tapY, 1500);
+    sleep(300);
+    swipe(
+      Math.round(device.width * 0.5),
+      tapY,
+      Math.round(device.width * 0.5),
+      Math.round(device.height * 0.2),
+      800
+    );
+  });
+  sleep(2000);
+
+  // Step 4: Keep tapping middle of screen until confirm.jpg appears
+  var confirmClicked = false;
+  var middleTapAttempts = 0;
+  while (middleTapAttempts < 20 && !confirmClicked && !_shutdownRequested) {
+    floatyMod.appendLog(panel, "Collect seedlings: tapping middle of screen...");
+    var midX = Math.round(device.width * 0.5);
+    var midY = Math.round(device.height * 0.5);
+    floatyMod.withPanelHidden(panel, function() {
+      press(midX, midY, 500);
+    });
+    sleep(1500);
+
+    // Check if confirm.jpg appeared
+    img = captureScreen();
+    if (!img) { middleTapAttempts++; continue; }
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn === "confirm.jpg") {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            _tapAt(m, "Collect seedlings: click confirm.jpg", panel);
+            confirmClicked = true;
+            sleep(2000);
+            break;
+          }
+        }
+      }
+      if (!confirmClicked) middleTapAttempts++;
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (confirmClicked) {
+    floatyMod.appendLog(panel, "Collect seedlings: collected!");
+  } else {
+    floatyMod.appendLog(panel, "Collect seedlings: confirm not found, giving up");
+  }
+
+  return confirmClicked;
+}
+
+// ---------------------------------------------------------------------------
+// Farm seedlings — check if on seedling page 1, then check empty space,
+// click empty space → special.jpg → Special seedlings.jpg → Confirm seedlings.jpg
+// ---------------------------------------------------------------------------
+
+function farmSeedlings(templates, panel) {
+  var threshold = 0.7;
+
+  // Step 1: Check if on seedling page 1
+  if (!isOnSeedlingPage1(templates, panel)) {
+    floatyMod.appendLog(panel, "farmSeedlings: not on seedling page 1, skipping");
+    return false;
+  }
+
+  floatyMod.appendLog(panel, "Farm seedlings: on seedling page 1, checking empty space");
+
+  // Step 2: Look for "Empty space.jpg"
+  var img = null;
+  var emptyMatch = null;
+  var farmAttempts = 0;
+  while (farmAttempts < 5 && !emptyMatch && !_shutdownRequested) {
+    img = captureScreen();
+    if (!img) { sleep(500); farmAttempts++; continue; }
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn.indexOf("empty space") !== -1) {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            emptyMatch = m;
+            break;
+          }
+        }
+      }
+      if (!emptyMatch) {
+        sleep(1000);
+        farmAttempts++;
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (!emptyMatch) {
+    floatyMod.appendLog(panel, "Farm seedlings: no empty space");
+    return false;
+  }
+
+  floatyMod.appendLog(panel, "Farm seedlings: empty space found");
+  _tapAt(emptyMatch, "Farm seedlings: click Empty space.jpg", panel);
+  sleep(2000);
+
+  // Step 3: Click special.jpg
+  var specialClicked = false;
+  img = captureScreen();
+  if (img) {
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn === "special.jpg") {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            _tapAt(m, "Farm seedlings: click special.jpg", panel);
+            specialClicked = true;
+            sleep(2000);
+            break;
+          }
+        }
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (!specialClicked) {
+    floatyMod.appendLog(panel, "Farm seedlings: special.jpg not found, giving up");
+    return false;
+  }
+
+  // Step 4: Click "Special seedlings.jpg"
+  var specialSeedlingsClicked = false;
+  img = captureScreen();
+  if (img) {
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn.indexOf("special seedlings") !== -1) {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            _tapAt(m, "Farm seedlings: click Special seedlings.jpg", panel);
+            specialSeedlingsClicked = true;
+            sleep(2000);
+            break;
+          }
+        }
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (!specialSeedlingsClicked) {
+    floatyMod.appendLog(panel, "Farm seedlings: Special seedlings.jpg not found, giving up");
+    return false;
+  }
+
+  // Step 5: Click "Confirm seedlings.jpg"
+  var confirmClicked = false;
+  img = captureScreen();
+  if (img) {
+    try {
+      for (var i = 0; i < templates.collect.length; i++) {
+        var cn = templates.collect[i].name.toLowerCase();
+        if (cn.indexOf("confirm seedlings") !== -1) {
+          var m = _matchOne(img, templates.collect[i], threshold);
+          if (m) {
+            _tapAt(m, "Farm seedlings: click Confirm seedlings.jpg", panel);
+            confirmClicked = true;
+            sleep(2000);
+            break;
+          }
+        }
+      }
+    } finally {
+      if (img) img.recycle();
+    }
+  }
+
+  if (confirmClicked) {
+    floatyMod.appendLog(panel, "Farm seedlings: farmed!");
+  } else {
+    floatyMod.appendLog(panel, "Farm seedlings: Confirm seedlings.jpg not found");
+  }
+
+  return confirmClicked;
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +692,7 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
     " checker:" + templates.seedlingPageChecker.length +
     " throwItems:" + templates.throwItems.length +
     " flow:" + templates.flow.length +
+    " collect:" + templates.collect.length +
     " common:" + commonTemplates.length);
 
   if (templates.throwItems.length === 0) {
@@ -443,6 +719,16 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
     floatyMod.appendLog(panel, "Could not reach seedling page — exiting");
     return;
   }
+  sleep(1000);
+
+  // Step 2b: Collect seedlings (if any to collect)
+  floatyMod.appendLog(panel, "Checking for seedlings to collect...");
+  collectSeedlings(templates, panel);
+  sleep(1000);
+
+  // Step 2c: Farm seedlings (if empty space available)
+  floatyMod.appendLog(panel, "Checking for empty space to farm...");
+  farmSeedlings(templates, panel);
   sleep(1000);
 
   // Step 3: Main loop — scan for throw items

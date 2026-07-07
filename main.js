@@ -26,6 +26,8 @@ if (!settings) {
 // ── Dispatch ─────────────────────────────────────────
 if (settings.mode === "Advanture") {
   require("./advanture/main").run(settings);
+} else if (settings.mode === "Throw Plant") {
+  require("./advanture/throw_plant_main").run(settings);
 } else {
   require("./mushroom_finder/main").run(settings);
 }

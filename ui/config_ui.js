@@ -31,7 +31,7 @@ function showConfigDialog() {
               gravity="center" margin="0 0 0 8"/>
 
         {/* Mode Selection */}
-        <spinner id="modeSelector" entries="Mushroom Finder|Advanture"
+        <spinner id="modeSelector" entries="Mushroom Finder|Advanture|Throw Plant"
                  textSize="14sp" gravity="center" margin="0 0 16 0"/>
 
         {/* Common checkboxes (always visible) */}
@@ -115,9 +115,12 @@ function showConfigDialog() {
       if (position === 0) {  // Mushroom Finder selected
         view.mushroomSettings.visibility = android.view.View.VISIBLE;
         view.advantureSettings.visibility = android.view.View.GONE;
-      } else {  // Advanture selected
+      } else if (position === 1) {  // Advanture selected
         view.mushroomSettings.visibility = android.view.View.GONE;
         view.advantureSettings.visibility = android.view.View.VISIBLE;
+      } else {  // Throw Plant selected
+        view.mushroomSettings.visibility = android.view.View.GONE;
+        view.advantureSettings.visibility = android.view.View.GONE;
       }
     }
   });

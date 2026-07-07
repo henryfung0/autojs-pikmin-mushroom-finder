@@ -468,7 +468,7 @@ function runAdvantureFlow(config, panel) {
           Math.round(device.width * 0.5),
           Math.round(device.height * 0.8),
           Math.round(device.width * 0.5),
-          Math.round(device.height * 0.3),
+          Math.round(device.height * 0.47),
           scrollDuration
         );
         sleep(settleDelay);
@@ -478,7 +478,13 @@ function runAdvantureFlow(config, panel) {
         emptyLoopCount++;
         floatyMod.appendLog(panel, "No item found on this scroll (#" + loopCount + ", emptyLoops=" + emptyLoopCount + ")");
         if (emptyLoopCount >= maxEmptyLoops) {
-          floatyMod.appendLog(panel, "Reached " + maxEmptyLoops + " empty loops — returning to main page");
+          floatyMod.appendLog(panel, "Reached " + maxEmptyLoops + " empty loops — back to main page, standby");
+          advState.isOnMainPage(mainTemplates, {
+            threshold: 0.7,
+            timeout: 30000,
+            floaty: panel,
+            dismissTemplates: commonTemplates
+          });
           break;
         }
       }

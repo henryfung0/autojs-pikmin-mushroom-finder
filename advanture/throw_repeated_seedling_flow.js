@@ -271,6 +271,9 @@ function navigateToSeedlingPage(templates, panel) {
 // Check if on seedling page 1 (helper) — returns true if "To seedling page.jpg"
 // (in-seedling-page navigator) is visible. DO NOT click it.
 // ---------------------------------------------------------------------------
+// Check if "To seedling page.jpg" (in-seedling-page navigator) is visible.
+// Returns true if on seedling page 1.
+// ---------------------------------------------------------------------------
 
 function isOnSeedlingPage1(templates, panel) {
   var threshold = 0.7;
@@ -292,7 +295,94 @@ function isOnSeedlingPage1(templates, panel) {
 }
 
 // ---------------------------------------------------------------------------
-// Collect seedlings — check if on seedling page 1, then look for
+// Ensure we are on seedling page 1.
+// If "To seedling page.jpg" is not visible, go back to main page,
+// click "seedling page.jpg" to re-enter, wait for it to appear.
+// Returns true if on seedling page 1, false if gave up.
+// ---------------------------------------------------------------------------
+
+function ensureOnSeedlingPage1(templates, panel) {
+  var threshold = 0.7;
+  var maxNavAttempts = 3;
+
+  for (var navAttempt = 0; navAttempt < maxNavAttempts && !_shutdownRequested; navAttempt++) {
+    if (isOnSeedlingPage1(templates, panel)) {
+      return true;
+    }
+
+    floatyMod.appendLog(panel, "ensureOnSeedlingPage1: not on seedling page 1 (attempt " + (navAttempt + 1) + "/" + maxNavAttempts + ")");
+
+    // Try to progress using common dismiss buttons first
+    var progressMade = false;
+    var img = captureScreen();
+    if (img) {
+      try {
+        // Try non-close/back common buttons first
+        for (var i = 0; i < templates.common.length && !progressMade; i++) {
+          var cn = templates.common[i].name.toLowerCase();
+          if (cn.indexOf("close") !== -1 || cn.indexOf("back") !== -1) continue;
+          var m = _matchOne(img, templates.common[i], threshold);
+          if (m) {
+            _tapAt(m, "ensureOnSeedlingPage1: common dismiss: " + templates.common[i].name, panel);
+            progressMade = true;
+            sleep(1500);
+          }
+        }
+        // Fallback to close/back
+        if (!progressMade) {
+          for (var i = 0; i < templates.common.length && !progressMade; i++) {
+            var cn = templates.common[i].name.toLowerCase();
+            if (cn.indexOf("close") === -1 && cn.indexOf("back") === -1) continue;
+            var m = _matchOne(img, templates.common[i], threshold);
+            if (m) {
+              _tapAt(m, "ensureOnSeedlingPage1: common dismiss: " + templates.common[i].name, panel);
+              progressMade = true;
+              sleep(1500);
+            }
+          }
+        }
+      } finally {
+        img.recycle();
+      }
+    }
+
+    if (!isOnSeedlingPage1(templates, panel)) {
+      // Try clicking "seedling page.jpg" to enter
+      img = captureScreen();
+      if (img) {
+        try {
+          for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
+            var name = templates.seedlingPageClicker[i].name.toLowerCase();
+            // Click "Seedling page.jpg" (the entry button), NOT "To seedling page.jpg"
+            if (name.indexOf("to seedling page") === -1 && name.indexOf("seedling page") !== -1) {
+              var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
+              if (m) {
+                _tapAt(m, "ensureOnSeedlingPage1: click: " + templates.seedlingPageClicker[i].name, panel);
+                sleep(2000);
+                break;
+              }
+            }
+          }
+        } finally {
+          img.recycle();
+        }
+      }
+    }
+
+    sleep(1000);
+  }
+
+  // Final check
+  if (isOnSeedlingPage1(templates, panel)) {
+    return true;
+  }
+
+  floatyMod.appendLog(panel, "ensureOnSeedlingPage1: gave up");
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Collect seedlings — ensure on seedling page 1, then look for
 // "Collect seedlings.jpg", tap-hold and pull up, tap middle until
 // confirm.jpg appears, click it, return to page.
 // ---------------------------------------------------------------------------
@@ -300,9 +390,9 @@ function isOnSeedlingPage1(templates, panel) {
 function collectSeedlings(templates, panel) {
   var threshold = 0.7;
 
-  // Step 1: Check if on seedling page 1
-  if (!isOnSeedlingPage1(templates, panel)) {
-    floatyMod.appendLog(panel, "collectSeedlings: not on seedling page 1, skipping");
+  // Step 1: Ensure on seedling page 1
+  if (!ensureOnSeedlingPage1(templates, panel)) {
+    floatyMod.appendLog(panel, "collectSeedlings: could not reach seedling page 1, skipping");
     return false;
   }
 
@@ -408,9 +498,9 @@ function collectSeedlings(templates, panel) {
 function farmSeedlings(templates, panel) {
   var threshold = 0.7;
 
-  // Step 1: Check if on seedling page 1
-  if (!isOnSeedlingPage1(templates, panel)) {
-    floatyMod.appendLog(panel, "farmSeedlings: not on seedling page 1, skipping");
+  // Step 1: Ensure on seedling page 1
+  if (!ensureOnSeedlingPage1(templates, panel)) {
+    floatyMod.appendLog(panel, "farmSeedlings: could not reach seedling page 1, skipping");
     return false;
   }
 

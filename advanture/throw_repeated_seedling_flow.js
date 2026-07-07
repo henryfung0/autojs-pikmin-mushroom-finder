@@ -3,13 +3,13 @@
  *
  * Flow:
  *   1. Ensure on main page (isOnMainPage)
- *   2. Navigate to plant page — click "plant page clicker" templates repeatedly
- *      until "plant page checker" is visible on screen (DO NOT click it)
- *   3. On plant page — scan for throw items (templates/throw_repeated_seedling/throw/)
+ *   2. Navigate to seedling page — click "seedling page clicker" templates repeatedly
+ *      until "seedling page checker" is visible on screen (DO NOT click it)
+ *   3. On seedling page — scan for throw items (templates/throw_repeated_seedling/throw/)
  *   4. If throw item found → click it → scroll up to 10 times to find flow.jpg
- *      - If flow.jpg found → click it → click confirm.jpg → return to plant page
- *      - If flow.jpg NOT found after 10 scrolls → back to plant page, retry
- *   5. After flow.jpg + confirm.jpg → return to plant page via common dismiss buttons
+ *      - If flow.jpg found → click it → click confirm.jpg → return to seedling page
+ *      - If flow.jpg NOT found after 10 scrolls → back to seedling page, retry
+ *   5. After flow.jpg + confirm.jpg → return to seedling page via common dismiss buttons
  *   6. If no throw item found → scroll down a bit → check again
  *   7. After max empty loops → back to main page, standby
  *
@@ -153,10 +153,10 @@ function _tapAt(match, label, panel) {
 // Load throw_repeated_seedling templates
 // ---------------------------------------------------------------------------
 
-function loadThrowPlantTemplates(templateDir) {
+function loadThrowRepeatedSeedlingTemplates(templateDir) {
   return {
-    plantPageClicker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/plant page clicker"),
-    plantPageChecker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
+    seedlingPageClicker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/seedling page clicker"),
+    seedlingPageChecker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
     throwItems:       _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/throw"),
     flow:             _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
     confirm:           _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
@@ -166,11 +166,11 @@ function loadThrowPlantTemplates(templateDir) {
 }
 
 // ---------------------------------------------------------------------------
-// Navigate to plant page — keep clicking plant page clicker until checker found
-// Returns true once plant page checker is visible (DO NOT click checker).
+// Navigate to seedling page — keep clicking seedling page clicker until checker found
+// Returns true once seedling page checker is visible (DO NOT click checker).
 // ---------------------------------------------------------------------------
 
-function navigateToPlantPage(templates, panel) {
+function navigateToSeedlingPage(templates, panel) {
   var threshold = 0.7;
   var deadline = Date.now() + 60000;
   var clickerIdx = 0;
@@ -183,44 +183,44 @@ function navigateToPlantPage(templates, panel) {
       img = captureScreen();
       if (!img) { sleep(500); continue; }
 
-      // Step 1: Check if already on plant page (plant page checker visible)
-      var onPlantPage = false;
-      for (var i = 0; i < templates.plantPageChecker.length; i++) {
-        var chkName = templates.plantPageChecker[i].name.toLowerCase();
-        if (chkName.indexOf("plant page checker") !== -1) {
-          var chk = _matchOne(img, templates.plantPageChecker[i], threshold);
+      // Step 1: Check if already on seedling page (seedling page checker visible)
+      var onSeedlingPage = false;
+      for (var i = 0; i < templates.seedlingPageChecker.length; i++) {
+        var chkName = templates.seedlingPageChecker[i].name.toLowerCase();
+        if (chkName.indexOf("seedling page checker") !== -1) {
+          var chk = _matchOne(img, templates.seedlingPageChecker[i], threshold);
           if (chk) {
-            floatyMod.appendLog(panel, "On plant page (plant page checker found)");
-            onPlantPage = true;
+            floatyMod.appendLog(panel, "On seedling page (seedling page checker found)");
+            onSeedlingPage = true;
             break;
           }
         }
       }
-      if (onPlantPage) {
+      if (onSeedlingPage) {
         return true;
       }
 
-      // Step 2: Not on plant page — click plant page clicker (round-robin)
+      // Step 2: Not on seedling page — click seedling page clicker (round-robin)
       var clicked = false;
-      var clickerTpl = templates.plantPageClicker[clickerIdx];
+      var clickerTpl = templates.seedlingPageClicker[clickerIdx];
       if (!clickerTpl) {
         clickerIdx = 0;
-        clickerTpl = templates.plantPageClicker[0];
+        clickerTpl = templates.seedlingPageClicker[0];
       }
 
       if (clickerTpl) {
         var m = _matchOne(img, clickerTpl, threshold);
         if (m) {
-          _tapAt(m, "Click plant page clicker: " + clickerTpl.name, panel);
+          _tapAt(m, "Click seedling page clicker: " + clickerTpl.name, panel);
           sleep(2000);
           clicked = true;
-          clickerIdx = (clickerIdx + 1) % templates.plantPageClicker.length;
+          clickerIdx = (clickerIdx + 1) % templates.seedlingPageClicker.length;
         }
       }
 
       if (!clicked) {
         // No clicker found — try common dismiss buttons to make progress
-        floatyMod.appendLog(panel, "No plant page clicker found — trying common dismiss");
+        floatyMod.appendLog(panel, "No seedling page clicker found — trying common dismiss");
         for (var j = 0; j < templates.common.length; j++) {
           var cmnName = templates.common[j].name.toLowerCase();
           if (cmnName.indexOf("close") !== -1 || cmnName.indexOf("back") !== -1) continue;
@@ -258,16 +258,16 @@ function navigateToPlantPage(templates, panel) {
     }
   }
 
-  floatyMod.appendLog(panel, "navigateToPlantPage: gave up after " + totalAttempts + " attempts");
+  floatyMod.appendLog(panel, "navigateToSeedlingPage: gave up after " + totalAttempts + " attempts");
   return false;
 }
 
 // ---------------------------------------------------------------------------
-// Return to plant page — after flow.jpg clicked, use common dismiss until
-// plant page checker re-appears.
+// Return to seedling page — after flow.jpg clicked, use common dismiss until
+// seedling page checker re-appears.
 // ---------------------------------------------------------------------------
 
-function returnToPlantPage(templates, panel) {
+function returnToSeedlingPage(templates, panel) {
   var threshold = 0.7;
   var deadline = Date.now() + 60000;
 
@@ -277,13 +277,13 @@ function returnToPlantPage(templates, panel) {
       img = captureScreen();
       if (!img) { sleep(500); continue; }
 
-      // Check if plant page checker is visible again
-      for (var i = 0; i < templates.plantPageChecker.length; i++) {
-        var chkName = templates.plantPageChecker[i].name.toLowerCase();
-        if (chkName.indexOf("plant page checker") !== -1) {
-          var chk = _matchOne(img, templates.plantPageChecker[i], threshold);
+      // Check if seedling page checker is visible again
+      for (var i = 0; i < templates.seedlingPageChecker.length; i++) {
+        var chkName = templates.seedlingPageChecker[i].name.toLowerCase();
+        if (chkName.indexOf("seedling page checker") !== -1) {
+          var chk = _matchOne(img, templates.seedlingPageChecker[i], threshold);
           if (chk) {
-            floatyMod.appendLog(panel, "Back on plant page");
+            floatyMod.appendLog(panel, "Back on seedling page");
             return true;
           }
         }
@@ -296,7 +296,7 @@ function returnToPlantPage(templates, panel) {
         if (cmnName.indexOf("close") !== -1 || cmnName.indexOf("back") !== -1) continue;
         var cmn = _matchOne(img, templates.common[j], threshold);
         if (cmn) {
-          _tapAt(cmn, "Return to plant page: " + templates.common[j].name, panel);
+          _tapAt(cmn, "Return to seedling page: " + templates.common[j].name, panel);
           sleep(1500);
           clicked = true;
           break;
@@ -310,7 +310,7 @@ function returnToPlantPage(templates, panel) {
           if (cmnName.indexOf("close") === -1 && cmnName.indexOf("back") === -1) continue;
           var cmn = _matchOne(img, templates.common[j], threshold);
           if (cmn) {
-            _tapAt(cmn, "Return to plant page (dismiss): " + templates.common[j].name, panel);
+            _tapAt(cmn, "Return to seedling page (dismiss): " + templates.common[j].name, panel);
             sleep(1500);
             clicked = true;
             break;
@@ -326,7 +326,7 @@ function returnToPlantPage(templates, panel) {
     }
   }
 
-  floatyMod.appendLog(panel, "returnToPlantPage: timeout");
+  floatyMod.appendLog(panel, "returnToSeedlingPage: timeout");
   return false;
 }
 
@@ -408,13 +408,13 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
   var templateDir = (config && config.detection && config.detection.templateDir) || "./templates/";
 
   floatyMod.appendLog(panel, "Loading throw_repeated_seedling templates...");
-  var templates = loadThrowPlantTemplates(templateDir);
+  var templates = loadThrowRepeatedSeedlingTemplates(templateDir);
 
   var mainNavTemplates = templates.mainNav.concat(templates.common);
   var commonTemplates = templates.common;
 
-  floatyMod.appendLog(panel, "Templates — clicker:" + templates.plantPageClicker.length +
-    " checker:" + templates.plantPageChecker.length +
+  floatyMod.appendLog(panel, "Templates — clicker:" + templates.seedlingPageClicker.length +
+    " checker:" + templates.seedlingPageChecker.length +
     " throwItems:" + templates.throwItems.length +
     " flow:" + templates.flow.length +
     " common:" + commonTemplates.length);
@@ -437,10 +437,10 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
   });
   sleep(1000);
 
-  // Step 2: Navigate to plant page
-  floatyMod.appendLog(panel, "Navigating to plant page...");
-  if (!navigateToPlantPage(templates, panel)) {
-    floatyMod.appendLog(panel, "Could not reach plant page — exiting");
+  // Step 2: Navigate to seedling page
+  floatyMod.appendLog(panel, "Navigating to seedling page...");
+  if (!navigateToSeedlingPage(templates, panel)) {
+    floatyMod.appendLog(panel, "Could not reach seedling page — exiting");
     return;
   }
   sleep(1000);
@@ -509,9 +509,9 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
         }
 
         if (!flowFound) {
-          // Could not find flow.jpg after max scrolls — go back to plant page
-          floatyMod.appendLog(panel, "flow.jpg not found after " + maxScrolls + " scrolls — back to plant page");
-          returnToPlantPage(templates, panel);
+          // Could not find flow.jpg after max scrolls — go back to seedling page
+          floatyMod.appendLog(panel, "flow.jpg not found after " + maxScrolls + " scrolls — back to seedling page");
+          returnToSeedlingPage(templates, panel);
           sleep(1000);
           continue;
         }
@@ -528,32 +528,32 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
           sleep(2000);
         }
 
-        // Return to plant page via common dismiss buttons
-        floatyMod.appendLog(panel, "Returning to plant page...");
-        returnToPlantPage(templates, panel);
+        // Return to seedling page via common dismiss buttons
+        floatyMod.appendLog(panel, "Returning to seedling page...");
+        returnToSeedlingPage(templates, panel);
         sleep(1000);
 
-        // Verify we are actually back on plant page
-        floatyMod.appendLog(panel, "Verifying plant page...");
+        // Verify we are actually back on seedling page
+        floatyMod.appendLog(panel, "Verifying seedling page...");
         var backVerified = false;
         var backAttempts = 0;
         while (backAttempts < 10 && !backVerified && !_shutdownRequested) {
           var verifyImg = captureScreen();
           if (!verifyImg) { sleep(500); backAttempts++; continue; }
           try {
-            for (var vi = 0; vi < templates.plantPageChecker.length; vi++) {
-              var vcName = templates.plantPageChecker[vi].name.toLowerCase();
-              if (vcName.indexOf("plant page checker") !== -1) {
-                var vchk = _matchOne(verifyImg, templates.plantPageChecker[vi], 0.7);
+            for (var vi = 0; vi < templates.seedlingPageChecker.length; vi++) {
+              var vcName = templates.seedlingPageChecker[vi].name.toLowerCase();
+              if (vcName.indexOf("seedling page checker") !== -1) {
+                var vchk = _matchOne(verifyImg, templates.seedlingPageChecker[vi], 0.7);
                 if (vchk) {
                   backVerified = true;
-                  floatyMod.appendLog(panel, "Plant page verified");
+                  floatyMod.appendLog(panel, "Seedling page verified");
                   break;
                 }
               }
             }
             if (!backVerified) {
-              floatyMod.appendLog(panel, "Not on plant page — tapping common...");
+              floatyMod.appendLog(panel, "Not on seedling page — tapping common...");
               // Try non-close/back first
               var tapped = false;
               for (var tj = 0; tj < templates.common.length && !tapped; tj++) {
@@ -622,7 +622,7 @@ function runThrowRepeatedSeedlingFlow(config, panel) {
   }
 
   floatyMod.updateStatus(panel, "Stopped");
-  floatyMod.appendLog(panel, "Throw plant flow stopped");
+  floatyMod.appendLog(panel, "Throw repeated seedling flow stopped");
 }
 
 module.exports = {

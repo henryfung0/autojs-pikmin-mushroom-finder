@@ -4,7 +4,7 @@
  * Orchestrates:
  *   Phase 1 — Setup          : Load templates, create panel
  *   Phase 2 — Launch         : Request screen capture, launch app
- *   Phase 3 — Throw Repeated Seedling Flow: Navigate to plant page, detect throw items
+ *   Phase 3 — Throw Repeated Seedling Flow: Navigate to seedling page, detect throw items
  *   Phase 4 — Cleanup        : Destroy panel
  *
  * Called by root main.js when mode === "Throw Repeated Seedling".
@@ -130,7 +130,7 @@ function run(settings) {
   // Phase 4 — Cleanup
   // ===================================================================
 
-  floatyMod.appendLog(panel, "Throw plant finished");
+  floatyMod.appendLog(panel, "Throw repeated seedling finished");
   sleep(3000);
   floatyMod.destroy(panel);
 }

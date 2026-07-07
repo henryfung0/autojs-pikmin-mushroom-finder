@@ -67,7 +67,6 @@ function run(settings) {
 
   var panel = floatyMod.createControlPanel(function() {
     floatyMod.destroy(panel);
-    exit();
   });
   floatyMod.appendLog(panel, "Throw Repeated Seedling mode started");
 

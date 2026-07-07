@@ -205,21 +205,22 @@ function navigateToSeedlingPage(templates, panel) {
         return true;
       }
 
-      // Step 2: Not on seedling page — click seedling page clicker (round-robin)
+      // Step 2: Not on seedling page — click "Seedling page.jpg" only (the entry button).
+      // NEVER click "To seedling page.jpg" — that goes from page 1 to page 2.
       var clicked = false;
-      var clickerTpl = templates.seedlingPageClicker[clickerIdx];
-      if (!clickerTpl) {
-        clickerIdx = 0;
-        clickerTpl = templates.seedlingPageClicker[0];
-      }
-
-      if (clickerTpl) {
-        var m = _matchOne(img, clickerTpl, threshold);
-        if (m) {
-          _tapAt(m, "Click seedling page clicker: " + clickerTpl.name, panel);
-          sleep(2000);
-          clicked = true;
-          clickerIdx = (clickerIdx + 1) % templates.seedlingPageClicker.length;
+      for (var c = 0; c < templates.seedlingPageClicker.length && !clicked; c++) {
+        var clickerTpl = templates.seedlingPageClicker[c];
+        var clickerName = clickerTpl.name.toLowerCase();
+        // Skip "to seedling page" — clicking it goes to page 2, not page 1
+        if (clickerName.indexOf("to seedling page") !== -1) continue;
+        // Only click "seedling page" (the entry button)
+        if (clickerName.indexOf("seedling page") !== -1) {
+          var m = _matchOne(img, clickerTpl, threshold);
+          if (m) {
+            _tapAt(m, "Click seedling page clicker: " + clickerTpl.name, panel);
+            sleep(2000);
+            clicked = true;
+          }
         }
       }
 

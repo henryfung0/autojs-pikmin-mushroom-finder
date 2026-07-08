@@ -98,7 +98,9 @@ function isOnMainPage(navTemplates, options) {
   while (Date.now() < deadline) {
     var img = null;
     try {
-      img = captureScreen();
+      floatyMod.withPanelHidden(floaty, function() {
+        img = captureScreen();
+      });
       if (!img) {
         sleep(500);
         continue;
@@ -211,7 +213,9 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
   while (Date.now() < deadline) {
     var img = null;
     try {
-      img = captureScreen();
+      floatyMod.withPanelHidden(floaty, function() {
+        img = captureScreen();
+      });
       if (!img) { sleep(500); continue; }
 
       // Step 1: Check if already on advanture page (look for "Advanture page" in mainTemplates)
@@ -253,7 +257,9 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
         }
         var img2 = null;
         try {
-          img2 = captureScreen();
+          floatyMod.withPanelHidden(floaty, function() {
+            img2 = captureScreen();
+          });
           if (!img2) break;
           var match = _matchOne(img2, entryList[j], threshold);
           if (match) {

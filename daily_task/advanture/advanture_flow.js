@@ -495,6 +495,16 @@ function runAdvantureFlow(config, panel) {
     sleep(500);
   }
 
+  // ── Navigate back to main page ──────────────────────────────────────
+  floatyMod.appendLog(panel, "Returning to main page...");
+  advState.isOnMainPage(mainTemplates, {
+    threshold: 0.7,
+    timeout: 30000,
+    floaty: panel,
+    dismissTemplates: commonTemplates
+  });
+  floatyMod.appendLog(panel, "Main page reached");
+
   floatyMod.updateStatus(panel, "Stopped");
   floatyMod.appendLog(panel, "Adventure scan stopped");
 }

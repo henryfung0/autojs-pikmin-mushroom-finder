@@ -81,6 +81,8 @@ function showConfigDialog() {
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <checkbox id="enableThrowRepeated" text="Throw Repeated" checked="true"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <checkbox id="enableCollectFeeding" text="Collect Feeding" checked="true"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <text text="Collect:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
@@ -177,6 +179,7 @@ function showConfigDialog() {
       enableCollect: view.enableCollect.isChecked(),
       enableFarm: view.enableFarm.isChecked(),
       enableThrowRepeated: view.enableThrowRepeated.isChecked(),
+      enableCollectFeeding: view.enableCollectFeeding.isChecked(),
       enableGift: view.enableGift.isChecked(),
       enableSeedling: view.enableSeedling.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
@@ -199,6 +202,7 @@ function showConfigDialog() {
     view.enableCollect.setChecked(true);
     view.enableFarm.setChecked(true);
     view.enableThrowRepeated.setChecked(true);
+    view.enableCollectFeeding.setChecked(true);
     view.enableGift.setChecked(true);
     view.enableSeedling.setChecked(true);
     view.enableFruit.setChecked(true);

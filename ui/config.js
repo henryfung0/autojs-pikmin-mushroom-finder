@@ -209,6 +209,15 @@ var config = {
     enableThrowRepeated: true,
 
     /**
+     * Whether to collect feeding items after the adventure flow completes.
+     * When enabled, opens the feeding page, collects all visible items,
+     * then closes the feeding page.
+     * @type {boolean}
+     * @default true
+     */
+    enableCollectFeeding: true,
+
+    /**
      * Maximum consecutive empty scan loops before giving up and returning
      * to the main page.  When no fruit / gift / plant is found for this
      * many loops in a row, the advanture scan exits gracefully.

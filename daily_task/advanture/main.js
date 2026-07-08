@@ -51,6 +51,9 @@ function run(settings) {
     if (settings.enableFruit !== undefined) {
       config.advanture.enableFruit = settings.enableFruit;
     }
+    if (settings.enableCollectFeeding !== undefined) {
+      config.advanture.enableCollectFeeding = settings.enableCollectFeeding;
+    }
     if (settings.maxEmptyLoops !== undefined) {
       config.advanture.maxEmptyLoops = settings.maxEmptyLoops;
     }
@@ -127,6 +130,16 @@ function run(settings) {
   floatyMod.appendLog(panel, "Starting adventure scan flow");
 
   advFlow.runAdvantureFlow(config, panel);
+
+  // ===================================================================
+  // Phase 3b — Collect Feeding (after adventure)
+  // ===================================================================
+
+  if (config.advanture.enableCollectFeeding !== false) {
+    floatyMod.appendLog(panel, "Starting collect feeding...");
+    var collectFeeding = require("./collect_feeding");
+    collectFeeding.runCollectFeeding(config, panel);
+  }
 
   // ===================================================================
   // Phase 4 — Cleanup

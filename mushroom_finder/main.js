@@ -225,20 +225,6 @@ function run(settings) {
   // Phase 3 — Scan
   // ===================================================================
 
-  var captureGranted = false;
-  try {
-    captureGranted = images.requestScreenCapture(false);
-  } catch (e) {
-    console.warn("images.requestScreenCapture threw: " + e);
-  }
-  if (!captureGranted) {
-    cleanupAndExit(
-      panel,
-      "Error: Capture denied",
-      "Screen capture permission denied. Grant permission and restart."
-    );
-  }
-
   floatyMod.updateStatus(panel, "Searching...");
   floatyMod.appendLog(panel, "Starting scan loop");
 

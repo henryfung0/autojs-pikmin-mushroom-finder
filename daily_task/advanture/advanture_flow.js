@@ -15,11 +15,11 @@
 
 "auto";
 
-var floatyMod = require("../ui/floaty");
-var scroll = require("../lib/gestures");
-var matcher = require("../lib/matcher");
+var floatyMod = require("../../ui/floaty");
+var scroll = require("../../lib/gestures");
+var matcher = require("../../lib/matcher");
 var advState = require("./advanture_state");
-var advConfig = require("../ui/config");
+var advConfig = require("../../ui/config");
 
 // ---------------------------------------------------------------------------
 // Volume key interrupt

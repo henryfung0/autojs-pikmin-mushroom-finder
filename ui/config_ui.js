@@ -25,67 +25,71 @@
 function showConfigDialog() {
   // Inflate the XML layout into a real Android View hierarchy.
   var view = ui.inflate(
-    <frame>
+    <frame bg="#1E1E1E">
       <vertical padding="16 8">
-        <text text="Pikmin Bloom" textSize="18sp" textColor="#1976D2"
+        <text text="Pikmin Bloom" textSize="18sp" textColor="#E0E0E0"
               gravity="center" margin="0 0 0 8"/>
 
         {/* Mode Selection */}
         <spinner id="modeSelector" entries="Mushroom Finder|Pikmin Daily Task"
-                 textSize="14sp" gravity="center" margin="0 0 16 0"/>
+                 textSize="14sp" textColor="#E0E0E0" gravity="center" margin="0 0 16 0"/>
 
         {/* Common checkboxes (always visible) */}
         <checkbox id="autoLaunch" text="Auto-launch Pikmin Bloom"
-                  checked="true" textSize="14sp" margin="0 0 0 4"/>
+                  checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
         <text text="Mushroom Finder Settings" textSize="15sp"
-              textColor="#1976D2" margin="0 0 0 4"/>
+              textColor="#64B5F6" margin="0 0 0 4"/>
 
         {/* Mushroom-specific settings (hidden by default) */}
         <vertical id="mushroomSettings" visibility="gone">
           {/* Confidence Threshold */}
           <text text="Confidence Threshold: 0.85" textSize="13sp"
-                margin="0 4 0 0" id="thresholdLabel"/>
-          <text text="0.85" textSize="12sp" textColor="#666666"
+                textColor="#CCCCCC" margin="0 4 0 0" id="thresholdLabel"/>
+          <text text="0.85" textSize="12sp" textColor="#999999"
                 gravity="end" id="thresholdValue"/>
           <seekbar id="threshold" progress="15" max="29"
                    margin="0 0 0 8"/>
 
           {/* Settle Delay */}
           <text text="Settle Delay: 2.5s" textSize="13sp"
-                margin="0 4 0 0" id="settleDelayLabel"/>
-          <text text="2.5" textSize="12sp" textColor="#666666"
+                textColor="#CCCCCC" margin="0 4 0 0" id="settleDelayLabel"/>
+          <text text="2.5" textSize="12sp" textColor="#999999"
                 gravity="end" id="settleDelayValue"/>
           <seekbar id="settleDelay" progress="4" max="19"
                    margin="0 0 0 8"/>
 
           {/* Max Empty Scrolls */}
           <text text="Max Empty Scrolls: 5" textSize="13sp"
-                margin="0 4 0 0" id="maxEmptyScrollsLabel"/>
-          <text text="5" textSize="12sp" textColor="#666666"
+                textColor="#CCCCCC" margin="0 4 0 0" id="maxEmptyScrollsLabel"/>
+          <text text="5" textSize="12sp" textColor="#999999"
                 gravity="end" id="maxEmptyScrollsValue"/>
           <seekbar id="maxEmptyScrolls" progress="4" max="14"
                    margin="0 0 0 8"/>
 
           <checkbox id="detectLargeColor" text="Include large color mushrooms"
-                    checked="true" textSize="14sp" margin="0 4 0 4"/>
+                    checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 4 0 4"/>
           <checkbox id="detectLargeElement" text="Include large element mushrooms"
-                    checked="true" textSize="14sp" margin="0 0 0 4"/>
+                    checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
         </vertical>
 
         {/* Advanture-specific settings (visible by default) */}
         <vertical id="advantureSettings">
-          <text text="Pikmin Daily Task:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
-          <checkbox id="throwRepeatedSeedlingEnabled" text="Throw Repeated Seedling" checked="true"
-                   textSize="14sp" margin="0 0 0 4"/>
-          <text text="Collect:" textSize="14sp" textColor="#1976D2" margin="0 8 0 4"/>
-          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" margin="0 0 0 4"/>
-          <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" margin="0 0 0 4"/>
-          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" margin="0 0 0 4"/>
+          <text text="Pikmin Daily Task:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <checkbox id="enableCollect" text="Auto Collect" checked="true"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <checkbox id="enableFarm" text="Auto Farm" checked="true"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <checkbox id="enableThrowRepeated" text="Throw Repeated" checked="true"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <text text="Collect:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
 
           {/* Max Empty Loops */}
           <text text="Max Empty Loops: 10" textSize="13sp"
-                margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
-          <text text="10" textSize="12sp" textColor="#666666"
+                textColor="#CCCCCC" margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
+          <text text="10" textSize="12sp" textColor="#999999"
                 gravity="end" id="maxEmptyLoopsValue"/>
           <seekbar id="maxEmptyLoops" progress="9" max="29"
                    margin="0 0 0 8"/>
@@ -170,7 +174,9 @@ function showConfigDialog() {
       detectLargeElement: view.detectLargeElement.isChecked(),
       settleDelay: (view.settleDelay.progress * 500) + 500,
       maxEmptyScrolls: view.maxEmptyScrolls.progress + 1,
-      throwRepeatedSeedlingEnabled: view.throwRepeatedSeedlingEnabled.isChecked(),
+      enableCollect: view.enableCollect.isChecked(),
+      enableFarm: view.enableFarm.isChecked(),
+      enableThrowRepeated: view.enableThrowRepeated.isChecked(),
       enableGift: view.enableGift.isChecked(),
       enableSeedling: view.enableSeedling.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
@@ -190,7 +196,9 @@ function showConfigDialog() {
     view.autoLaunch.setChecked(true);
     view.detectLargeColor.setChecked(true);
     view.detectLargeElement.setChecked(true);
-    view.throwRepeatedSeedlingEnabled.setChecked(true);
+    view.enableCollect.setChecked(true);
+    view.enableFarm.setChecked(true);
+    view.enableThrowRepeated.setChecked(true);
     view.enableGift.setChecked(true);
     view.enableSeedling.setChecked(true);
     view.enableFruit.setChecked(true);

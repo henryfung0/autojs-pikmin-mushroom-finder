@@ -12,9 +12,9 @@
 
 "auto";
 
-var config      = require("../ui/config");
-var matcher     = require("../lib/matcher");
-var floatyMod   = require("../ui/floaty");
+var config      = require("../../ui/config");
+var matcher     = require("../../lib/matcher");
+var floatyMod   = require("../../ui/floaty");
 var advFlow     = require("./advanture_flow");
 var advState    = require("./advanture_state");
 
@@ -92,22 +92,7 @@ function run(settings) {
   // Phase 2 — Launch / Navigate
   // ===================================================================
 
-  var captureGranted = false;
-  try {
-    captureGranted = images.requestScreenCapture(false);
-  } catch (e) {
-    console.warn("requestScreenCapture threw: " + e);
-  }
-  if (!captureGranted) {
-    cleanupAndExit(
-      panel,
-      "Error: Capture denied",
-      "Screen capture permission denied. Grant permission and restart."
-    );
-  }
-
   floatyMod.updateStatus(panel, "Ready");
-  floatyMod.appendLog(panel, "Screen capture granted");
 
   if (settings && settings.autoLaunch) {
     floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");

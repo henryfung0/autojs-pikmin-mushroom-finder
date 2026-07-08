@@ -11,8 +11,8 @@
 
 "auto";
 
-var floatyMod = require("../ui/floaty");
-var advConfig = require("../ui/config");
+var floatyMod = require("../../ui/floaty");
+var advConfig = require("../../ui/config");
 
 // ── Click feedback indicator ─────────────────────────────────────────────
 var _clickDot = null;

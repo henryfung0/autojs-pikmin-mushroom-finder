@@ -8,8 +8,8 @@
  */
 
 var configUi = require("./ui/config_ui");
-var throwFlow = require("./advanture/throw_repeated_seedling_flow");
-var advFlow = require("./advanture/advanture_flow");
+var throwFlow = require("./daily_task/seedlings/throw_repeated_seedling_flow");
+var advFlow = require("./daily_task/advanture/advanture_flow");
 var floatyMod = require("./ui/floaty");
 
 // ── Singleton guard: kill any previous instance of this script ─────
@@ -26,13 +26,25 @@ if (!settings) {
   exit();
 }
 
+// ── Screen capture permission (request ONCE before dispatch) ─
+var captureGranted = false;
+try {
+  captureGranted = images.requestScreenCapture(false);
+} catch (e) {
+  console.warn("requestScreenCapture threw: " + e);
+}
+if (!captureGranted) {
+  toast("Screen capture permission denied. Grant permission and restart.");
+  exit();
+}
+
 // ── Dispatch ─────────────────────────────────────────
 if (settings.mode === "Advanture") {
-  require("./advanture/main").run(settings);
+  require("./daily_task/advanture/main").run(settings);
 } else if (settings.mode === "Pikmin Daily Task") {
-  // Run throw repeated seedling first, then adventure
-  if (settings.throwRepeatedSeedlingEnabled !== false) {
-    var trsResult = require("./advanture/throw_repeated_seedling_main").run(settings);
+  // Run seedling operations (collect/farm/throw) first, then adventure
+  if (settings.enableCollect || settings.enableFarm || settings.enableThrowRepeated) {
+    var trsResult = require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings);
   }
   if (!throwFlow.isShutdownRequested() && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
     if (trsResult && trsResult.panel) {
@@ -46,7 +58,7 @@ if (settings.mode === "Advanture") {
       sleep(3000);
       floatyMod.destroy(panel);
     } else {
-      require("./advanture/main").run(settings);
+      require("./daily_task/advanture/main").run(settings);
     }
   }
 } else {

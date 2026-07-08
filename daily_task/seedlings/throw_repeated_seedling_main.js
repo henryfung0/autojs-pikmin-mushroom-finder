@@ -1,5 +1,5 @@
 /**
- * advanture/throw_repeated_seedling_main.js — Pipeline orchestrator for Throw Repeated Seedling mode
+ * advanture/seedlings_main.js — Pipeline orchestrator for Throw Repeated Seedling mode
  *
  * Orchestrates:
  *   Phase 1 — Setup          : Load templates, create panel

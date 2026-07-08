@@ -1,11 +1,11 @@
 /**
- * advanture/throw_repeated_seedling_flow.js — Throw Repeated Seedling scanning flow
+ * advanture/seedlings_flow.js — Throw Repeated Seedling scanning flow
  *
  * Flow:
  *   1. Ensure on main page (isOnMainPage)
  *   2. Navigate to seedling page — click "seedling page clicker" templates repeatedly
  *      until "seedling page checker" is visible on screen (DO NOT click it)
- *   3. On seedling page — scan for throw items (templates/throw_repeated_seedling/throw/)
+ *   3. On seedling page — scan for throw items (templates/seedlings/throw/)
  *   4. If throw item found → click it → scroll up to 10 times to find flow.jpg
  *      - If flow.jpg found → click it → click confirm.jpg → return to seedling page
  *      - If flow.jpg NOT found after 10 scrolls → back to seedling page, retry
@@ -14,7 +14,7 @@
  *   7. After max empty loops → back to main page, standby
  *
  * collectSeedlings() and farmSeedlings() now live in separate files
- * and are called from throw_repeated_seedling_main.js instead.
+ * and are called from seedlings_main.js instead.
  *
  * Exports:
  *   runThrowRepeatedSeedlingFlow(config, panel)  → void
@@ -105,7 +105,7 @@ function clickConfirmButton(templates, panel) {
 // ---------------------------------------------------------------------------
 
 /**
- * Run the throw_repeated_seedling scanning flow.
+ * Run the seedlings scanning flow.
  *
  * @param {Object} config - Configuration object.
  * @param {Object} panel  - Floaty window for logging.
@@ -113,7 +113,7 @@ function clickConfirmButton(templates, panel) {
 function runThrowRepeatedSeedlingFlow(config, panel) {
   var templateDir = (config && config.detection && config.detection.templateDir) || "./templates/";
 
-  floatyMod.appendLog(panel, "Loading throw_repeated_seedling templates...");
+  floatyMod.appendLog(panel, "Loading seedlings templates...");
   var templates = seedlingUtils.loadThrowRepeatedSeedlingTemplates(templateDir);
 
   var mainNavTemplates = templates.mainNav.concat(templates.common);

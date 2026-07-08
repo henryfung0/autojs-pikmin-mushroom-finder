@@ -3,7 +3,7 @@
 /**
  * advanture/seedling_utils.js — Shared utilities for seedling operations
  *
- * Shared functions extracted from throw_repeated_seedling_flow.js.
+ * Shared functions extracted from seedlings_flow.js.
  * Used by collect_seedlings.js, farm_seedlings.js, and throw_repeated_seedling_flow.js.
  */
 
@@ -152,17 +152,17 @@ function _tapAt(match, label, panel) {
 }
 
 // ---------------------------------------------------------------------------
-// Load throw_repeated_seedling templates
+// Load seedlings templates
 // ---------------------------------------------------------------------------
 
 function loadThrowRepeatedSeedlingTemplates(templateDir) {
   return {
-    seedlingPageClicker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/seedling page clicker"),
-    seedlingPageChecker: _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
-    throwItems:       _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/throw"),
-    flow:             _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
-    confirm:           _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/navigation"),
-    collect:          _loadTemplatesFromDir(templateDir, "throw_repeated_seedling/collect"),
+    seedlingPageClicker: _loadTemplatesFromDir(templateDir, "seedlings/seedling page clicker"),
+    seedlingPageChecker: _loadTemplatesFromDir(templateDir, "seedlings/navigation"),
+    throwItems:       _loadTemplatesFromDir(templateDir, "seedlings/throw"),
+    flow:             _loadTemplatesFromDir(templateDir, "seedlings/navigation"),
+    confirm:           _loadTemplatesFromDir(templateDir, "seedlings/navigation"),
+    collect:          _loadTemplatesFromDir(templateDir, "seedlings/collect"),
     common:           _loadTemplatesFromDir(templateDir, "common"),
     mainNav:          _loadTemplatesFromDir(templateDir, "navigation")
   };
@@ -178,10 +178,10 @@ function isOnSeedlingPage1(templates, panel) {
   try {
     img = captureScreen();
     if (!img) return false;
-    for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
-      var name = templates.seedlingPageClicker[i].name.toLowerCase();
+    for (var i = 0; i < templates.seedlingPageChecker.length; i++) {
+      var name = templates.seedlingPageChecker[i].name.toLowerCase();
       if (name.indexOf("to seedling page") !== -1) {
-        var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
+        var m = _matchOne(img, templates.seedlingPageChecker[i], threshold);
         if (m) return true;
       }
     }
@@ -243,15 +243,11 @@ function ensureOnSeedlingPage1(templates, panel) {
       if (img) {
         try {
           for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
-            var name = templates.seedlingPageClicker[i].name.toLowerCase();
-            // Click "Seedling page.jpg" (the entry button), NOT "To seedling page.jpg"
-            if (name.indexOf("to seedling page") === -1 && name.indexOf("seedling page") !== -1) {
-              var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
-              if (m) {
-                _tapAt(m, "ensureOnSeedlingPage1: click: " + templates.seedlingPageClicker[i].name, panel);
-                sleep(2000);
-                break;
-              }
+            var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
+            if (m) {
+              _tapAt(m, "ensureOnSeedlingPage1: click: " + templates.seedlingPageClicker[i].name, panel);
+              sleep(2000);
+              break;
             }
           }
         } finally {
@@ -369,12 +365,12 @@ function ensureOnSeedlingPage2(templates, panel) {
     img = captureScreen();
     if (img) {
       try {
-        for (var ti = 0; ti < templates.seedlingPageClicker.length; ti++) {
-          var tn = templates.seedlingPageClicker[ti].name.toLowerCase();
+        for (var ti = 0; ti < templates.seedlingPageChecker.length; ti++) {
+          var tn = templates.seedlingPageChecker[ti].name.toLowerCase();
           if (tn.indexOf("to seedling page") !== -1) {
-            var tm = _matchOne(img, templates.seedlingPageClicker[ti], threshold);
+            var tm = _matchOne(img, templates.seedlingPageChecker[ti], threshold);
             if (tm) {
-              _tapAt(tm, "ensureOnSeedlingPage2: click " + templates.seedlingPageClicker[ti].name, panel);
+              _tapAt(tm, "ensureOnSeedlingPage2: click " + templates.seedlingPageChecker[ti].name, panel);
               sleep(2000);
               // Check if we've arrived on page 2
               var verifyImg = captureScreen();

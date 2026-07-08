@@ -94,7 +94,8 @@ function farmSeedlings(templates, panel) {
   }
 
   if (!specialClicked) {
-    floatyMod.appendLog(panel, "Farm seedlings: special.jpg not found, giving up");
+    floatyMod.appendLog(panel, "Farm seedlings: special.jpg not found, returning to page 1");
+    seedlingUtils.ensureOnSeedlingPage1(templates, panel);
     return false;
   }
 
@@ -121,7 +122,8 @@ function farmSeedlings(templates, panel) {
   }
 
   if (!specialSeedlingsClicked) {
-    floatyMod.appendLog(panel, "Farm seedlings: Special seedlings.jpg not found, giving up");
+    floatyMod.appendLog(panel, "Farm seedlings: Special seedlings.jpg not found, returning to page 1");
+    seedlingUtils.ensureOnSeedlingPage1(templates, panel);
     return false;
   }
 
@@ -150,7 +152,8 @@ function farmSeedlings(templates, panel) {
   if (confirmClicked) {
     floatyMod.appendLog(panel, "Farm seedlings: farmed!");
   } else {
-    floatyMod.appendLog(panel, "Farm seedlings: Confirm seedlings.jpg not found");
+    floatyMod.appendLog(panel, "Farm seedlings: Confirm seedlings.jpg not found, returning to page 1");
+    seedlingUtils.ensureOnSeedlingPage1(templates, panel);
   }
 
   return confirmClicked;

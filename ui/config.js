@@ -183,6 +183,32 @@ var config = {
     enableFruit: true,
 
     /**
+     * Whether to auto-collect seedlings when entering the seedling page.
+     * When enabled, looks for "Collect seedlings.jpg" and performs
+     * the tap-hold + pull-up + confirm sequence.
+     * @type {boolean}
+     * @default true
+     */
+    enableCollect: true,
+
+    /**
+     * Whether to auto-farm seedlings when on seedling page 1.
+     * When enabled, looks for "Empty space.jpg" and clicks through
+     * special → Special seedlings → Confirm seedlings.
+     * @type {boolean}
+     * @default true
+     */
+    enableFarm: true,
+
+    /**
+     * Whether to auto-throw repeated seedlings from the seedling page.
+     * When enabled, scans for throw items and performs the throw flow.
+     * @type {boolean}
+     * @default true
+     */
+    enableThrowRepeated: true,
+
+    /**
      * Maximum consecutive empty scan loops before giving up and returning
      * to the main page.  When no fruit / gift / plant is found for this
      * many loops in a row, the advanture scan exits gracefully.

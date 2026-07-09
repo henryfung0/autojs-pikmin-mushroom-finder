@@ -55,7 +55,15 @@ function run(settings) {
     if (settings.detectLargeElement !== undefined) {
       config.detection.detectLargeElement = settings.detectLargeElement;
     }
+    if (settings.largeColorThreshold !== undefined) {
+      config.detection.largeColorThreshold = settings.largeColorThreshold;
+    }
+    if (settings.largeElementThreshold !== undefined) {
+      config.detection.largeElementThreshold = settings.largeElementThreshold;
+    }
     console.info("Settings merged — threshold=" + config.detection.threshold +
+      ", largeColor=" + config.detection.largeColorThreshold +
+      ", largeElement=" + config.detection.largeElementThreshold +
       ", settleDelay=" + config.scan.settleDelay +
       ", maxEmptyScrolls=" + config.scan.maxEmptyScrolls);
   }
@@ -64,16 +72,17 @@ function run(settings) {
   // Phase 1 — Setup
   // ===================================================================
 
+  var mushroomTemplatesDir = files.join(config.detection.templateDir, "mushrooms");
   console.info(
-    "Loading templates from '" + config.detection.templateDir + "' ..."
+    "Loading mushroom templates from '" + mushroomTemplatesDir + "' ..."
   );
-  var templates = matcher.loadAllTemplates(config.detection.templateDir, { excludeDirs: ["navigation"] });
+  var templates = matcher.loadAllTemplates(mushroomTemplatesDir);
 
   if (templates.length === 0) {
     var errMsg =
       "No mushroom templates found at " +
-      config.detection.templateDir +
-      ". Place .png files and restart.";
+      mushroomTemplatesDir +
+      ". Place .png files in templates/mushrooms/ and restart.";
     toast(errMsg);
     console.error(errMsg);
     exit();
@@ -86,7 +95,7 @@ function run(settings) {
   var othersTemplates = [];
   var mushroomTemplates = [];
   for (var i = 0; i < templates.length; i++) {
-    if (templates[i].name.indexOf("/others/") !== -1) {
+    if (templates[i].name.indexOf("others/") !== -1) {
       othersTemplates.push(templates[i]);
     } else {
       mushroomTemplates.push(templates[i]);

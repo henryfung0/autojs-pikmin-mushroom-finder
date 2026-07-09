@@ -5,11 +5,10 @@
  * compile results, and fire callbacks when mushrooms with free
  * slots are found.
  *
- * Scan pattern: always scroll left at a fixed Y, forever.  When the map
- * area runs out of content the viewport is re-centered around the player
- * icon and sweeping resumes in the same direction.  No vertical scrolling
- * is performed — horizontal sweep only.  This mirrors the original
- * scanner.js logic that was proven to work.
+ * Scan pattern: horizontal zigzag at fixed finger Y — sweep left until
+ * empty, re-center, sweep right until empty, then vertically scroll the
+ * map down to expose a new area and repeat.  The vertical scroll count
+ * increases each cycle (1×, 2×, 3×, …) so coverage expands outward.
  *
  * Module-level exports:
  *   startScanning(config, templates, onFound, floatyW)
@@ -121,33 +120,25 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
     settleDelay = 1500;
   }
 
-  // Scan Y coordinate — 42% of screen height (approx 1008 on 2400px screen).
-  // Y never changes during the scan.  The map is swept horizontally at this
-  // fixed Y, and when the area runs out of content the viewport is re-centered
-  // around the player icon before sweeping resumes.
+  // Scan Y coordinate — fixed at 42% of screen height.
+  // Horizontal sweeps always happen at this Y.  When both left and right
+  // sides are exhausted, the scanner vertically scrolls the map down
+  // (swipe gesture) to see a new area, with the scroll count increasing
+  // progressively (1×, 2×, 3×, …) so coverage expands outward.
   var currentY = Math.round(device.height * 0.42);
+  var verticalShiftPercent = config.scan.verticalShiftPercent || 0.6;
+
+  // Scan phase: "left" = sweeping left from player; "right" = sweeping right
+  var scanPhase = "left";
+  var verticalScrollCount = 1;
 
   console.info("DEBUG: device.width=" + device.width + ", device.height=" + device.height);
   console.info("DEBUG: currentY=" + currentY + ", settleDelay=" + settleDelay);
 
-  // ── Main scan loop — swipe left at fixed Y, forever ─────────────────
-  while (!_shutdownRequested && _scanning) {
-    _totalSwipes++;
-
-    console.info("DEBUG SWIPE: swipeNum=" + _totalSwipes + ", currentY=" + currentY +
-      ", startX=" + Math.round(device.width * 0.2) +
-      ", endX=" + Math.round(device.width * 0.8));
-
-    scroll.scrollLeft(currentY, swipeDuration, floatyW,
-      "Swipe " + _totalSwipes + " ←");
-
-    sleep(settleDelay);
-
-    if (_shutdownRequested) {
-      break;
-    }
-
-    // ── Capture → detect cycle ───────────────────────────────────────
+  // ── Helper: capture screen and detect mushrooms ──────────────────────
+  // Returns true if a mushroom was found (calls onFound and sets _scanning=false).
+  // If no mushroom found, updates sideEmpty state (empty scroll counts / direction).
+  function _captureAndDetect(isPreScan) {
     var screenImage = null;
     var captureAttempts = 0;
     var maxCaptureAttempts = 3;
@@ -170,50 +161,106 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
     }
 
     if (!screenImage) {
-      console.error("startScanning: captureScreen failed after " + maxCaptureAttempts + " attempts — skipping frame");
+      console.error("_captureAndDetect: captureScreen failed after " + maxCaptureAttempts + " attempts — skipping frame");
       floatyMod.appendLog(floatyW, "Capture failed, skipping frame");
-      continue;
+      return false;
     }
 
     try {
       var matches = detection.findTemplates(screenImage, templates, config);
       if (matches && matches.length > 0) {
         var match = matches[0];
-        console.info("startScanning: found \"" + match.templateName +
+        console.info("_captureAndDetect: found \"" + match.templateName +
           "\" at (" + match.x + ", " + match.y +
           ") confidence=" + match.confidence.toFixed(3));
         floatyMod.updateStatus(floatyW, "Mushroom Found!");
         floatyMod.showDuringScan(floatyW, true);
         _scanning = false;
         onFound(match);
-        return;
+        return true;
       }
 
-      // No mushroom found — check "others" map-content indicator templates.
-      // If any match, the map still has potential content (seeds, decor, etc.)
-      // and we reset the empty-scroll counter.  If none match for N consecutive
-      // scrolls, the map area is empty — reposition by clicking own position.
-      if (othersTemplates.length > 0) {
-        var othersResult = detection.findTemplates(screenImage, othersTemplates, config);
-        if (othersResult && othersResult.length > 0) {
-          _emptyScrollCount = 0;
+      // No mushroom — check if the current area is "empty" (only after swipe,
+      // not during pre-scan where we're checking the starting position).
+      if (!isPreScan) {
+        var sideEmpty = false;
+
+        if (othersTemplates.length > 0) {
+          var othersResult = detection.findTemplates(screenImage, othersTemplates, config);
+          if (othersResult && othersResult.length > 0) {
+            _emptyScrollCount = 0;
+          } else {
+            _emptyScrollCount++;
+            floatyMod.appendLog(floatyW, "Empty scroll #" + _emptyScrollCount + "/" + maxEmptyScrolls);
+          }
+          sideEmpty = (_emptyScrollCount >= maxEmptyScrolls);
         } else {
           _emptyScrollCount++;
-          floatyMod.appendLog(floatyW, "Empty scroll #" + _emptyScrollCount + "/" + maxEmptyScrolls);
+          floatyMod.appendLog(floatyW, "Sweep #" + _emptyScrollCount + "/" + maxEmptyScrolls + " (no others templates)");
+          sideEmpty = (_emptyScrollCount >= maxEmptyScrolls);
         }
 
-        if (_emptyScrollCount >= maxEmptyScrolls) {
-          floatyMod.appendLog(floatyW, "Map area empty — repositioning to own position");
+        if (sideEmpty) {
           _emptyScrollCount = 0;
-          navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
-          floatyMod.appendLog(floatyW, "Waiting 2s for map to recenter after own position click");
-          sleep(2000);
-          floatyMod.appendLog(floatyW, "Resuming leftward sweep at fixed Y");
+
+          if (scanPhase === "left") {
+            floatyMod.appendLog(floatyW, "Left side empty — re-centering for right sweep");
+            navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            sleep(2000);
+            scanPhase = "right";
+            floatyMod.appendLog(floatyW, "Resuming → at same Y");
+          } else {
+            floatyMod.appendLog(floatyW, "Right side empty — scrolling down " + verticalScrollCount + "×");
+            navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            sleep(2000);
+            scroll.scrollDown(verticalScrollCount, verticalShiftPercent, swipeDuration, floatyW);
+            sleep(settleDelay);
+            verticalScrollCount++;
+            scanPhase = "left";
+            floatyMod.appendLog(floatyW, "Resuming ← after scroll down");
+          }
         }
       }
     } finally {
       screenImage.recycle();
     }
+    return false;
+  }
+
+  // ── Pre-scan: check current screen BEFORE first swipe ────────────────
+  // If a mushroom is already visible when scanning starts, we find it
+  // immediately instead of swiping it away.
+  floatyMod.appendLog(floatyW, "Checking current screen...");
+  if (_captureAndDetect(true)) return;
+
+  // ── Main scan loop — zigzag left/right, then vertical scroll ────────
+  while (!_shutdownRequested && _scanning) {
+    _totalSwipes++;
+
+    if (scanPhase === "left") {
+      console.info("DEBUG SWIPE: swipeNum=" + _totalSwipes + ", currentY=" + currentY +
+        ", startX=" + Math.round(device.width * 0.2) +
+        ", endX=" + Math.round(device.width * 0.8) + ", phase=←");
+
+      scroll.scrollLeft(currentY, swipeDuration, floatyW,
+        "Swipe " + _totalSwipes + " ←");
+    } else {
+      console.info("DEBUG SWIPE: swipeNum=" + _totalSwipes + ", currentY=" + currentY +
+        ", startX=" + Math.round(device.width * 0.8) +
+        ", endX=" + Math.round(device.width * 0.2) + ", phase=→");
+
+      scroll.scrollRight(currentY, swipeDuration, floatyW,
+        "Swipe " + _totalSwipes + " →");
+    }
+
+    sleep(settleDelay);
+
+    if (_shutdownRequested) {
+      break;
+    }
+
+    // Capture → detect (with empty-area check enabled)
+    if (_captureAndDetect(false)) return;
   }
 
   _scanning = false;

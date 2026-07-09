@@ -95,6 +95,7 @@ function _readImage(dir, fileName) {
  */
 function loadNavigationTemplates(templateDir) {
   var templates = [];
+  var commonTemplates = [];
 
   // Load from navigation/ subdirectory
   var navDir = files.join(templateDir, "navigation");
@@ -104,13 +105,21 @@ function loadNavigationTemplates(templateDir) {
     if (tpl) templates.push(tpl);
   }
 
-  // Also load from common/ subdirectory (dismiss buttons, confirm, etc.)
+  // Load from common/ subdirectory
   var commonDir = files.join(templateDir, "common");
   var commonEntries = _listImages(commonDir);
   for (var i = 0; i < commonEntries.length; i++) {
     var tpl = _readImage(commonDir, commonEntries[i]);
-    if (tpl) templates.push(tpl);
+    if (tpl) {
+      templates.push(tpl);
+      commonTemplates.push(tpl);
+    }
   }
+
+  // Attach common templates as a property so navigateToMap can use them
+  // as dismiss targets.  Array preserves .length iteration for callers
+  // that need the full template list.
+  templates.common = commonTemplates;
 
   console.info("loadNavigationTemplates: loaded " + templates.length + " template(s) (nav:" + navEntries.length + " + common:" + commonEntries.length + ")");
   return templates;
@@ -205,21 +214,26 @@ function dismissPikminIcon(navTemplates, floatyW) {
  * @param {Image} screenImage - Current screenshot.
  * @param {{name: string, image: Image}} tpl - Template descriptor.
  * @param {number} [threshold=0.8] - Match confidence threshold.
+ * @param {boolean} [silent=false] - If true, suppress per-template log lines.
  * @returns {{x: number, y: number, confidence: number}|null}
  */
-function _matchOne(screenImage, tpl, threshold) {
+function _matchOne(screenImage, tpl, threshold, silent) {
   if (!screenImage || !tpl || !tpl.image) return null;
   try {
-    console.info("_matchOne: searching for \"" + tpl.name + "\" (tpl " + tpl.w + "x" + tpl.h +
-      ", threshold=" + (threshold || 0.8) + ")");
+    if (!silent) {
+      console.info("_matchOne: searching for \"" + tpl.name + "\" (tpl " + tpl.w + "x" + tpl.h +
+        ", threshold=" + (threshold || 0.8) + ")");
+    }
     var result = images.findImage(screenImage, tpl.image, {
       threshold: threshold || 0.8,
       region: [0, 0, screenImage.getWidth(), screenImage.getHeight()]
     });
     if (result) {
       var confidence = result.confidence !== undefined ? result.confidence : threshold;
-      console.info("_matchOne: found \"" + tpl.name + "\" at (" + result.x + "," + result.y +
-        ") confidence=" + confidence);
+      if (!silent) {
+        console.info("_matchOne: found \"" + tpl.name + "\" at (" + result.x + "," + result.y +
+          ") confidence=" + confidence);
+      }
       return {
         x: result.x,
         y: result.y,
@@ -229,7 +243,9 @@ function _matchOne(screenImage, tpl, threshold) {
         confidence: confidence
       };
     } else {
-      console.info("_matchOne: no match for \"" + tpl.name + "\" — below threshold");
+      if (!silent) {
+        console.info("_matchOne: no match for \"" + tpl.name + "\" — below threshold");
+      }
     }
   } catch (e) {
     console.warn("_matchOne: error matching \"" + tpl.name + "\": " + e +
@@ -298,29 +314,9 @@ function navigateToMap(navTemplates, config, floatyW) {
     if (!mapViewTpl && (base === "map_view" || base === "map view" || base === "mapview")) mapViewTpl = navTemplates[i];
   }
 
-  // Build dismiss template array — any template that isn't navigation-specific
-  var navKeywords = ["go_to_map", "go to map", "gotomap",
-                     "map_view", "map view", "mapview",
-                     "map_view2", "map view2", "mapview2",
-                     "map_view3", "map view3", "mapview3",
-                     "large", "own position", "own_position",
-                     "pikmin icon", "pikmin_icon",
-                     "advanture page", "advanture_page",
-                     "store"];
-  var dismissTemplates = [];
-  for (var i = 0; i < navTemplates.length; i++) {
-    var name = navTemplates[i].name.toLowerCase();
-    var isNavSpecific = false;
-    for (var k = 0; k < navKeywords.length; k++) {
-      if (name.indexOf(navKeywords[k]) !== -1) {
-        isNavSpecific = true;
-        break;
-      }
-    }
-    if (!isNavSpecific) {
-      dismissTemplates.push(navTemplates[i]);
-    }
-  }
+  // common/ templates are all "click to go back to main page" buttons.
+  // No exclusion/filter logic — every image in common/ is a dismiss target.
+  var dismissTemplates = navTemplates.common || [];
 
   console.info("navigateToMap: dismiss=" + dismissTemplates.length + " template(s)" +
     ", go_to_map=" + (goToMapTpl ? "yes" : "no") +
@@ -342,39 +338,10 @@ function navigateToMap(navTemplates, config, floatyW) {
         continue;
       }
 
-      // Priority 1: Dismiss overlays — try any common/dismiss template
       var match = null;
-      for (var d = 0; d < dismissTemplates.length && !match; d++) {
-        match = _matchOne(img, dismissTemplates[d], 0.7);
-      }
-      if (match) {
-        var tapX = match.x + Math.round(match.w / 2);
-        var tapY = match.y + Math.round(match.h / 2);
-        console.info("navigateToMap: found dismiss button \"" + match.name + "\", pressing at (" + tapX + "," + tapY + ")");
-        floatyMod.appendLog(floatyW, "Dismiss popup \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
-        _showTap(tapX, tapY);
-        press(tapX, tapY, 1000);
-        sleep(1500);
-        continue;
-      }
 
-      // Priority 2: Go to map button (longer press required)
-      if (goToMapTpl) {
-        match = _matchOne(img, goToMapTpl, 0.7);
-        if (match) {
-          var tapX = match.x + Math.round(match.w / 2);
-          var tapY = match.y + Math.round(match.h / 2);
-          console.info("navigateToMap: found go_to_map, pressing at (" + tapX + "," + tapY + ")");
-          floatyMod.appendLog(floatyW, "Tap 'Go to map' at (" + tapX + "," + tapY + ")");
-          _showTap(tapX, tapY);
-          press(tapX, tapY, 1000);
-          console.info("navigateToMap: press() executed");
-          sleep(2000);
-          continue;
-        }
-      }
-
-      // Priority 3: Already on map — map_view3 detected
+      // Priority 1: Already on map — map_view3 detected (check BEFORE dismiss so
+      // we catch the map screen immediately after clicking Go to map)
       if (mapView3Tpl) {
         match = _matchOne(img, mapView3Tpl, 0.7);
         if (match) {
@@ -384,7 +351,8 @@ function navigateToMap(navTemplates, config, floatyW) {
         }
       }
 
-      // Priority 4: Click map_view (the matched image itself)
+      // Priority 2: Map view button — check BEFORE dismiss so a visible
+      // Back button on the map screen doesn't undo navigation progress.
       if (mapViewTpl) {
         match = _matchOne(img, mapViewTpl, 0.7);
         if (match) {
@@ -396,6 +364,43 @@ function navigateToMap(navTemplates, config, floatyW) {
           press(tapX, tapY, 1000);
           console.info("navigateToMap: press() executed");
           sleep(2000);
+          continue;
+        }
+      }
+
+      // Priority 3: Dismiss overlays — batch-scan common/ templates silently.
+      // Runs AFTER map_view so a Back button on the map screen doesn't
+      // undo forward navigation.
+      if (dismissTemplates.length > 0) {
+        console.info("navigateToMap: scanning common/ (" + dismissTemplates.length + " templates) for dismiss targets...");
+        for (var d = 0; d < dismissTemplates.length && !match; d++) {
+          match = _matchOne(img, dismissTemplates[d], 0.7, true);
+        }
+        if (match) {
+          var tapX = match.x + Math.round(match.w / 2);
+          var tapY = match.y + Math.round(match.h / 2);
+          console.info("navigateToMap: found dismiss \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
+          floatyMod.appendLog(floatyW, "Dismiss popup \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
+          _showTap(tapX, tapY);
+          press(tapX, tapY, 1000);
+          sleep(1500);
+          continue;
+        }
+        console.info("navigateToMap: no common/ template matched");
+      }
+
+      // Priority 4: Go to map button (longer press required)
+      if (goToMapTpl) {
+        match = _matchOne(img, goToMapTpl, 0.7);
+        if (match) {
+          var tapX = match.x + Math.round(match.w / 2);
+          var tapY = match.y + Math.round(match.h / 2);
+          console.info("navigateToMap: found go_to_map, pressing at (" + tapX + "," + tapY + ")");
+          floatyMod.appendLog(floatyW, "Tap 'Go to map' at (" + tapX + "," + tapY + ")");
+          _showTap(tapX, tapY);
+          press(tapX, tapY, 1000);
+          console.info("navigateToMap: press() executed");
+          sleep(4000);  // longer wait for map transition
           continue;
         }
       }

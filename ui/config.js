@@ -157,12 +157,30 @@ var config = {
     detectLargeColor: true,
 
     /**
+     * Match threshold for "large color" mushroom templates specifically.
+     * Lower = easier to detect (more matches, more false positives).
+     * Main threshold applies to all other templates.
+     * @type {number}
+     * @default 0.75
+     */
+    largeColorThreshold: 0.75,
+
+    /**
      * Whether to include "large element" mushroom templates in the scan.
      * Set to false to only scan for "large color" mushrooms.
      * @type {boolean}
      * @default true
      */
     detectLargeElement: true,
+
+    /**
+     * Match threshold for "large element" mushroom templates specifically.
+     * Lower = easier to detect (more matches, more false positives).
+     * Main threshold applies to all other templates.
+     * @type {number}
+     * @default 0.75
+     */
+    largeElementThreshold: 0.75,
 
     /**
      * File extensions to scan for when loading template images.

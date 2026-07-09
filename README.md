@@ -43,8 +43,13 @@ autojs/
 │   ├── 03_handle_mushroom  Handle found mushroom (phase 3)
 │   └── screen_state.js     Screen state classification (Pikmin Bloom-specific)
 ├── templates/
-│   ├── navigation/
-│   └── mushrooms/
+│   ├── common/          Dismiss buttons (close, back)
+│   ├── navigation/      Screen-specific nav buttons
+│   ├── mushrooms/       Mushroom detection templates
+│   │   └── others/      (optional) Map-content indicators
+│   ├── seedlings/       Seedling management templates
+│   ├── feeding/         Feeding item templates
+│   └── advanture/       Advanture mode templates
 └── README.md
 ```
 
@@ -60,31 +65,39 @@ Copy the entire `autojs/` folder to your device. In AutoJS6, open the project fo
 
 ### 3. Capture navigation templates
 
-The navigator uses screenshot templates to recognize UI elements. For each navigation template:
+The navigator uses screenshot templates to recognize UI elements.
+
+Templates are loaded from two subdirectories:
+- **`templates/common/`** — "click to go to main page" dismiss buttons (every image is treated as a dismiss target, no exclusion logic)
+- **`templates/navigation/`** — Named templates handled individually by filename
+
+For each navigation template:
 
 1. Navigate manually to the screen containing the button you want to detect
 2. Take a screenshot
 3. Crop the image to just the button/icon
-4. Save it with the matching filename in `templates/navigation/`
+4. Save it with the matching filename in the correct directory
 
-| Template File | What to capture | What the script does with it |
-|---|---|---|
-| `Close1.jpg` | A close/dismiss button | Detects it on screen → taps its center |
-| `Close2.jpg` | Another close button variant | Same as Close1 (tried if Close1 not found) |
-| `Close3.jpg` | Another close button variant | Same (tried if Close1/Close2 not found) |
-| `Back.jpg` | A back/return button | Taps it to go back (tried last among dismiss buttons) |
-| `Go to map.jpg` | The "Go to map" button | Taps it to enter the map |
-| `Map view.jpg` | The map view button/icon | Taps its center to open the mushroom map |
-| `Map view3.jpg` | The mushroom map view itself | Detects this → immediately triggers scan phase |
+| Template File | Directory | What to capture | What the script does |
+|---|---|---|---|
+| `Close1.jpg` — `Close3.jpg` | `common/` | Close/dismiss buttons | Detects on screen → taps center (dismiss priority) |
+| `Back.jpg` / `Back2.jpg` | `common/` | Back/return buttons | Taps to go to main page (dismiss priority) |
+| `Go to map.jpg` | `navigation/` | The "Go to map" button | Taps it to enter the map |
+| `Map view.jpg` | `navigation/` | The map view button/icon | Taps center to open mushroom map |
+| `Map view3.jpg` | `navigation/` | The mushroom map view itself | Detects this → immediately triggers scan phase |
+| `Own position.jpg` | `navigation/` | Player's own position marker | Taps to re-center map after empty sweeps |
+| `Large.jpg` | `navigation/` | Large mushroom entry button | Taps after a mushroom is detected |
 
 **Priority order during navigation:**
-1. Dismiss any popup/overlay (Close1 → Close2 → Close3 → Back)
-2. Tap "Go to map" button
-3. Check if already on the mushroom map (Map view3) — if found, skip straight to scanning
+1. Check if already on map (Map view3) — if found, skip straight to scanning
+2. Dismiss any popup/overlay (all `common/` templates tried in order)
+3. Tap "Go to map" button
 4. Tap "Map view" button to enter the map
 5. Loop back to step 1 until map is reached or timeout
 
 ### 4. Capture mushroom templates
+
+Templates go in `templates/mushrooms/`. The script scans for all images in this directory during the scan phase. When one matches, the scan stops and the match is reported.
 
 For each mushroom type you want to detect:
 
@@ -93,7 +106,13 @@ For each mushroom type you want to detect:
 3. Crop the image to just the mushroom icon
 4. Save it in `templates/mushrooms/`
 
-The script will scan for all images in `templates/mushrooms/` during the scan phase. When one matches on screen, the scan stops and the match is reported.
+#### Optional: Map-content indicators (`templates/mushrooms/others/`)
+
+Templates placed in `templates/mushrooms/others/` serve as map-content indicators
+(seeds, decor, etc.). When any match, the "empty scroll" counter resets — the
+scanner knows the map still has items. When none match for N consecutive frames,
+the scanner re-centers and switches direction. Without these, the scanner uses a
+swipe-count heuristic to decide when to switch direction.
 
 ## How to Run
 
@@ -140,12 +159,15 @@ Whenever the script taps the screen, a small red dot (18dp) appears at the exact
 ### Pre-flight Dialog (shown on start)
 
 | Setting | Range | Default | Description |
-|---|---|---|---|
+|---|---|---|---|---|
 | Confidence threshold | 0.70 – 0.99 | 0.85 | How closely a template must match (lower = more matches, more false positives) |
-| Swipes per row | 1 – 6 | 3 | Consecutive horizontal swipes before shifting down |
 | Settle delay | 500 – 10000 ms | 2500 ms | Wait time after each swipe for map tiles to render |
+| Max empty scrolls | 1 – 15 | 5 | Consecutive empty frames before switching direction / scrolling down |
+| Include large color | On/Off | On | Whether to scan for large color mushrooms |
+| Large color threshold | 0.50 – 0.79 | 0.75 | Match sensitivity for large color templates (lower = easier) |
+| Include large element | On/Off | On | Whether to scan for large element mushrooms |
+| Large element threshold | 0.50 – 0.79 | 0.75 | Match sensitivity for large element templates (lower = easier) |
 | Auto-launch | On/Off | On | Whether to auto-launch Pikmin Bloom |
-| Debug mode | On/Off | Off | Extra logging for troubleshooting |
 
 ### Config File (`config.js`)
 
@@ -160,35 +182,53 @@ Advanced settings can be adjusted directly in `config.js`:
 | `scan.swipeDuration` | 600 ms | Speed of each swipe gesture |
 | `scan.overlapPercent` | 0.4 | Overlap between adjacent swipes |
 | `scan.verticalShiftPercent` | 0.6 | Vertical distance between scan rows |
-| `scan.sweepCountPerRow` | 3 | Swipes per horizontal row |
+| `scan.maxEmptyScrolls` | 5 | Max empty frames before re-centering / scrolling down |
 | `detection.threshold` | 0.85 | Template match confidence threshold |
 | `detection.maxMatches` | 5 | Max candidates after dedup |
 | `detection.nmsOverlap` | 0.3 | IoU threshold for dedup |
 | `detection.breakOnFirstMatch` | true | Stop scanning on first detection |
+| `detection.detectLargeColor` | true | Include large color mushroom templates |
+| `detection.largeColorThreshold` | 0.75 | Match threshold for large color templates |
+| `detection.detectLargeElement` | true | Include large element mushroom templates |
+| `detection.largeElementThreshold` | 0.75 | Match threshold for large element templates |
+| `detection.templateDir` | `./templates/` | Template image directory |
 | `screenshot.outputDir` | `/sdcard/DCIM/PikminMushroomFinder/` | Screenshot save location |
 
 ## Scan Pattern
 
-The scan uses a vertical zigzag pattern:
+The scan uses a horizontal zigzag pattern at a fixed Y coordinate
+(~42% of screen height), alternating direction after each empty pass:
 
 ```
-Sweep 1:  ←──────────  (left, top row)
-Sweep 2:  ←──────────  (left, top row)
-Sweep 3:  ←──────────  (left, top row)
-          ↓ shift down
-Sweep 4:  ──────────→  (right, next row)
-Sweep 5:  ──────────→  (right, next row)
-Sweep 6:  ──────────→  (right, next row)
-          ↓ shift down
-          ... repeat ...
+Pass 1:  ←──────────  (sweep left until empty)
+            ↓ re-center at own position
+Pass 2:  ──────────→  (sweep right until empty)
+            ↓ re-center → scroll down (1×)
+Pass 3:  ←──────────  (sweep left until empty)
+            ↓ re-center at own position
+Pass 4:  ──────────→  (sweep right until empty)
+            ↓ re-center → scroll down (2×)   ← distance increases
+Pass 5:  ←──────────  (sweep left until empty)
+            ↓ re-center at own position
+... repeat with increasing vertical scroll distance ...
 ```
+
+"Empty" means `maxEmptyScrolls` (default 5) consecutive screen captures
+with no map-content indicator templates matched.  When available, the
+scanner uses `templates/mushrooms/others/` templates to detect whether
+the visible map area still has content (seeds, decor, etc.) — if those
+match, the empty counter resets.
 
 After each swipe, the script:
 1. Waits for the map to settle (`settleDelay`)
 2. Captures the screen
 3. Runs template matching against all mushroom templates
 4. If a match is found → reports it and stops
-5. If no match → continues to the next swipe
+5. If no match → increments the empty counter and checks direction
+
+When the right side is empty, the script vertically scrolls the map down
+by an increasing amount (1×→2×→3× of `verticalShiftPercent`) so coverage
+expands outward instead of re-scanning the same area.
 
 The scan runs **indefinitely** until a mushroom is found or the user stops it.
 
@@ -233,4 +273,4 @@ The scan runs **indefinitely** until a mushroom is found or the user stops it.
 
 - All screen taps use a **1000ms press** duration (long press) — this is intentional for in-game UI responsiveness
 - The floating panel is moved **off-screen** during `captureScreen()` calls so it never appears in detection frames
-- Template images in `templates/navigation/Map view2.jpg` and `Go to map2.jpg` are intentionally not used (reserved)
+- Template images suffixed with `2` (e.g. `Map view2.jpg`, `Go to map2.jpg`) are intentionally skipped during navigation — they act as reserves for future use without breaking the current state machine

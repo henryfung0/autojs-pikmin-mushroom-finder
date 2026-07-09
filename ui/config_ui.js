@@ -68,6 +68,20 @@ function showConfigDialog() {
 
           <checkbox id="detectLargeColor" text="Include large color mushrooms"
                     checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 4 0 4"/>
+          {/* Large Color Threshold */}
+          <text text="Large Color Threshold: 0.75" textSize="13sp"
+                textColor="#CCCCCC" margin="0 4 0 0" id="largeColorThresholdLabel"/>
+          <text text="0.75" textSize="12sp" textColor="#999999"
+                gravity="end" id="largeColorThresholdValue"/>
+          <seekbar id="largeColorThreshold" progress="5" max="29"
+                   margin="0 0 0 8"/>
+          {/* Large Element Threshold */}
+          <text text="Large Element Threshold: 0.75" textSize="13sp"
+                textColor="#CCCCCC" margin="0 4 0 0" id="largeElementThresholdLabel"/>
+          <text text="0.75" textSize="12sp" textColor="#999999"
+                gravity="end" id="largeElementThresholdValue"/>
+          <seekbar id="largeElementThreshold" progress="5" max="29"
+                   margin="0 0 0 8"/>
           <checkbox id="detectLargeElement" text="Include large element mushrooms"
                     checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
         </vertical>
@@ -149,6 +163,22 @@ function showConfigDialog() {
     }
   });
 
+  // Large color threshold (progress 0-29 → value 0.50-0.79)
+  view.largeColorThreshold.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = ((progress + 50) / 100).toFixed(2);
+      view.largeColorThresholdValue.setText(value);
+    }
+  });
+
+  // Large element threshold (progress 0-29 → value 0.50-0.79)
+  view.largeElementThreshold.setOnSeekBarChangeListener({
+    onProgressChanged: function(seekBar, progress, fromUser) {
+      var value = ((progress + 50) / 100).toFixed(2);
+      view.largeElementThresholdValue.setText(value);
+    }
+  });
+
   // Max empty scrolls (progress 0-14 → value 1-15)
   view.maxEmptyScrolls.setOnSeekBarChangeListener({
     onProgressChanged: function(seekBar, progress, fromUser) {
@@ -172,6 +202,8 @@ function showConfigDialog() {
       mode: view.modeSelector.getSelectedItem(),
       autoLaunch: view.autoLaunch.isChecked(),
       threshold: (view.threshold.progress + 70) / 100,
+      largeColorThreshold: (view.largeColorThreshold.progress + 50) / 100,
+      largeElementThreshold: (view.largeElementThreshold.progress + 50) / 100,
       detectLargeColor: view.detectLargeColor.isChecked(),
       detectLargeElement: view.detectLargeElement.isChecked(),
       settleDelay: (view.settleDelay.progress * 500) + 500,
@@ -196,6 +228,10 @@ function showConfigDialog() {
     view.settleDelayValue.setText("2.5");
     view.maxEmptyScrolls.setProgress(4);
     view.maxEmptyScrollsValue.setText("5");
+    view.largeColorThreshold.setProgress(5);
+    view.largeColorThresholdValue.setText("0.75");
+    view.largeElementThreshold.setProgress(5);
+    view.largeElementThresholdValue.setText("0.75");
     view.autoLaunch.setChecked(true);
     view.detectLargeColor.setChecked(true);
     view.detectLargeElement.setChecked(true);

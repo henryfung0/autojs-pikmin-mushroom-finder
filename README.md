@@ -27,28 +27,25 @@ The script runs a 4-phase pipeline:
 
 ```
 autojs/
-├── main.js              Entry point — orchestrates the 4-phase pipeline
-├── navigator.js         Screen template state machine for navigating to the map
-├── scanner.js           Zigzag swipe + capture + detection loop
-├── detection.js         Multi-template matching engine (findImage + NMS)
-├── config.js            Centralized configuration values
-├── config_ui.js         Pre-flight settings dialog
-├── floaty.js            Floating log panel (transparent, draggable, scrollable)
-├── utils.js             Screen state classification, screenshot saving
+├── main.js                 Entry point — ultra-thin dispatcher
+├── lib/                    Reusable AutoJS6 utilities
+│   ├── gestures.js         Scroll, zoom, swipe helpers
+│   ├── matcher.js          Multi-template matching engine (findImage + NMS)
+│   └── screen.js           Screenshot capture, brightness analysis
+├── ui/                     UI components
+│   ├── config.js           Centralized configuration values
+│   ├── config_ui.js        Pre-flight settings dialog
+│   └── floaty.js           Floating log panel
+├── mushroom_finder/        Mushroom hunting domain logic
+│   ├── main.js             Pipeline orchestrator (calls 01→02→03)
+│   ├── 01_navigate_to_map  Navigate to mushroom map (phase 1)
+│   ├── 02_scan_map         Scan loop — zigzag + capture + detect (phase 2)
+│   ├── 03_handle_mushroom  Handle found mushroom (phase 3)
+│   └── screen_state.js     Screen state classification (Pikmin Bloom-specific)
 ├── templates/
-│   ├── navigation/      Templates used by navigator.js to navigate the game UI
-│   │   ├── Close1.jpg      Dismiss popup/overlay (variant 1)
-│   │   ├── Close2.jpg      Dismiss popup/overlay (variant 2)
-│   │   ├── Close3.jpg      Dismiss popup/overlay (variant 3)
-│   │   ├── Back.jpg        Back button
-│   │   ├── Go to map.jpg   Button to enter the map view
-│   │   ├── Map view.jpg    Map entry button
-│   │   └── Map view3.jpg   Already-on-map indicator (triggers scan start)
-│   └── mushrooms/       Templates scanned for during the detection phase
-│       ├── Large poison.jpg       Large poison mushroom
-│       ├── large electricity.jpg  Large electric mushroom
-│       └── large white.jpg        Large white mushroom
-└── README.md            This file
+│   ├── navigation/
+│   └── mushrooms/
+└── README.md
 ```
 
 ## Setup

@@ -1,0 +1,205 @@
+F3: Export/Function Integrity Check
+====================================
+Date: 2026-06-15
+Scope: All refactored project .js files
+
+==============================================================================
+1. lib/gestures.js — Expected: scrollLeft, scrollRight, zoom, zoomOut, zoomIn
+==============================================================================
+  Defined functions:
+    scrollLeft(y, swipeDuration, floatyW, label)         [line 5]
+    scrollRight(y, swipeDuration, floatyW, label)         [line 16]
+    zoom(direction, times, floatyW)                       [line 27]
+    zoomOut(times, floatyW)                               [line 62]
+    zoomIn(times, floatyW)                                [line 66]
+
+  module.exports (line 70-76):
+    { scrollLeft, scrollRight, zoom, zoomOut, zoomIn }
+
+  RESULT: ✓ 5/5 functions preserved and exported
+
+==============================================================================
+2. lib/matcher.js — Expected: loadAllTemplates, findTemplates (NOT findMushrooms), nms, recycleAllTemplates
+==============================================================================
+  Defined public functions:
+    loadAllTemplates(templateDir, options)                 [line 203]
+    findTemplates(screenImage, templates, config)          [line 293]
+    nms(matches, overlapThreshold)                         [line 397]
+    recycleAllTemplates(templates)                         [line 448]
+
+  Internal functions (not exported):
+    _defaultRegion()                                       [line 36]
+    _resolveRegion(options)                                [line 58]
+    _calculateIoU(m1, m2)                                  [line 83]
+    _collectImageFiles(dir, excludeDirs)                   [line 131]
+
+  module.exports (line 480-485):
+    { loadAllTemplates, findTemplates, nms, recycleAllTemplates }
+
+  findMushrooms presence: NONE (ZERO occurrences in file)
+  findTemplates presence: DEFINED + EXPORTED
+
+  RESULT: ✓ 4/4 public functions preserved and exported
+  RESULT: ✓ findMushrooms → findTemplates rename complete
+
+==============================================================================
+3. lib/screen.js — Expected: saveScreenshotToGallery, meanBrightness, terrainRatio
+==============================================================================
+  Defined functions:
+    _red(color)                                            [line 26] (internal)
+    _green(color)                                          [line 35] (internal)
+    _blue(color)                                           [line 44] (internal)
+    meanBrightness(image, stride)                          [line 62]
+    terrainRatio(image, stride)                            [line 110]
+    saveScreenshotToGallery(image, name, options)          [line 162]
+
+  module.exports (line 239-243):
+    { saveScreenshotToGallery, meanBrightness, terrainRatio }
+
+  RESULT: ✓ 3/3 functions preserved and exported
+
+==============================================================================
+4. mushroom_finder/screen_state.js — Expected: classifyScreenState, getGameMapRegion
+==============================================================================
+  Defined functions:
+    _red(color)                                            [line 29] (internal)
+    _brightRegionStats(image, stride, brightThreshold)     [line 48] (internal)
+    classifyScreenState(image, options)                    [line 123]
+    getGameMapRegion(options)                              [line 229]
+
+  require statements:
+    var { meanBrightness, terrainRatio } = require("../lib/screen")  [line 18] ✓
+
+  module.exports (line 254-257):
+    { classifyScreenState, getGameMapRegion }
+
+  RESULT: ✓ 2/2 functions preserved and exported
+  RESULT: ✓ Destructured import of meanBrightness, terrainRatio from ../lib/screen
+
+==============================================================================
+5. mushroom_finder/01_navigate_to_map.js — Expected: 5 exports
+==============================================================================
+  Defined public functions:
+    loadNavigationTemplates(templateDir)                   [line 51]
+    dismissPikminIcon(navTemplates, floatyW)               [line 108]
+    navigateToMap(navTemplates, config, floatyW)           [line 236]
+    waitForAndClickLarge(navTemplates, floatyW, timeout)   [line 399]
+    waitForAndClickOwnPosition(navTemplates, floatyW, timeout) [line 448]
+
+  module.exports (line 497-503):
+    { loadNavigationTemplates, dismissPikminIcon, navigateToMap,
+      waitForAndClickLarge, waitForAndClickOwnPosition }
+
+  RESULT: ✓ 5/5 functions preserved and exported
+
+==============================================================================
+6. mushroom_finder/02_scan_map.js — Expected: startScanning, stopScanning, isScanning, wasUserStop
+==============================================================================
+  Defined functions:
+    startScanning(config, templates, onFound, floatyW, extraOptions)  [line 76]
+    stopScanning()                                                    [line 225]
+    wasUserStop()                                                     [line 234]
+    isScanning()                                                      [line 242]
+
+  module.exports (line 250-255):
+    { startScanning, stopScanning, isScanning, wasUserStop }
+
+  findMushrooms references: NONE
+  findTemplates usage (line 177, 195):
+    detection.findTemplates(screenImage, templates, config)     ✓
+    detection.findTemplates(screenImage, othersTemplates, config) ✓
+
+  RESULT: ✓ 4/4 functions preserved and exported
+  RESULT: ✓ Uses findTemplates (not findMushrooms)
+
+==============================================================================
+7. mushroom_finder/03_handle_mushroom.js — Expected: handleMushroomFound
+==============================================================================
+  Defined functions:
+    handleMushroomFound(panel, match, navTemplates, navigatorMod)  [line 12]
+
+  module.exports (line 26-28):
+    { handleMushroomFound }
+
+  RESULT: ✓ 1/1 function preserved and exported
+
+==============================================================================
+8. mushroom_finder/main.js — Expected: run(settings)
+==============================================================================
+  Defined functions:
+    cleanupAndExit(panel, statusText, toastMsg)             [line 23] (internal)
+    run(settings)                                           [line 37]
+    onFound(match) (inner)                                  [line 104]
+
+  Calls to phases:
+    Phase 1: matcher.loadAllTemplates()                      ✓
+    Phase 2: navModule.loadNavigationTemplates()             ✓
+    Phase 2: navModule.navigateToMap()                       ✓
+    Phase 3: scanner.startScanning()                         ✓
+    Phase 3: mushroomHandler.handleMushroomFound() (via onFound) ✓
+
+  module.exports (line 242-244):
+    { run }
+
+  RESULT: ✓ 1/1 function preserved and exported
+  RESULT: ✓ Calls all 3 phases correctly
+
+==============================================================================
+9. Root main.js — Entry point (NO module.exports)
+==============================================================================
+  module.exports count: 0 (confirmed) ✓
+  Dispatches to: require("./mushroom_finder/main").run(settings) ✓
+
+  RESULT: ✓ Entry point dispatches correctly
+
+==============================================================================
+10. Global reference check — getGameMapRegion vs regionFn in lib/matcher.js
+==============================================================================
+  getGameMapRegion occurrences in lib/matcher.js: 0  ✓ (CLEAN)
+  regionFn occurrences in lib/matcher.js: 6           ✓ (pattern in use)
+
+  _resolveRegion signature (line 58):
+    function _resolveRegion(options)
+    Uses: options.regionFn() pattern ✓
+
+  RESULT: ✓ GLOBALS CLEAN - no reference to global getGameMapRegion
+
+==============================================================================
+11. Rename consistency — findMushrooms → findTemplates
+==============================================================================
+  findMushrooms in source .js files:
+    lib/   : 0 occurrences
+    mushroom_finder/ : 0 occurrences
+    ui/    : 0 occurrences
+    main.js: 0 occurrences
+
+  findMushrooms only in documentation/plans (.md, .json) — EXPECTED ✓
+
+  findTemplates in source .js files:
+    lib/matcher.js:      definition (line 293), export (line 482), doc refs
+    mushroom_finder/02_scan_map.js: call sites (lines 177, 195)
+    mushroom_finder/main.js: not directly (uses matcher indirectly)
+
+  RESULT: ✓ findMushrooms fully removed from source code
+  RESULT: ✓ findTemplates correctly present in definition + call sites
+
+==============================================================================
+12. Call site verification — consumers of lib/matcher.js
+==============================================================================
+  mushroom_finder/02_scan_map.js (line 22):
+    var detection = require("../lib/matcher");
+    → Uses: detection.findTemplates(screenImage, templates, config) ✓
+
+  mushroom_finder/main.js (line 17):
+    var matcher = require("../lib/matcher");
+    → Uses: matcher.loadAllTemplates() ✓
+
+  RESULT: ✓ All consumers use correct API
+
+==============================================================================
+FINAL VERDICT
+==============================================================================
+  Functions: 25/25 preserved (5+4+3+2+5+4+1+1)
+  Renames:   findMushrooms→findTemplates OK
+  Globals:   CLEAN (0 getGameMapRegion in matcher.js)
+  VERDICT:   APPROVE ✓

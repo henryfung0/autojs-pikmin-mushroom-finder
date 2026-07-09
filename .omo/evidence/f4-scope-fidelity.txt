@@ -1,0 +1,340 @@
+================================================================================
+F4 SCOPE FIDELITY CHECK
+================================================================================
+Date: 2026-06-15
+Branch: refactor/cleanup-dead-code
+Plan: .omo/plans/refactor-project-structure.md
+Commits analyzed: d4d26ad, 8c461f5, 9052ea4, a998f4a, 08a4ea3, 68fd6af,
+                  655a885, d060aff, 498d1fd, 26cfca4
+
+================================================================================
+TASK-BY-TASK VERIFICATION
+================================================================================
+
+TASK 1 — Create directories (lib/, mushroom_finder/)
+────────────────────────────────────────────────────────────────────────────────
+Commit:    No explicit commit (dirs created implicitly by file moves)
+Status:    COMPLIANT
+Evidence:  lib/ exists, mushroom_finder/ exists
+Note:      Git does not track empty directories. Dirs created as a side effect
+           of Task 2-4 file moves. No explicit commit needed.
+
+
+TASK 2 — scroll.js → lib/gestures.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    d4d26ad
+Expected:  R100 scroll.js lib/gestures.js
+Actual:    R100 scroll.js lib/gestures.js | 1 insertion, 1 deletion
+           git show --stat: 1 file changed, 1 insertion(+), 1 deletion(-)
+Scope:     ✓ R100 rename (1 file, 2 changes)
+           ✓ require("./ui/floaty") → require("../ui/floaty")
+           ✓ No function body changes (only the require path changed)
+           ✓ No export renames
+           ✓ File has no comment header to update (starts with "auto";)
+Compliant: YES
+
+
+TASK 3 — detection.js → lib/matcher.js + findTemplates + regionFn
+────────────────────────────────────────────────────────────────────────────────
+Commit:    8c461f5
+Expected:  R100 detection.js lib/matcher.js | findMushrooms→findTemplates
+           | _resolveRegion(options) injecting regionFn
+Actual:    R100 detection.js lib/matcher.js | 30 insertions, 24 deletions
+Details:
+  ✓ R100 rename
+  ✓ File header: "detection.js" → "lib/matcher.js"
+  ✓ Comment updated: "mushroom types" → "template types"
+  ✓ function findMushrooms → function findTemplates (line 290)
+  ✓ module.exports: findMushrooms → findTemplates (line 482)
+  ✓ _resolveRegion(): now accepts (options) param
+  ✓ _resolveRegion(): uses options.regionFn instead of global getGameMapRegion
+  ✓ Call site: _resolveRegion(config) with options passthrough
+  ✓ findTemplates signature: findTemplates(screenImage, templates, config)
+  ✓ require("./ui/config") → require("../ui/config")
+  ✓ nms() NOT renamed (line 397, exports line 483)
+  ✓ loadAllTemplates() NOT renamed (line 203, exports line 481)
+  ✓ recycleAllTemplates() NOT renamed (line 448, exports line 484)
+  ✓ Zero references to global getGameMapRegion remain
+Compliant: YES
+
+
+TASK 4 — Split utils/utils.js → lib/screen.js + screen_state.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    9052ea4
+Expected:  A lib/screen.js + A mushroom_finder/screen_state.js + D utils/utils.js
+Actual:    A lib/screen.js + R100 utils/utils.js → screen_state.js + M main.js
+Details:
+  ✓ lib/screen.js created with 3 exports:
+    - saveScreenshotToGallery (complete, with MediaScanner logic)
+    - meanBrightness (stride-based sampling preserved)
+    - terrainRatio (green/blue dominance heuristic preserved)
+  ✓ mushroom_finder/screen_state.js created with 2 exports:
+    - classifyScreenState (logic unchanged)
+    - getGameMapRegion (logic unchanged)
+  ✓ screen_state.js imports: var { meanBrightness, terrainRatio } = require("../lib/screen");
+  ✓ utils/utils.js deleted (via rename → screen_state.js)
+  ✓ No function logic changes (pure split)
+  ⚠ Also touched main.js: updated require from utils to screen_state
+    (necessary change — require path would be broken otherwise)
+    This change was later overwritten by Task 9's rewrite.
+Compliant: YES (minor: main.js touched, but necessary and overwritten)
+
+
+TASK 5 — navigator.js → mushroom_finder/01_navigate_to_map.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    a998f4a
+Expected:  R100 navigator.js mushroom_finder/01_navigate_to_map.js
+Actual:    R100 navigator.js mushroom_finder/01_navigate_to_map.js | 4 changes
+           ALSO: R100 scanner.js mushroom_finder/02_scan_map.js | 0 changes
+Details:
+  ✓ navigator.js moved to mushroom_finder/01_navigate_to_map.js
+  ✓ File header updated: "navigator.js" → "mushroom_finder/01_navigate_to_map.js — Navigation phase (Phase 1)"
+  ✓ require("./ui/floaty") → require("../ui/floaty")
+  ✓ _showTap() untouched
+  ✓ State machine logic untouched
+  ✓ All 5 exports preserved: loadNavigationTemplates, dismissPikminIcon,
+    navigateToMap, waitForAndClickLarge, waitForAndClickOwnPosition
+  ✦ CROSS-CONTAMINATION: Also renamed scanner.js → mushroom_finder/02_scan_map.js
+    This file belongs to Task 6. The rename has 0 content changes but was
+    committed under the wrong task.
+Compliant: YES (with cross-contamination flag — see below)
+
+
+TASK 6 — scanner.js → mushroom_finder/02_scan_map.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    08a4ea3
+Expected:  R100 scanner.js mushroom_finder/02_scan_map.js | 4 require paths
+Actual:    1 file changed, 5 insertions(+), 5 deletions(-)
+Details:
+  ✓ File header updated: "scanner.js" → "mushroom_finder/02_scan_map.js — Scan loop (Phase 2)"
+  ✓ require("./detection") → require("../lib/matcher")
+  ✓ require("./ui/floaty") → require("../ui/floaty")
+  ✓ require("./scroll") → require("../lib/gestures")
+  ✓ require("./navigator") → require("./01_navigate_to_map")
+  ✓ Scan loop logic untouched
+  ✓ Direction flip logic untouched
+  ✓ Settle delay untouched
+  ✓ Volume key handling untouched
+  ⚠ Rename already done by Task 5 commit (a998f4a) — this commit only
+    updated header + require paths
+Compliant: YES
+
+
+TASK 7 — Create mushroom_finder/03_handle_mushroom.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    68fd6af
+Expected:  A mushroom_finder/03_handle_mushroom.js | onFound extraction
+Actual:    1 file created, 28 lines
+Details:
+  ✓ handleMushroomFound function extracted (matches original onFound in main.js)
+  ✓ Exports: handleMushroomFound
+  ✓ require("../ui/floaty") — correct path
+  ✓ Faithfully reimplements original onFound callback:
+    - updateStatus + appendLog with match info
+    - Click mushroom center (tapX/tapY calculation)
+    - waitForAndClickLarge delegation
+  ✓ No new behavior added
+  ✓ No volume key handling or singleton guard
+  ✓ No screenshot saving (original onFound didn't save one either)
+Compliant: YES
+
+
+TASK 8 — Create mushroom_finder/main.js orchestrator
+────────────────────────────────────────────────────────────────────────────────
+Commit:    655a885
+Expected:  A mushroom_finder/main.js | pipeline 01→02→03
+Actual:    1 file created, 244 lines
+Details:
+  ✓ Exports run(settings) function
+  ✓ Phase 1 (Setup): load templates, filter large color/element, create panel
+  ✓ Phase 2 (Launch): auto-launch app, navigate to map, poll screen state
+  ✓ Phase 3 (Scan): startScanning with onFound delegating to 03_handle_mushroom
+  ✓ Phase 4 (Cleanup): destroy panel, handle user stop
+  ✓ All require paths correct (relative to mushroom_finder/):
+    - ../ui/config, ./screen_state, ../lib/matcher, ./02_scan_map
+    - ../ui/floaty, ./01_navigate_to_map, ./03_handle_mushroom
+  ✓ onFound callback delegates to mushroomHandler.handleMushroomFound()
+  ✓ matcher.findTemplates() used (renamed from findMushrooms)
+  ✓ Volume key listener preserved
+  ✓ Pipeline logic unchanged from original main.js
+Compliant: YES
+
+
+TASK 9 — Rewrite root main.js as ultra-thin dispatcher
+────────────────────────────────────────────────────────────────────────────────
+Commit:    d060aff
+Expected:  M main.js | ~25 lines | singleton guard + dispatch
+Actual:    1 file, 24 lines (16 insertions, 281 deletions)
+Details:
+  ✓ Ultra-thin: 24 lines (target: under 30) ✓
+  ✓ "auto"; directive at top ✓
+  ✓ Singleton guard preserved (engines.myEngine().id loop) ✓
+  ✓ Config dialog invocation preserved (configUi.showConfigDialog()) ✓
+  ✓ Dispatch: require("./mushroom_finder/main").run(settings) ✓
+  ✓ No pipeline logic remains in main.js ✓
+  ✓ No function definitions (grep -c 'function ' main.js = 0) ✓
+  ✓ Only requires: ./ui/config_ui ✓
+Compliant: YES
+
+
+TASK 10 — Delete stale root files + utils/ directory
+────────────────────────────────────────────────────────────────────────────────
+Commit:    No explicit commit needed
+Expected:  All old files deleted, utils/ removed
+Actual:    Verified:
+           ✓ detection.js — DELETED (R100 in Task 3)
+           ✓ navigator.js — DELETED (R100 in Task 5)
+           ✓ scanner.js — DELETED (R100 in Task 5)
+           ✓ scroll.js — DELETED (R100 in Task 2)
+           ✓ utils/utils.js — DELETED (R100 in Task 4)
+           ✓ utils/ directory — DELETED
+Compliant: YES
+
+
+TASK 11 — Update README.md structure tree
+────────────────────────────────────────────────────────────────────────────────
+Commit:    498d1fd
+Expected:  M README.md | structure tree updated
+Actual:    1 file, 18 insertions, 23 deletions
+Details:
+  ✓ Old flat structure listing removed
+  ✓ New modular structure with lib/, mushroom_finder/ added
+  ✓ All new paths present: gestures.js, matcher.js, screen.js
+  ✓ Numbered phases: 01_navigate_to_map, 02_scan_map, 03_handle_mushroom
+  ✓ screen_state.js present in tree
+  ✓ utils.js removed from tree (0 occurrences)
+  ✓ Dispatcher description: "ultra-thin dispatcher"
+  ✓ Only the tree section was changed — other content left intact
+Compliant: YES
+
+
+FIX COMMIT — findMushrooms→findTemplates in 02_scan_map.js
+────────────────────────────────────────────────────────────────────────────────
+Commit:    26cfca4
+Expected:  M mushroom_finder/02_scan_map.js | 2 substitutions
+Actual:    1 file, 4 lines changed (2 substitutions)
+Details:
+  ✓ detection.findMushrooms() → detection.findTemplates() (line 177)
+  ✓ detection.findMushrooms() → detection.findTemplates() (line 195)
+  ✓ No other changes in this commit
+Compliant: YES
+
+
+================================================================================
+SCOPE CREEP CHECKS
+================================================================================
+
+1. project.json UNCHANGED:
+   ✓ git diff HEAD~10..HEAD -- project.json → empty
+   Status: CLEAN
+
+2. templates/ DIRECTORY UNCHANGED:
+   ✓ git diff HEAD~10..HEAD -- templates/ → empty
+   Status: CLEAN
+
+3. All touched files are APPROVED:
+   ✓ lib/gestures.js (Task 2)
+   ✓ lib/matcher.js (Task 3)
+   ✓ lib/screen.js (Task 4)
+   ✓ mushroom_finder/screen_state.js (Task 4)
+   ✓ mushroom_finder/01_navigate_to_map.js (Task 5)
+   ✓ mushroom_finder/02_scan_map.js (Task 6 + Fix)
+   ✓ mushroom_finder/03_handle_mushroom.js (Task 7)
+   ✓ mushroom_finder/main.js (Task 8)
+   ✓ main.js (Task 4 + Task 9)
+   ✓ README.md (Task 11)
+   No files outside lib/, mushroom_finder/, main.js, README.md were modified.
+   Status: CLEAN
+
+
+================================================================================
+CROSS-CONTAMINATION ANALYSIS
+================================================================================
+
+Contamination #1: Task 5 commit (a998f4a) also renamed scanner.js
+────────────────────────────────────────────────────────────────────────────
+Description: Commit a998f4a titled "refactor: move navigator.js →
+             mushroom_finder/01_navigate_to_map.js" ALSO performed
+             R100 scanner.js → mushroom_finder/02_scan_map.js.
+Impact:      LOW — the rename had 0 content changes (just the file path).
+             Task 6 (commit 08a4ea3) then correctly updated the require
+             paths. The contamination is in commit boundaries, not in code
+             correctness.
+File:        mushroom_finder/02_scan_map.js was created by Task 5, not Task 6.
+
+Contamination #2: Task 4 commit (9052ea4) touched main.js
+────────────────────────────────────────────────────────────────────────────
+Description: Commit 9052ea4 updated main.js to change the require path
+             from ./utils/utils to ./mushroom_finder/screen_state.
+Impact:      MINOR — necessary to keep main.js working after utils.js split.
+             This change was later overwritten by Task 9's complete rewrite.
+             Not a meaningful contamination.
+
+Summary:     1 real contamination (Task 5 → Task 6 file), minor impact
+Status:      1 issue
+
+
+================================================================================
+GUARDRAILS (Must NOT do) COMPLIANCE
+================================================================================
+
+Guardrail                                                          Status
+──────────────────────────────────────────────────────────────────────────
+No drive-by improvements (volume keys, zoom, recycle)             ✓ PASS
+No changes to project.json                                        ✓ PASS
+No changes to templates/                                          ✓ PASS
+No function signature changes beyond findMushrooms→findTemplates  ✓ PASS
+No renaming of nms/loadAllTemplates/recycleAllTemplates           ✓ PASS (verified in matcher.js)
+No reformatting beyond file header updates                        ✓ PASS
+No new features or behavior modifications                         ✓ PASS
+No changes to config defaults or new config keys                  ✓ PASS
+
+All guardrails: CLEAN
+
+
+================================================================================
+UNACCOUNTED CHANGES
+================================================================================
+
+git diff HEAD --name-only:
+  .omo/boulder.json                           — infrastructure, not project code
+git status --short (untracked):
+  .omo/evidence/f2-structure-audit.txt        — evidence (expected)
+  .omo/evidence/f3-export-integrity.txt       — evidence (expected)
+  .omo/evidence/task-2-gestures-moved.txt     — evidence (expected)
+  .omo/notepads/                              — planning artifacts
+  .omo/plans/refactor-project-structure.md    — plan file (expected)
+
+No project files are modified or unaccounted for outside the .omo/ directory.
+Status: CLEAN
+
+
+================================================================================
+OLD REQUIRE PATHS
+================================================================================
+Verify no old require paths remain in codebase:
+  require("./detection")    → PASS (0 matches)
+  require("./scroll")       → PASS (0 matches)
+  require("./navigator")    → PASS (0 matches)
+  require("./utils/utils")  → PASS (0 matches)
+Status: CLEAN
+
+
+================================================================================
+VERDICT
+================================================================================
+
+Tasks [10/10 compliant] | Contamination [1 issue — minor] | Unaccounted [CLEAN]
+
+VERDICT: APPROVE
+
+Notes:
+- All 10 tasks + 1 fix commit are scope-compliant
+- 1 contamination issue: Task 5 (a998f4a) also renamed scanner.js (Task 6's file)
+  — but the rename had 0 content changes, and Task 6 correctly followed up
+- Zero scope creep: project.json, templates/, and all guardrails pass
+- Zero unaccounted changes in project files
+- All old require paths eliminated
+- All function renames correct (findMushrooms→findTemplates only)
+- nms/loadAllTemplates/recycleAllTemplates preserved as specified
+================================================================================

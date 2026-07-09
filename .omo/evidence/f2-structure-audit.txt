@@ -1,0 +1,119 @@
+================================================================================
+F2: File Structure & Path Audit
+================================================================================
+Date: 2026-06-15
+================================================================================
+
+1. FILE TREE VERIFICATION
+----------------------------------------------------------------------
+Expected vs Actual file tree comparison:
+
+Expected:
+  ./lib/gestures.js
+  ./lib/matcher.js
+  ./lib/screen.js
+  ./mushroom_finder/01_navigate_to_map.js
+  ./mushroom_finder/02_scan_map.js
+  ./mushroom_finder/03_handle_mushroom.js
+  ./mushroom_finder/main.js
+  ./mushroom_finder/screen_state.js
+  ./main.js
+  ./ui/config.js
+  ./ui/config_ui.js
+  ./ui/floaty.js
+
+Actual (find . -name '*.js' -not -path './node_modules/*' -not -path './.omo/*' | sort):
+  ./lib/gestures.js
+  ./lib/matcher.js
+  ./lib/screen.js
+  ./main.js
+  ./mushroom_finder/01_navigate_to_map.js
+  ./mushroom_finder/02_scan_map.js
+  ./mushroom_finder/03_handle_mushroom.js
+  ./mushroom_finder/main.js
+  ./mushroom_finder/screen_state.js
+  ./ui/config.js
+  ./ui/config_ui.js
+  ./ui/floaty.js
+
+RESULT: PASS (exact match, 12/12 files present)
+
+2. OLD FILE CLEANUP
+----------------------------------------------------------------------
+  detection.js   → DELETED
+  navigator.js   → DELETED
+  scanner.js     → DELETED
+  scroll.js      → DELETED
+  utils/utils.js → DELETED
+  utils/         → DELETED (directory removed)
+
+RESULT: PASS (6/6 deleted)
+
+3. REQUIRE PATH RESOLUTION
+----------------------------------------------------------------------
+All 18 require() calls verified individually:
+
+  #  File                                Require Path                   Resolves To                          Status
+  1  lib/gestures.js:3                   ../ui/floaty                   ui/floaty.js                         OK
+  2  lib/matcher.js:20                   ../ui/config                   ui/config.js                         OK
+  3  main.js:10                          ./ui/config_ui                 ui/config_ui.js                      OK
+  4  main.js:23                          ./mushroom_finder/main         mushroom_finder/main.js              OK
+  5  mushroom_finder/01_navigate_to_map:20 ../ui/floaty                 ui/floaty.js                         OK
+  6  mushroom_finder/02_scan_map.js:22   ../lib/matcher                 lib/matcher.js                       OK
+  7  mushroom_finder/02_scan_map.js:23   ../ui/floaty                   ui/floaty.js                         OK
+  8  mushroom_finder/02_scan_map.js:24   ../lib/gestures                lib/gestures.js                      OK
+  9  mushroom_finder/02_scan_map.js:25   ./01_navigate_to_map           mushroom_finder/01_navigate_to_map.js OK
+ 10  mushroom_finder/03_handle_mushroom:10 ../ui/floaty                 ui/floaty.js                         OK
+ 11  mushroom_finder/main.js:15          ../ui/config                   ui/config.js                         OK
+ 12  mushroom_finder/main.js:16          ./screen_state                 mushroom_finder/screen_state.js      OK
+ 13  mushroom_finder/main.js:17          ../lib/matcher                 lib/matcher.js                       OK
+ 14  mushroom_finder/main.js:18          ./02_scan_map                  mushroom_finder/02_scan_map.js       OK
+ 15  mushroom_finder/main.js:19          ../ui/floaty                   ui/floaty.js                         OK
+ 16  mushroom_finder/main.js:20          ./01_navigate_to_map           mushroom_finder/01_navigate_to_map.js OK
+ 17  mushroom_finder/main.js:21          ./03_handle_mushroom           mushroom_finder/03_handle_mushroom.js OK
+ 18  mushroom_finder/screen_state.js:18  ../lib/screen                  lib/screen.js                        OK
+
+Note: ui/config.js:8 has require('./ui/config') in a JSDoc comment (documentation) — skipped.
+
+RESULT: PASS (18/18 resolve)
+
+4. STALE REQUIRE REFERENCES
+----------------------------------------------------------------------
+  grep -rn 'require.*detection'     → EMPTY (no stale references)
+  grep -rn 'require.*scroll'        → EMPTY (gestures.js rename is clean)
+  grep -rn 'require.*"\./utils'     → EMPTY
+  grep -rn 'require.*"\.\./utils'   → EMPTY
+
+RESULT: PASS (no stale references to deleted files)
+
+5. README TREE MATCH
+----------------------------------------------------------------------
+README.md Project Structure section checked:
+
+SHOULD be mentioned:
+  lib/gestures.js             ✓ (line 32)
+  lib/matcher.js              ✓ (line 33)
+  lib/screen.js               ✓ (line 34)
+  mushroom_finder/01_navigate_to_map  ✓ (line 41 — missing .js extension, minor)
+  mushroom_finder/02_scan_map         ✓ (line 42 — missing .js extension, minor)
+  mushroom_finder/03_handle_mushroom  ✓ (line 43 — missing .js extension, minor)
+  mushroom_finder/screen_state.js     ✓ (line 44)
+  mushroom_finder/main.js             ✓ (line 40)
+  ui/config.js                        ✓ (line 36)
+  ui/config_ui.js                     ✓ (line 37)
+  ui/floaty.js                        ✓ (line 38)
+
+SHOULD NOT be mentioned:
+  detection.js              → 0 matches ✓
+  navigator.js              → 0 matches ✓
+  scanner.js               → 0 matches ✓
+  scroll.js                → 0 matches ✓
+  utils.js                 → 0 matches ✓
+
+RESULT: PASS (with minor note: 3 file entries lack .js extension in README)
+
+================================================================================
+FINAL VERDICT
+================================================================================
+File tree [PASS] | Require paths [18/18 resolve] | Old files [6 deleted] | README [MATCH] | VERDICT: APPROVE
+================================================================================

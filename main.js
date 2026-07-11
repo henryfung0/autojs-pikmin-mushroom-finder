@@ -76,6 +76,11 @@ if (settings.mode === "Advanture") {
     var collectFeeding = require("./daily_task/advanture/collect_feeding");
     collectFeeding.runCollectFeeding(config, panel);
   }
+  if (!throwFlow.isShutdownRequested() && settings.enableFeedPikmin) {
+    floatyMod.appendLog(panel, "Starting feed pikmin...");
+    var feedPikmin = require("./daily_task/feeding/feed_pikmin");
+    feedPikmin.feedPikmin(config, panel);
+  }
   floatyMod.appendLog(panel, "Pikmin Daily Task finished");
   sleep(3000);
   floatyMod.destroy(panel);

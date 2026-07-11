@@ -43,11 +43,41 @@ function _loadTemplatesFromDir(baseDir, subDir) {
   return templates;
 }
 
+function _loadSpecificTemplates(baseDir, subDir, fileNames) {
+  var dir = files.join(baseDir, subDir);
+  var templates = [];
+  for (var i = 0; i < fileNames.length; i++) {
+    var filePath = files.join(dir, fileNames[i]);
+    try {
+      var img = images.read(filePath);
+      if (!img) continue;
+      var w = img.getWidth();
+      var h = img.getHeight();
+      if (w > 0 && h > 0) {
+        templates.push({ name: fileNames[i], image: img, w: w, h: h });
+      } else {
+        img.recycle();
+      }
+    } catch (e) {
+      console.warn("collect_feeding: error reading '" + filePath + "': " + e);
+    }
+  }
+  return templates;
+}
+
+// Per-template threshold overrides (filename → threshold)
+var TEMPLATE_THRESHOLDS = {
+  "Grape(1).jpg": 0.8,
+  "Grape.jpg": 0.8,
+  "Peach1.jpg": 0.8,
+};
+
 function _matchOne(screenImage, tpl, threshold) {
   if (!screenImage || !tpl || !tpl.image) return null;
+  var t = (tpl.name && TEMPLATE_THRESHOLDS[tpl.name]) || threshold || 0.7;
   try {
     var result = images.findImage(screenImage, tpl.image, {
-      threshold: threshold || 0.7,
+      threshold: t,
       region: [0, 0, screenImage.getWidth(), screenImage.getHeight()],
     });
     if (result) {
@@ -58,7 +88,7 @@ function _matchOne(screenImage, tpl, threshold) {
         h: tpl.h,
         name: tpl.name,
         confidence:
-          result.confidence !== undefined ? result.confidence : threshold,
+          result.confidence !== undefined ? result.confidence : t,
       };
     }
   } catch (e) {
@@ -147,7 +177,7 @@ function runCollectFeeding(config, panel) {
   });
   sleep(1000);
 
-  var feedingPageTemplates = _loadTemplatesFromDir(templateDir, "feeding");
+  var feedingPageTemplates = _loadSpecificTemplates(templateDir, "feeding", ["Feeding page.jpg"]);
   var collectTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect");
 
   if (feedingPageTemplates.length === 0) {

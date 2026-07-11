@@ -95,24 +95,33 @@ function showConfigDialog() {
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 8"/>
 
           {/* Group 1: Seedling */}
-          <text text="1. Seedling:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <horizontal gravity="center_vertical">
+            <checkbox id="enableSeedlingGroup" text="1. Seedling" checked="true"
+                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+          </horizontal>
           <checkbox id="enableCollect" text="Collect seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
           <checkbox id="enableFarm" text="Farm seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
           <checkbox id="enableThrowRepeated" text="Throw repeated seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
 
           {/* Group 2: Adventure */}
-          <text text="2. Adventure:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
-          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          <horizontal gravity="center_vertical">
+            <checkbox id="enableAdventureGroup" text="2. Adventure" checked="true"
+                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+          </horizontal>
+          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+          <checkbox id="enableSeedlingAdv" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
 
           {/* Group 3: Feeding */}
-          <text text="3. Feeding:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <horizontal gravity="center_vertical">
+            <checkbox id="enableFeedingGroup" text="3. Feeding" checked="true"
+                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+          </horizontal>
           <checkbox id="enableCollectFeeding" text="Collect feeding" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
 
           {/* Max Empty Loops */}
           <text text="Max Empty Loops: 10" textSize="13sp"
@@ -207,6 +216,24 @@ function showConfigDialog() {
     }
   });
 
+  // ── Group checkbox toggles ────────────────────────
+  view.enableSeedlingGroup.on("click", function() {
+    var checked = view.enableSeedlingGroup.isChecked();
+    view.enableCollect.setChecked(checked);
+    view.enableFarm.setChecked(checked);
+    view.enableThrowRepeated.setChecked(checked);
+  });
+  view.enableAdventureGroup.on("click", function() {
+    var checked = view.enableAdventureGroup.isChecked();
+    view.enableGift.setChecked(checked);
+    view.enableSeedlingAdv.setChecked(checked);
+    view.enableFruit.setChecked(checked);
+  });
+  view.enableFeedingGroup.on("click", function() {
+    var checked = view.enableFeedingGroup.isChecked();
+    view.enableCollectFeeding.setChecked(checked);
+  });
+
   // ── Start button ─────────────────────────────────
   view.startBtn.on("click", function() {
     dialogResult.choice = "start";
@@ -225,7 +252,7 @@ function showConfigDialog() {
       enableThrowRepeated: view.enableThrowRepeated.isChecked(),
       enableCollectFeeding: view.enableCollectFeeding.isChecked(),
       enableGift: view.enableGift.isChecked(),
-      enableSeedling: view.enableSeedling.isChecked(),
+      enableSeedling: view.enableSeedlingAdv.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
       maxEmptyLoops: view.maxEmptyLoops.progress + 1,
       pikminAccount: view.accountSelector.getSelectedItemPosition() + 1
@@ -253,8 +280,11 @@ function showConfigDialog() {
     view.enableThrowRepeated.setChecked(true);
     view.enableCollectFeeding.setChecked(true);
     view.enableGift.setChecked(true);
-    view.enableSeedling.setChecked(true);
+    view.enableSeedlingAdv.setChecked(true);
     view.enableFruit.setChecked(true);
+    view.enableSeedlingGroup.setChecked(true);
+    view.enableAdventureGroup.setChecked(true);
+    view.enableFeedingGroup.setChecked(true);
     view.maxEmptyLoops.setProgress(9);
     view.maxEmptyLoopsValue.setText("10");
   });

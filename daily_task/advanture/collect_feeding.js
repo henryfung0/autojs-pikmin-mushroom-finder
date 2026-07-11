@@ -167,6 +167,7 @@ function runCollectFeeding(config, panel) {
   floatyMod.appendLog(panel, "Opening feeding page...");
   var opened = false;
   for (var attempt = 0; attempt < 5; attempt++) {
+    var startTime = Date.now();
     var img = null;
     try {
       img = captureScreen();
@@ -174,7 +175,7 @@ function runCollectFeeding(config, panel) {
         sleep(1000);
         continue;
       }
-      var match = _findFirstMatch(img, feedingPageTemplates, 0.5);
+      var match = _findFirstMatch(img, feedingPageTemplates, 0.7);
       if (match) {
         _tapAt(match, "Tap " + match.name + " (open)", panel);
         opened = true;
@@ -183,7 +184,8 @@ function runCollectFeeding(config, panel) {
     } finally {
       if (img) img.recycle();
     }
-    sleep(1000);
+    var elapsed = Date.now() - startTime;
+    if (elapsed < 2000) sleep(2000 - elapsed);
   }
 
   if (!opened) {
@@ -193,43 +195,142 @@ function runCollectFeeding(config, panel) {
 
   sleep(2000);
 
-  var collectThreshold = 0.5;
-  var maxCollectIterations = 30;
+  var collectThreshold = 0.7;
   var collectedCount = 0;
+
+  var maxConsecutiveMisses = 3;
   var consecutiveMisses = 0;
+  var retryCount = 0;
+  var maxRetries = 3;
 
-  for (var iter = 0; iter < maxCollectIterations; iter++) {
-    var screenImg = null;
-    try {
-      screenImg = captureScreen();
-      if (!screenImg) {
-        sleep(500);
-        continue;
+  while (retryCount < maxRetries) {
+    floatyMod.appendLog(panel, "Scanning for collect items (retry " + (retryCount + 1) + ")...");
+
+    while (consecutiveMisses < maxConsecutiveMisses) {
+      var startTime = Date.now();
+      var screenImg = null;
+      try {
+        screenImg = captureScreen();
+        if (!screenImg) {
+          sleep(500);
+          continue;
+        }
+
+        var collectMatch = _findFirstMatch(
+          screenImg,
+          collectTemplates,
+          collectThreshold,
+        );
+        if (collectMatch) {
+          collectedCount++;
+          consecutiveMisses = 0;
+          _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
+          sleep(1500);
+        } else {
+          consecutiveMisses++;
+          if (consecutiveMisses < maxConsecutiveMisses) {
+            floatyMod.appendLog(
+              panel,
+              "No collect item (" + consecutiveMisses + "/" + maxConsecutiveMisses + ")",
+            );
+          }
+        }
+      } finally {
+        if (screenImg) screenImg.recycle();
       }
+      var elapsed = Date.now() - startTime;
+      if (elapsed < 1000) sleep(1000 - elapsed);
+    }
 
-      var collectMatch = _findFirstMatch(
-        screenImg,
-        collectTemplates,
-        collectThreshold,
-      );
-      if (collectMatch) {
-        collectedCount++;
-        consecutiveMisses = 0;
-        _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
-        sleep(1500);
-      } else {
-        consecutiveMisses++;
-        if (consecutiveMisses >= 3) {
-          floatyMod.appendLog(
-            panel,
-            "No collect items 3 times in a row — done",
-          );
-          break;
+    retryCount++;
+    if (retryCount >= maxRetries) break;
+
+    var doubleClickCount = (retryCount < maxRetries) ? 1 : 3;
+    floatyMod.appendLog(
+      panel,
+      "3 consecutive misses — double click " + doubleClickCount + "x",
+    );
+
+    for (var dc = 0; dc < doubleClickCount; dc++) {
+      var dcStart = Date.now();
+      while (Date.now() - dcStart < 2000) {
+        var dcImg = null;
+        try {
+          dcImg = captureScreen();
+          if (!dcImg) {
+            sleep(500);
+            continue;
+          }
+          var dcMatch = _findFirstMatch(dcImg, feedingPageTemplates, 0.7);
+          if (dcMatch) {
+            var dcX = dcMatch.x + Math.round(dcMatch.w / 2);
+            var dcY = dcMatch.y + Math.round(dcMatch.h / 2);
+            var navBarH =
+              (advConfig.ui && advConfig.ui.navBarHeight) ||
+              Math.round(device.height * 0.07);
+            var maxSafeY = device.height - navBarH;
+            if (dcY > maxSafeY) dcY = maxSafeY;
+            floatyMod.appendLog(
+              panel,
+              "Double-click " + dcMatch.name + " (retry #" + retryCount + ")",
+            );
+            floatyMod.withPanelHidden(panel, function () {
+              press(dcX, dcY, 500);
+              sleep(100);
+              press(dcX, dcY, 500);
+            });
+            break;
+          }
+        } finally {
+          if (dcImg) dcImg.recycle();
         }
         sleep(500);
       }
-    } finally {
-      if (screenImg) screenImg.recycle();
+      sleep(500);
+    }
+
+    consecutiveMisses = 0;
+    sleep(2000);
+  }
+
+  if (retryCount >= maxRetries) {
+    floatyMod.appendLog(panel, "3 consecutive misses — double click 3x (final)");
+    for (var dc = 0; dc < 3; dc++) {
+      var dcStart = Date.now();
+      while (Date.now() - dcStart < 2000) {
+        var dcImg = null;
+        try {
+          dcImg = captureScreen();
+          if (!dcImg) {
+            sleep(500);
+            continue;
+          }
+          var dcMatch = _findFirstMatch(dcImg, feedingPageTemplates, 0.7);
+          if (dcMatch) {
+            var dcX = dcMatch.x + Math.round(dcMatch.w / 2);
+            var dcY = dcMatch.y + Math.round(dcMatch.h / 2);
+            var navBarH =
+              (advConfig.ui && advConfig.ui.navBarHeight) ||
+              Math.round(device.height * 0.07);
+            var maxSafeY = device.height - navBarH;
+            if (dcY > maxSafeY) dcY = maxSafeY;
+            floatyMod.appendLog(
+              panel,
+              "Double-click " + dcMatch.name + " (final #" + (dc + 1) + ")",
+            );
+            floatyMod.withPanelHidden(panel, function () {
+              press(dcX, dcY, 500);
+              sleep(100);
+              press(dcX, dcY, 500);
+            });
+            break;
+          }
+        } finally {
+          if (dcImg) dcImg.recycle();
+        }
+        sleep(500);
+      }
+      sleep(500);
     }
   }
 
@@ -247,7 +348,7 @@ function runCollectFeeding(config, panel) {
           sleep(500);
           continue;
         }
-        var closeMatch = _findFirstMatch(closeImg, feedingPageTemplates, 0.5);
+        var closeMatch = _findFirstMatch(closeImg, feedingPageTemplates, 0.7);
         if (closeMatch) {
           var tapX = closeMatch.x + Math.round(closeMatch.w / 2);
           var tapY = closeMatch.y + Math.round(closeMatch.h / 2);

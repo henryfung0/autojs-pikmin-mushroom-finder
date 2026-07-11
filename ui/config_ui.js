@@ -23,7 +23,6 @@
  *   Returns null if the user pressed Exit or cancelled.
  */
 function showConfigDialog() {
-  // Inflate the XML layout into a real Android View hierarchy.
   var view = ui.inflate(
     <frame bg="#1E1E1E">
       <vertical padding="16 8">
@@ -34,106 +33,106 @@ function showConfigDialog() {
         <spinner id="modeSelector" entries="Mushroom Finder|Pikmin Daily Task"
                  textSize="14sp" textColor="#E0E0E0" gravity="center" margin="0 0 16 0"/>
 
-        {/* Common checkboxes (always visible) */}
-        <checkbox id="autoLaunch" text="Auto-launch Pikmin Bloom"
-                  checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-        <text text="Mushroom Finder Settings" textSize="15sp"
-              textColor="#64B5F6" margin="0 0 0 4"/>
+        {/* Scrollable settings area */}
+        <vertical layout_weight="1">
+          <text text="Mushroom Finder Settings" textSize="15sp"
+                textColor="#64B5F6" margin="0 0 0 4"/>
 
-        {/* Mushroom-specific settings (hidden by default) */}
-        <vertical id="mushroomSettings" visibility="gone">
-          {/* Confidence Threshold */}
-          <text text="Confidence Threshold: 0.85" textSize="13sp"
-                textColor="#CCCCCC" margin="0 4 0 0" id="thresholdLabel"/>
-          <text text="0.85" textSize="12sp" textColor="#999999"
-                gravity="end" id="thresholdValue"/>
-          <seekbar id="threshold" progress="15" max="29"
-                   margin="0 0 0 8"/>
+          {/* Mushroom-specific settings (hidden by default) */}
+          <vertical id="mushroomSettings" visibility="gone">
+            {/* Confidence Threshold */}
+            <text text="Confidence Threshold: 0.85" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 4 0 0" id="thresholdLabel"/>
+            <text text="0.85" textSize="12sp" textColor="#999999"
+                  gravity="end" id="thresholdValue"/>
+            <seekbar id="threshold" progress="15" max="29"
+                     margin="0 0 0 8"/>
 
-          {/* Settle Delay */}
-          <text text="Settle Delay: 2.5s" textSize="13sp"
-                textColor="#CCCCCC" margin="0 4 0 0" id="settleDelayLabel"/>
-          <text text="2.5" textSize="12sp" textColor="#999999"
-                gravity="end" id="settleDelayValue"/>
-          <seekbar id="settleDelay" progress="4" max="19"
-                   margin="0 0 0 8"/>
+            {/* Settle Delay */}
+            <text text="Settle Delay: 2.5s" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 4 0 0" id="settleDelayLabel"/>
+            <text text="2.5" textSize="12sp" textColor="#999999"
+                  gravity="end" id="settleDelayValue"/>
+            <seekbar id="settleDelay" progress="4" max="19"
+                     margin="0 0 0 8"/>
 
-          {/* Max Empty Scrolls */}
-          <text text="Max Empty Scrolls: 5" textSize="13sp"
-                textColor="#CCCCCC" margin="0 4 0 0" id="maxEmptyScrollsLabel"/>
-          <text text="5" textSize="12sp" textColor="#999999"
-                gravity="end" id="maxEmptyScrollsValue"/>
-          <seekbar id="maxEmptyScrolls" progress="4" max="14"
-                   margin="0 0 0 8"/>
+            {/* Max Empty Scrolls */}
+            <text text="Max Empty Scrolls: 5" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 4 0 0" id="maxEmptyScrollsLabel"/>
+            <text text="5" textSize="12sp" textColor="#999999"
+                  gravity="end" id="maxEmptyScrollsValue"/>
+            <seekbar id="maxEmptyScrolls" progress="4" max="14"
+                     margin="0 0 0 8"/>
 
-          <checkbox id="detectLargeColor" text="Include large color mushrooms"
-                    checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 4 0 4"/>
-          {/* Large Color Threshold */}
-          <text text="Large Color Threshold: 0.75" textSize="13sp"
-                textColor="#CCCCCC" margin="0 4 0 0" id="largeColorThresholdLabel"/>
-          <text text="0.75" textSize="12sp" textColor="#999999"
-                gravity="end" id="largeColorThresholdValue"/>
-          <seekbar id="largeColorThreshold" progress="5" max="29"
-                   margin="0 0 0 8"/>
-          {/* Large Element Threshold */}
-          <text text="Large Element Threshold: 0.75" textSize="13sp"
-                textColor="#CCCCCC" margin="0 4 0 0" id="largeElementThresholdLabel"/>
-          <text text="0.75" textSize="12sp" textColor="#999999"
-                gravity="end" id="largeElementThresholdValue"/>
-          <seekbar id="largeElementThreshold" progress="5" max="29"
-                   margin="0 0 0 8"/>
-          <checkbox id="detectLargeElement" text="Include large element mushrooms"
-                    checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+            <checkbox id="detectLargeColor" text="Include large color mushrooms"
+                      checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 4 0 4"/>
+            {/* Large Color Threshold */}
+            <text text="Large Color Threshold: 0.75" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 4 0 0" id="largeColorThresholdLabel"/>
+            <text text="0.75" textSize="12sp" textColor="#999999"
+                  gravity="end" id="largeColorThresholdValue"/>
+            <seekbar id="largeColorThreshold" progress="5" max="29"
+                     margin="0 0 0 8"/>
+            {/* Large Element Threshold */}
+            <text text="Large Element Threshold: 0.75" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 4 0 0" id="largeElementThresholdLabel"/>
+            <text text="0.75" textSize="12sp" textColor="#999999"
+                  gravity="end" id="largeElementThresholdValue"/>
+            <seekbar id="largeElementThreshold" progress="5" max="29"
+                     margin="0 0 0 8"/>
+            <checkbox id="detectLargeElement" text="Include large element mushrooms"
+                      checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+          </vertical>
+
+          {/* Pikmin Daily Task settings */}
+          <vertical id="advantureSettings">
+            <text text="Pikmin Daily Task:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+
+            <text text="Account:" textSize="14sp" textColor="#CCCCCC" margin="0 0 0 4"/>
+            <spinner id="accountSelector" entries="Main Ac|Second Ac|Both Ac"
+                     textSize="14sp" textColor="#E0E0E0" margin="0 0 0 8"/>
+
+            {/* Group 1: Seedling */}
+            <horizontal gravity="center_vertical">
+              <checkbox id="enableSeedlingGroup" text="1. Seedling" checked="true"
+                       textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+            </horizontal>
+            <checkbox id="enableCollect" text="Collect seedlings" checked="true"
+                     textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+            <checkbox id="enableFarm" text="Farm seedlings" checked="true"
+                     textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+            <checkbox id="enableThrowRepeated" text="Throw repeated seedlings" checked="true"
+                     textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+
+            {/* Group 2: Adventure */}
+            <horizontal gravity="center_vertical">
+              <checkbox id="enableAdventureGroup" text="2. Adventure" checked="true"
+                       textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+            </horizontal>
+            <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+            <checkbox id="enableSeedlingAdv" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+            <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+
+            {/* Group 3: Feeding */}
+            <horizontal gravity="center_vertical">
+              <checkbox id="enableFeedingGroup" text="3. Feeding" checked="true"
+                       textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
+            </horizontal>
+            <checkbox id="enableCollectFeeding" text="Collect feeding" checked="true"
+                     textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
+
+            {/* Max Empty Loops */}
+            <text text="Max Empty Loops: 10" textSize="13sp"
+                  textColor="#CCCCCC" margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
+            <text text="10" textSize="12sp" textColor="#999999"
+                  gravity="end" id="maxEmptyLoopsValue"/>
+            <seekbar id="maxEmptyLoops" progress="9" max="29"
+                     margin="0 0 0 8"/>
+          </vertical>
         </vertical>
 
-        {/* Pikmin Daily Task settings */}
-        <vertical id="advantureSettings">
-          <text text="Pikmin Daily Task:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
-
-          <text text="Account:" textSize="14sp" textColor="#CCCCCC" margin="0 0 0 4"/>
-          <spinner id="accountSelector" entries="Main Ac|Second Ac|Both Ac"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 8"/>
-
-          {/* Group 1: Seedling */}
-          <horizontal gravity="center_vertical">
-            <checkbox id="enableSeedlingGroup" text="1. Seedling" checked="true"
-                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
-          </horizontal>
-          <checkbox id="enableCollect" text="Collect seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-          <checkbox id="enableFarm" text="Farm seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-          <checkbox id="enableThrowRepeated" text="Throw repeated seedlings" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-
-          {/* Group 2: Adventure */}
-          <horizontal gravity="center_vertical">
-            <checkbox id="enableAdventureGroup" text="2. Adventure" checked="true"
-                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
-          </horizontal>
-          <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-          <checkbox id="enableSeedlingAdv" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-          <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-
-          {/* Group 3: Feeding */}
-          <horizontal gravity="center_vertical">
-            <checkbox id="enableFeedingGroup" text="3. Feeding" checked="true"
-                     textSize="14sp" textColor="#64B5F6" textStyle="bold" margin="0 8 0 4"/>
-          </horizontal>
-          <checkbox id="enableCollectFeeding" text="Collect feeding" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="24 0 0 4"/>
-
-          {/* Max Empty Loops */}
-          <text text="Max Empty Loops: 10" textSize="13sp"
-                textColor="#CCCCCC" margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
-          <text text="10" textSize="12sp" textColor="#999999"
-                gravity="end" id="maxEmptyLoopsValue"/>
-          <seekbar id="maxEmptyLoops" progress="9" max="29"
-                   margin="0 0 0 8"/>
-        </vertical>
-
-        {/* Button row */}
-        <horizontal gravity="center" margin="12 0 0 0">
+        {/* Fixed button row at bottom */}
+        <horizontal gravity="center" margin="12 8 0 0">
           <button id="resetBtn" text="Reset" textSize="13sp"
                   style="Widget.AppCompat.Button.ButtonBar.AlertDialog"
                   layout_weight="1"/>
@@ -223,15 +222,38 @@ function showConfigDialog() {
     view.enableFarm.setChecked(checked);
     view.enableThrowRepeated.setChecked(checked);
   });
+  view.enableCollect.on("click", function() {
+    view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
+  });
+  view.enableFarm.on("click", function() {
+    view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
+  });
+  view.enableThrowRepeated.on("click", function() {
+    view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
+  });
+
   view.enableAdventureGroup.on("click", function() {
     var checked = view.enableAdventureGroup.isChecked();
     view.enableGift.setChecked(checked);
     view.enableSeedlingAdv.setChecked(checked);
     view.enableFruit.setChecked(checked);
   });
+  view.enableGift.on("click", function() {
+    view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
+  });
+  view.enableSeedlingAdv.on("click", function() {
+    view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
+  });
+  view.enableFruit.on("click", function() {
+    view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
+  });
+
   view.enableFeedingGroup.on("click", function() {
     var checked = view.enableFeedingGroup.isChecked();
     view.enableCollectFeeding.setChecked(checked);
+  });
+  view.enableCollectFeeding.on("click", function() {
+    view.enableFeedingGroup.setChecked(view.enableCollectFeeding.isChecked());
   });
 
   // ── Start button ─────────────────────────────────
@@ -296,8 +318,7 @@ function showConfigDialog() {
   });
 
   var d = dialogs.build({
-    customView: view,
-    wrapInScrollView: true
+    customView: view
   });
 
   d.on("cancel", function() {

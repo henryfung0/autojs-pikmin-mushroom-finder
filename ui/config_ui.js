@@ -86,7 +86,7 @@ function showConfigDialog() {
                     checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
         </vertical>
 
-        {/* Advanture-specific settings (visible by default) */}
+        {/* Pikmin Daily Task settings */}
         <vertical id="advantureSettings">
           <text text="Pikmin Daily Task:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
 
@@ -94,18 +94,25 @@ function showConfigDialog() {
           <spinner id="accountSelector" entries="Main Ac|Second Ac|Both Ac"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 8"/>
 
-          <checkbox id="enableCollect" text="Auto Collect" checked="true"
+          {/* Group 1: Seedling */}
+          <text text="1. Seedling:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <checkbox id="enableCollect" text="Collect seedlings" checked="true"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <checkbox id="enableFarm" text="Auto Farm" checked="true"
+          <checkbox id="enableFarm" text="Farm seedlings" checked="true"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <checkbox id="enableThrowRepeated" text="Throw Repeated" checked="true"
+          <checkbox id="enableThrowRepeated" text="Throw repeated seedlings" checked="true"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <checkbox id="enableCollectFeeding" text="Collect Feeding" checked="true"
-                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
-          <text text="Collect:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+
+          {/* Group 2: Adventure */}
+          <text text="2. Adventure:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
           <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <checkbox id="enableSeedling" text="Seedling" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
+
+          {/* Group 3: Feeding */}
+          <text text="3. Feeding:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+          <checkbox id="enableCollectFeeding" text="Collect feeding" checked="true"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
 
           {/* Max Empty Loops */}
           <text text="Max Empty Loops: 10" textSize="13sp"

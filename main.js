@@ -60,6 +60,9 @@ if (settings.mode === "Advanture") {
     var trsResult = require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings, panel);
   }
   if (!throwFlow.isShutdownRequested() && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
+    if (settings.enableGift !== undefined) config.advanture.enableGift = settings.enableGift;
+    if (settings.enableSeedling !== undefined) config.advanture.enableSeedling = settings.enableSeedling;
+    if (settings.enableFruit !== undefined) config.advanture.enableFruit = settings.enableFruit;
     if (trsResult && trsResult.panel) {
       floatyMod.appendLog(panel, "Starting adventure flow (continuing from throw repeated seedling)");
       floatyMod.updateStatus(panel, "Scanning...");

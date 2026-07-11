@@ -46,8 +46,8 @@ function run(settings, panel) {
     if (settings.enableGift !== undefined) {
       config.advanture.enableGift = settings.enableGift;
     }
-    if (settings.enablePlant !== undefined) {
-      config.advanture.enablePlant = settings.enablePlant;
+    if (settings.enableSeedling !== undefined) {
+      config.advanture.enableSeedling = settings.enableSeedling;
     }
     if (settings.enableFruit !== undefined) {
       config.advanture.enableFruit = settings.enableFruit;
@@ -64,7 +64,7 @@ function run(settings, panel) {
     console.info("Adventure settings merged — threshold=" + config.detection.threshold +
       ", settleDelay=" + config.scan.settleDelay +
       ", collect gift=" + config.advanture.enableGift +
-      " plant=" + config.advanture.enablePlant +
+      " seedling=" + config.advanture.enableSeedling +
       " fruit=" + config.advanture.enableFruit +
       ", maxEmptyLoops=" + config.advanture.maxEmptyLoops +
       ", account=" + config.account.pikminAccount);

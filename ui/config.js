@@ -285,6 +285,20 @@ var config = {
   },
 
   // ──────────────────────────────────────────────
+  // Account Settings
+  // ──────────────────────────────────────────────
+  /** @namespace account - Multi-account selection for Poco dual-app. */
+  account: {
+    /**
+     * Which Pikmin Bloom account to use (Poco dual app).
+     * 1 = Main Ac, 2 = Second Ac, 3 = Both Ac (run adventure twice).
+     * @type {number}
+     * @default 1
+     */
+    pikminAccount: 1,
+  },
+
+  // ──────────────────────────────────────────────
   // Debug Settings
   // ──────────────────────────────────────────────
   /** @namespace debug - Logging and diagnostic controls. */

@@ -89,6 +89,11 @@ function showConfigDialog() {
         {/* Advanture-specific settings (visible by default) */}
         <vertical id="advantureSettings">
           <text text="Pikmin Daily Task:" textSize="14sp" textColor="#64B5F6" margin="0 8 0 4"/>
+
+          <text text="Account:" textSize="14sp" textColor="#CCCCCC" margin="0 0 0 4"/>
+          <spinner id="accountSelector" entries="Main Ac|Second Ac|Both Ac"
+                   textSize="14sp" textColor="#E0E0E0" margin="0 0 0 8"/>
+
           <checkbox id="enableCollect" text="Auto Collect" checked="true"
                    textSize="14sp" textColor="#E0E0E0" margin="0 0 0 4"/>
           <checkbox id="enableFarm" text="Auto Farm" checked="true"
@@ -215,7 +220,8 @@ function showConfigDialog() {
       enableGift: view.enableGift.isChecked(),
       enableSeedling: view.enableSeedling.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
-      maxEmptyLoops: view.maxEmptyLoops.progress + 1
+      maxEmptyLoops: view.maxEmptyLoops.progress + 1,
+      pikminAccount: view.accountSelector.getSelectedItemPosition() + 1
     };
     d.dismiss();
   });

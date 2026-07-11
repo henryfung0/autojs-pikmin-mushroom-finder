@@ -35,7 +35,7 @@ function cleanupAndExit(panel, statusText, toastMsg) {
   exit();
 }
 
-function run(settings) {
+function run(settings, panel) {
 
   // Merge UI dialog settings into config
   if (settings) {
@@ -85,44 +85,10 @@ function run(settings) {
 
   console.info("Loaded " + allTemplates.length + " template(s)");
 
-  var panel = floatyMod.createControlPanel(function() {
-    floatyMod.destroy(panel);
-  });
   floatyMod.appendLog(panel, "Throw Repeated Seedling mode started");
 
   // ===================================================================
-  // Phase 2 — Launch
-  // ===================================================================
-
-  floatyMod.updateStatus(panel, "Ready");
-
-  if (settings && settings.autoLaunch) {
-    floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
-    floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-    app.launchPackage(config.app.packageName);
-    sleep(3000);
-
-    var pkg = currentPackage();
-    if (pkg === "com.android.systemui") {
-      floatyMod.appendLog(panel, "System UI — tapping to dismiss...");
-      var cx = Math.round(device.width / 2);
-      var cy = Math.round(device.height / 2);
-      press(cx, cy, 800);
-      sleep(1500);
-      var botCy = Math.round(device.height * 0.85);
-      press(cx, botCy, 800);
-      sleep(2000);
-    }
-    floatyMod.appendLog(panel, "App in foreground");
-  } else {
-    floatyMod.updateStatus(panel, "Open the game manually...");
-    floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
-    sleep(5000);
-    floatyMod.appendLog(panel, "Proceeding to throw repeated seedling flow...");
-  }
-
-  // ===================================================================
-  // Phase 3 — Orchestrate Seedling Operations
+  // Phase 2 — Orchestrate Seedling Operations
   // ===================================================================
 
   var enableCollect       = config.advanture && config.advanture.enableCollect;
@@ -197,7 +163,7 @@ function run(settings) {
   }
 
   // ===================================================================
-  // Phase 4 — Cleanup
+  // Phase 3 — Cleanup
   // ===================================================================
 
   floatyMod.appendLog(panel, "Throw repeated seedling finished");

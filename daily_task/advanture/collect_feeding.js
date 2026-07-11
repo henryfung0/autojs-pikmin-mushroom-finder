@@ -1,23 +1,8 @@
-/**
- * advanture/collect_feeding.js — Collect feeding items after adventure flow
- *
- * Flow:
- *   1. Click "Feeding page.jpg" to open the feeding page
- *   2. Loop: capture screen → check for collect templates → click if found
- *   3. When no collect templates found → break loop
- *   4. Double-click "Feeding page.jpg" to close the feeding page
- *
- * Exports:
- *   runCollectFeeding(config, panel)  → void
- */
-
 "auto";
 
 var floatyMod = require("../../ui/floaty");
-
-// ---------------------------------------------------------------------------
-// Internal helpers (duplicated per-module pattern — see advanture_flow.js)
-// ---------------------------------------------------------------------------
+var advState  = require("./advanture_state");
+var advConfig = require("../../ui/config");
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -57,10 +42,9 @@ function _loadTemplatesFromDir(baseDir, subDir) {
 function _matchOne(screenImage, tpl, threshold) {
   if (!screenImage || !tpl || !tpl.image) return null;
   try {
-    var searchRegion = [0, 0, screenImage.getWidth(), screenImage.getHeight()];
     var result = images.findImage(screenImage, tpl.image, {
       threshold: threshold || 0.7,
-      region: searchRegion
+      region: [0, 0, screenImage.getWidth(), screenImage.getHeight()]
     });
     if (result) {
       return {
@@ -78,24 +62,17 @@ function _matchOne(screenImage, tpl, threshold) {
   return null;
 }
 
-function _tapAt(match, label, panel, config) {
+function _tapAt(match, label, panel) {
   var tapX = match.x + Math.round(match.w / 2);
   var tapY = match.y + Math.round(match.h / 2);
-  // Clamp Y to stay above the navigation bar so taps land on the app
-  var navBarHeight = (config && config.ui && config.ui.navBarHeight) || Math.round(device.height * 0.07);
+  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
   var maxSafeY = device.height - navBarHeight;
-  if (tapY > maxSafeY) {
-    tapY = maxSafeY;
-  }
+  if (tapY > maxSafeY) tapY = maxSafeY;
   floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")");
   floatyMod.withPanelHidden(panel, function() {
     press(tapX, tapY, 1000);
   });
 }
-
-// ---------------------------------------------------------------------------
-// Find the first matching template on screen
-// ---------------------------------------------------------------------------
 
 function _findFirstMatch(screenImage, templates, threshold) {
   if (!templates || templates.length === 0) return null;
@@ -106,45 +83,66 @@ function _findFirstMatch(screenImage, templates, threshold) {
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Main flow
-// ---------------------------------------------------------------------------
-
-/**
- * Run the collect feeding flow.
- * Call AFTER advanture flow has completed and returned to main page.
- *
- * @param {Object} config - Configuration object (from config.js).
- * @param {Object} panel  - Floaty window for logging.
- */
 function runCollectFeeding(config, panel) {
   var templateDir = (config && config.detection && config.detection.templateDir) || "./templates/";
 
-  // ── Step 1: Load templates ──────────────────────────────────────────
+  floatyMod.appendLog(panel, "Checking main page...");
+  var navDir = files.join(templateDir, "navigation");
+  var commonDir = files.join(templateDir, "common");
+  var navTemplates = [];
+  var commonTemplates = [];
+  try {
+    var navFiles = files.listDir(navDir, function(n) {
+      return typeof n === "string" && (n.toLowerCase().endsWith(".jpg") || n.toLowerCase().endsWith(".png"));
+    });
+    for (var i = 0; i < navFiles.length; i++) {
+      var img = images.read(files.join(navDir, navFiles[i]));
+      if (img && img.getWidth() > 0 && img.getHeight() > 0) {
+        navTemplates.push({ name: navFiles[i], image: img, w: img.getWidth(), h: img.getHeight() });
+      }
+    }
+  } catch (e) {}
+  try {
+    var commonFiles = files.listDir(commonDir, function(n) {
+      return typeof n === "string" && (n.toLowerCase().endsWith(".jpg") || n.toLowerCase().endsWith(".png"));
+    });
+    for (var j = 0; j < commonFiles.length; j++) {
+      var cImg = images.read(files.join(commonDir, commonFiles[j]));
+      if (cImg && cImg.getWidth() > 0 && cImg.getHeight() > 0) {
+        commonTemplates.push({ name: commonFiles[j], image: cImg, w: cImg.getWidth(), h: cImg.getHeight() });
+      }
+    }
+  } catch (e) {}
+  var allNav = navTemplates.concat(commonTemplates);
+  advState.isOnMainPage(allNav, {
+    threshold: 0.7,
+    timeout: 30000,
+    floaty: panel,
+    dismissTemplates: commonTemplates
+  });
+  sleep(1000);
+
   var feedingPageTemplates = _loadTemplatesFromDir(templateDir, "feeding");
   var collectTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect");
 
   if (feedingPageTemplates.length === 0) {
-    floatyMod.appendLog(panel, "No feeding page templates found — skipping collect feeding");
+    floatyMod.appendLog(panel, "No feeding page templates found");
     return;
   }
 
   floatyMod.appendLog(panel, "Feeding templates: " + feedingPageTemplates.length +
     " page, " + collectTemplates.length + " collect items");
 
-  // ── Step 2: Click feeding page entry button to open ─────────────────
   floatyMod.appendLog(panel, "Opening feeding page...");
-
   var opened = false;
   for (var attempt = 0; attempt < 5; attempt++) {
     var img = null;
     try {
       img = captureScreen();
       if (!img) { sleep(1000); continue; }
-
       var match = _findFirstMatch(img, feedingPageTemplates, 0.7);
       if (match) {
-        _tapAt(match, "Tap " + match.name + " (open)", panel, config);
+        _tapAt(match, "Tap " + match.name + " (open)", panel);
         opened = true;
         break;
       }
@@ -155,17 +153,16 @@ function runCollectFeeding(config, panel) {
   }
 
   if (!opened) {
-    floatyMod.appendLog(panel, "Could not find feeding page entry button — skipping");
+    floatyMod.appendLog(panel, "Could not find feeding page button");
     return;
   }
 
-  // Wait for feeding page to fully open
   sleep(2000);
 
-  // ── Step 3: Collect loop ────────────────────────────────────────────
   var collectThreshold = 0.7;
   var maxCollectIterations = 30;
   var collectedCount = 0;
+  var consecutiveMisses = 0;
 
   for (var iter = 0; iter < maxCollectIterations; iter++) {
     var screenImg = null;
@@ -176,43 +173,46 @@ function runCollectFeeding(config, panel) {
       var collectMatch = _findFirstMatch(screenImg, collectTemplates, collectThreshold);
       if (collectMatch) {
         collectedCount++;
-        _tapAt(collectMatch, "Collect " + collectMatch.name, panel, config);
+        consecutiveMisses = 0;
+        _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
         sleep(1500);
       } else {
-        // No collect template found — done collecting
-        if (collectedCount > 0) {
-          floatyMod.appendLog(panel, "No more collect items found after " + collectedCount + " collected");
-        } else {
-          floatyMod.appendLog(panel, "No collect items found on feeding page");
+        consecutiveMisses++;
+        if (consecutiveMisses >= 3) {
+          floatyMod.appendLog(panel, "No collect items 3 times in a row — done");
+          break;
         }
-        break;
+        sleep(500);
       }
     } finally {
       if (screenImg) screenImg.recycle();
     }
   }
 
-  if (collectedCount >= maxCollectIterations) {
-    floatyMod.appendLog(panel, "Collect loop reached max iterations (" + maxCollectIterations + ")");
-  }
-
-  // Wait a moment before closing
   sleep(1000);
 
-  // ── Step 4: Double-click feeding page button to close ───────────────
-  floatyMod.appendLog(panel, "Closing feeding page...");
-
-  for (var clickNum = 0; clickNum < 2; clickNum++) {
+  floatyMod.appendLog(panel, "Closing feeding page (3 double-clicks)...");
+  for (var clickNum = 0; clickNum < 3; clickNum++) {
     var found = false;
-    for (var retry = 0; retry < 5; retry++) {
+    var startTime = Date.now();
+    while (Date.now() - startTime < 2000) {
       var closeImg = null;
       try {
         closeImg = captureScreen();
         if (!closeImg) { sleep(500); continue; }
-
         var closeMatch = _findFirstMatch(closeImg, feedingPageTemplates, 0.7);
         if (closeMatch) {
-          _tapAt(closeMatch, "Tap " + closeMatch.name + " (close #" + (clickNum + 1) + ")", panel, config);
+          var tapX = closeMatch.x + Math.round(closeMatch.w / 2);
+          var tapY = closeMatch.y + Math.round(closeMatch.h / 2);
+          var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
+          var maxSafeY = device.height - navBarHeight;
+          if (tapY > maxSafeY) tapY = maxSafeY;
+          floatyMod.appendLog(panel, "Double-click " + closeMatch.name + " (close #" + (clickNum + 1) + ")");
+          floatyMod.withPanelHidden(panel, function() {
+            press(tapX, tapY, 500);
+            sleep(100);
+            press(tapX, tapY, 500);
+          });
           found = true;
           break;
         }
@@ -221,15 +221,10 @@ function runCollectFeeding(config, panel) {
       }
       sleep(500);
     }
-
     if (!found) {
-      floatyMod.appendLog(panel, "Could not find feeding page button for click #" + (clickNum + 1));
+      floatyMod.appendLog(panel, "Feeding page button not found for click #" + (clickNum + 1));
     }
-
-    // Pause ~500ms between the two clicks (double-click behavior)
-    if (clickNum === 0) {
-      sleep(500);
-    }
+    sleep(500);
   }
 
   sleep(1000);

@@ -17,6 +17,7 @@ var matcher     = require("../../lib/matcher");
 var floatyMod   = require("../../ui/floaty");
 var advFlow     = require("./advanture_flow");
 var advState    = require("./advanture_state");
+var pikminIcon  = require("../../lib/pikmin_icon");
 
 function cleanupAndExit(panel, statusText, toastMsg) {
   if (panel) {
@@ -32,7 +33,7 @@ function cleanupAndExit(panel, statusText, toastMsg) {
   exit();
 }
 
-function run(settings) {
+function run(settings, panel) {
 
   // ── Merge UI dialog settings into config ──────────────────────────────
   if (settings) {
@@ -57,12 +58,16 @@ function run(settings) {
     if (settings.maxEmptyLoops !== undefined) {
       config.advanture.maxEmptyLoops = settings.maxEmptyLoops;
     }
+    if (settings.pikminAccount !== undefined) {
+      config.account.pikminAccount = settings.pikminAccount;
+    }
     console.info("Adventure settings merged — threshold=" + config.detection.threshold +
       ", settleDelay=" + config.scan.settleDelay +
       ", collect gift=" + config.advanture.enableGift +
       " plant=" + config.advanture.enablePlant +
       " fruit=" + config.advanture.enableFruit +
-      ", maxEmptyLoops=" + config.advanture.maxEmptyLoops);
+      ", maxEmptyLoops=" + config.advanture.maxEmptyLoops +
+      ", account=" + config.account.pikminAccount);
   }
 
   // ===================================================================
@@ -97,56 +102,78 @@ function run(settings) {
 
   floatyMod.updateStatus(panel, "Ready");
 
-  if (settings && settings.autoLaunch) {
-    floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
-    floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-    app.launchPackage(config.app.packageName);
-    sleep(3000);
-
-    var pkg = currentPackage();
-    if (pkg === "com.android.systemui") {
-      floatyMod.appendLog(panel, "System UI — tapping to dismiss...");
-      var cx = Math.round(device.width / 2);
-      var cy = Math.round(device.height / 2);
-      press(cx, cy, 800);
-      sleep(1500);
-      var botCy = Math.round(device.height * 0.85);
-      press(cx, botCy, 800);
-      sleep(2000);
+  var pikminAccount = config.account.pikminAccount || 1;
+  var accountsToRun = pikminAccount === 3 ? [1, 2] : [pikminAccount];
+  
+  for (var accIdx = 0; accIdx < accountsToRun.length; accIdx++) {
+    var currentAccount = accountsToRun[accIdx];
+    
+    if (accIdx > 0) {
+      floatyMod.appendLog(panel, "=== Starting account " + currentAccount + " ===");
     }
-    floatyMod.appendLog(panel, "App in foreground");
-  } else {
-    floatyMod.updateStatus(panel, "Open the game manually...");
-    floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
-    sleep(5000);
-    floatyMod.appendLog(panel, "Proceeding to adventure scan...");
-  }
+    
+    if (settings && settings.autoLaunch) {
+      floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
+      floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
+      app.launchPackage(config.app.packageName);
+      sleep(5000);
 
-  // ===================================================================
-  // Phase 3 — Adventure Flow
-  // ===================================================================
+      pikminIcon.detectAndClickIcon(config.detection.templateDir, currentAccount, panel);
+      sleep(2000);
+      
+      floatyMod.appendLog(panel, "App in foreground (account " + currentAccount + ")");
+    } else {
+      floatyMod.updateStatus(panel, "Open the game manually...");
+      floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
+      sleep(5000);
+      floatyMod.appendLog(panel, "Proceeding to adventure scan...");
+    }
 
-  floatyMod.updateStatus(panel, "Scanning...");
-  floatyMod.appendLog(panel, "Starting adventure scan flow");
+    // ===================================================================
+    // Phase 3 — Adventure Flow
+    // ===================================================================
 
-  advFlow.runAdvantureFlow(config, panel);
+    floatyMod.updateStatus(panel, "Scanning...");
+    floatyMod.appendLog(panel, "Starting adventure scan flow (account " + currentAccount + ")");
 
-  // ===================================================================
-  // Phase 3b — Collect Feeding (after adventure)
-  // ===================================================================
+    advFlow.runAdvantureFlow(config, panel);
 
-  if (config.advanture.enableCollectFeeding !== false) {
-    floatyMod.appendLog(panel, "Starting collect feeding...");
-    var collectFeeding = require("./collect_feeding");
-    collectFeeding.runCollectFeeding(config, panel);
+    // ===================================================================
+    // Phase 3b — Collect Feeding (after adventure)
+    // ===================================================================
+
+    if (config.advanture.enableCollectFeeding !== false) {
+      floatyMod.appendLog(panel, "Starting collect feeding...");
+      var collectFeeding = require("./collect_feeding");
+      collectFeeding.runCollectFeeding(config, panel);
+    }
+
+    if (accIdx < accountsToRun.length - 1) {
+      floatyMod.appendLog(panel, "Account " + currentAccount + " done, preparing next account...");
+      sleep(2000);
+      app.launchPackage(config.app.packageName);
+      sleep(3000);
+    }
   }
 
   // ===================================================================
   // Phase 4 — Cleanup
   // ===================================================================
 
+  floatyMod.appendLog(panel, "Returning to main page...");
+  var navTemplates = matcher.loadAllTemplates(templateDir + "navigation", { excludeDirs: [] });
+  var commonTemplates = matcher.loadAllTemplates(templateDir + "common", { excludeDirs: [] });
+  var allNavTemplates = navTemplates.concat(commonTemplates);
+  advState.isOnMainPage(allNavTemplates, {
+    threshold: 0.7,
+    timeout: 30000,
+    floaty: panel,
+    dismissTemplates: commonTemplates
+  });
+  sleep(1000);
+
   floatyMod.appendLog(panel, "Adventure finished");
-  sleep(3000);
+  sleep(2000);
   floatyMod.destroy(panel);
 }
 

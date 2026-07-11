@@ -162,17 +162,36 @@ function loadAdventureTemplates(templateDir) {
 }
 
 // ---------------------------------------------------------------------------
+// Detect page bottom boundary (returns Y coordinate or null)
+// ---------------------------------------------------------------------------
+
+function detectPageBottom(screenImage, templates, threshold) {
+  if (!templates || templates.length === 0) return null;
+  for (var i = 0; i < templates.length; i++) {
+    if (templates[i].name.toLowerCase().indexOf("page bottom") !== -1) {
+      var match = _matchOne(screenImage, templates[i], threshold);
+      if (match) {
+        // Return Y of the bottom edge of the page bottom marker
+        return match.y + match.h;
+      }
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Find best item (gift > plant > fruit) on screen
 // ---------------------------------------------------------------------------
 
-function findBestItem(screenImage, templates, config, skipPlant) {
+function findBestItem(screenImage, templates, config, skipPlant, pageBottomY) {
   var threshold = (config && config.detection && config.detection.threshold) || 0.7;
 
-  // Restrict search to area above the navigation bar
-  // Use config value, or fall back to 7% of screen height (typical nav bar)
   var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
   var safeHeight = screenImage.getHeight() - navBarHeight;
-  var safeRegion = [0, 0, screenImage.getWidth(), safeHeight];
+
+  // Offset pageBottomY upward by 300px to avoid clicking too close to the marker
+  var maxY = pageBottomY ? Math.min(pageBottomY - 300, safeHeight) : safeHeight;
+  var safeRegion = [0, 0, screenImage.getWidth(), maxY];
 
   // Priority order: gift, seedling, fruit
   // Only check categories enabled in config
@@ -194,7 +213,7 @@ function findBestItem(screenImage, templates, config, skipPlant) {
       var tpl = cat.templates[i];
       var match = _matchOne(screenImage, tpl, threshold, safeRegion);
       if (match) {
-        // Double-check: reject if match top-left corner is in nav bar zone
+        if (pageBottomY && match.y > maxY) continue;
         if (match.y > safeHeight) continue;
         match.category = cat.key;
         return match;
@@ -396,21 +415,19 @@ function runAdvantureFlow(config, panel) {
   var emptyLoopCount = 0;
   var seedlingFull = false;
   var maxEmptyLoops = (config && config.advanture && config.advanture.maxEmptyLoops) || 10;
+  var pageBottomY = null;
 
   while (!_shutdownRequested) {
     loopCount++;
 
     // ── Step 1: Ensure we're on advanture page ────────────────────────
-    // isOnAdvanturePage checks for advanture detector first.
-    // If not found, it navigates to main page → clicks Advanture.jpg → re-checks.
-    // If true, we're on advanture page. If false, we couldn't get there.
     if (!advState.isOnAdvanturePage(mainTemplates, templates.nav, { floaty: panel, threshold: 0.7, dismissTemplates: commonTemplates, entryTemplates: advEntryTemplates })) {
       floatyMod.appendLog(panel, "Could not reach advanture page — retrying...");
       sleep(2000);
       continue;
     }
 
-    // ── Step 2: Capture and scan for items (no scroll first) ───────────
+    // ── Step 2: Capture and scan for items ─────────────────────────────
     var img = null;
     var screenImage = null;
     var captureAttempts = 0;
@@ -436,7 +453,13 @@ function runAdvantureFlow(config, panel) {
     }
 
     try {
-      var match = findBestItem(screenImage, templates, config, seedlingFull);
+      pageBottomY = detectPageBottom(screenImage, templates.nav, 0.7);
+      if (pageBottomY) {
+        console.info("Page bottom detected at Y=" + pageBottomY);
+        floatyMod.appendLog(panel, "Page bottom at Y=" + pageBottomY + " (effective=" + (pageBottomY - 300) + ")");
+      }
+
+      var match = findBestItem(screenImage, templates, config, seedlingFull, pageBottomY);
       if (match) {
         emptyLoopCount = 0;
         floatyMod.updateStatus(panel, match.category.toUpperCase() + " Found!");

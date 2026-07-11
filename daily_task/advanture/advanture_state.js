@@ -106,10 +106,10 @@ function isOnMainPage(navTemplates, options) {
         continue;
       }
 
-      // Check ALL templates for page indicators (store detector, advanture detector)
+      // Check for "store detector" — that means main page
       for (var i = 0; i < navTemplates.length; i++) {
         var name = navTemplates[i].name.toLowerCase();
-        if (name.indexOf("store detector") !== -1 || name.indexOf("advanture detector") !== -1) {
+        if (name.indexOf("store detector") !== -1) {
           var match = _matchOne(img, navTemplates[i], threshold);
           if (match) {
             console.info("isOnMainPage: " + navTemplates[i].name + " found, on target page");

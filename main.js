@@ -1,18 +1,10 @@
 "auto";
 
-/**
- * main.js — Entry point for AutoJS6 Pikmin Bloom automation.
- *
- * Ultra-thin dispatcher: singleton guard → combined config dialog →
- * dispatch to selected mode module.
- */
-
-var configUi = require("./ui/config_ui");
-var throwFlow = require("./daily_task/seedlings/throw_repeated_seedling_flow");
-var advFlow = require("./daily_task/advanture/advanture_flow");
+var config    = require("./ui/config");
+var configUi  = require("./ui/config_ui");
 var floatyMod = require("./ui/floaty");
+var pikminIcon = require("./lib/pikmin_icon");
 
-// ── Singleton guard: kill any previous instance of this script ─────
 var thisEngine = engines.myEngine();
 engines.all().forEach(function(engine) {
   if (engine.id !== thisEngine.id) {
@@ -20,13 +12,11 @@ engines.all().forEach(function(engine) {
   }
 });
 
-// ── Show combined config dialog ────────────────────────────
 var settings = configUi.showConfigDialog();
 if (!settings) {
   exit();
 }
 
-// ── Screen capture permission (request ONCE before dispatch) ─
 var captureGranted = false;
 try {
   captureGranted = images.requestScreenCapture(false);
@@ -38,29 +28,54 @@ if (!captureGranted) {
   exit();
 }
 
-// ── Dispatch ─────────────────────────────────────────
+if (settings.pikminAccount !== undefined) {
+  config.account.pikminAccount = settings.pikminAccount;
+}
+
+var panel = floatyMod.createControlPanel(function() {
+  floatyMod.destroy(panel);
+  exit();
+});
+
+if (settings.autoLaunch) {
+  floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
+  app.launchPackage(config.app.packageName);
+  sleep(5000);
+
+  var account = config.account.pikminAccount || 1;
+  pikminIcon.detectAndClickIcon(config.detection.templateDir, account, panel);
+  sleep(2000);
+} else {
+  floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
+  sleep(5000);
+}
+
 if (settings.mode === "Advanture") {
-  require("./daily_task/advanture/main").run(settings);
+  require("./daily_task/advanture/main").run(settings, panel);
 } else if (settings.mode === "Pikmin Daily Task") {
-  // Run seedling operations (collect/farm/throw) first, then adventure
+  var throwFlow = require("./daily_task/seedlings/throw_repeated_seedling_flow");
+  var advFlow   = require("./daily_task/advanture/advanture_flow");
+
   if (settings.enableCollect || settings.enableFarm || settings.enableThrowRepeated) {
-    var trsResult = require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings);
+    var trsResult = require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings, panel);
   }
   if (!throwFlow.isShutdownRequested() && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
     if (trsResult && trsResult.panel) {
-      // Reuse throw repeated seedling's panel and config — skip Phase 1/2
-      var panel = trsResult.panel;
-      var cfg = trsResult.config;
       floatyMod.appendLog(panel, "Starting adventure flow (continuing from throw repeated seedling)");
       floatyMod.updateStatus(panel, "Scanning...");
-      advFlow.runAdvantureFlow(cfg, panel);
-      floatyMod.appendLog(panel, "Adventure finished");
-      sleep(3000);
-      floatyMod.destroy(panel);
+      advFlow.runAdvantureFlow(config, panel);
     } else {
-      require("./daily_task/advanture/main").run(settings);
+      require("./daily_task/advanture/main").run(settings, panel);
     }
   }
+  if (!throwFlow.isShutdownRequested() && settings.enableCollectFeeding !== false) {
+    floatyMod.appendLog(panel, "Starting collect feeding...");
+    var collectFeeding = require("./daily_task/advanture/collect_feeding");
+    collectFeeding.runCollectFeeding(config, panel);
+  }
+  floatyMod.appendLog(panel, "Pikmin Daily Task finished");
+  sleep(3000);
+  floatyMod.destroy(panel);
 } else {
   require("./mushroom_finder/main").run(settings);
 }

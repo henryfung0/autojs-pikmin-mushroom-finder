@@ -171,7 +171,15 @@ function feedPikmin(config, panel) {
       }
       var match = _findFirstMatch(img, feedingPageTemplates, 0.7);
       if (match) {
-        _tapAt(match, "Tap " + match.name + " (open)", panel);
+        var tapX = match.x + Math.round(match.w / 2);
+        var tapY = match.y + Math.round(match.h / 2);
+        var navBarHeight =
+          (advConfig.ui && advConfig.ui.navBarHeight) ||
+          Math.round(device.height * 0.07);
+        var maxSafeY = device.height - navBarHeight;
+        if (tapY > maxSafeY) tapY = maxSafeY;
+        floatyMod.appendLog(panel, "Double tap " + match.name + " at (" + tapX + "," + tapY + ")");
+        _doubleTap(tapX, tapY, panel);
         opened = true;
         break;
       }
@@ -192,7 +200,15 @@ function feedPikmin(config, panel) {
         if (!retryImg) { sleep(1000); continue; }
         var retryMatch = _findFirstMatch(retryImg, feedingPageTemplates, 0.7);
         if (retryMatch) {
-          _tapAt(retryMatch, "Tap " + retryMatch.name + " (open retry)", panel);
+          var tapX = retryMatch.x + Math.round(retryMatch.w / 2);
+          var tapY = retryMatch.y + Math.round(retryMatch.h / 2);
+          var navBarHeight =
+            (advConfig.ui && advConfig.ui.navBarHeight) ||
+            Math.round(device.height * 0.07);
+          var maxSafeY = device.height - navBarHeight;
+          if (tapY > maxSafeY) tapY = maxSafeY;
+          floatyMod.appendLog(panel, "Double tap " + retryMatch.name + " (retry) at (" + tapX + "," + tapY + ")");
+          _doubleTap(tapX, tapY, panel);
           opened = true;
           break;
         }

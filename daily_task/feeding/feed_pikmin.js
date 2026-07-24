@@ -114,16 +114,19 @@ function _tapAt(match, label, panel) {
   });
 }
 
-function _doubleTap(x, y, panel) {
+function _multiTap(x, y, panel, times) {
   var navBarHeight =
     (advConfig.ui && advConfig.ui.navBarHeight) ||
     Math.round(device.height * 0.07);
   var maxSafeY = device.height - navBarHeight;
   if (y > maxSafeY) y = maxSafeY;
   floatyMod.withPanelHidden(panel, function () {
-    press(x, y, 500);
-    sleep(100);
-    press(x, y, 500);
+    for (var i = 0; i < times; i++) {
+      press(x, y, 1000);
+      if (i < times - 1) {
+        sleep(100);
+      }
+    }
   });
 }
 
@@ -179,7 +182,7 @@ function feedPikmin(config, panel) {
         var maxSafeY = device.height - navBarHeight;
         if (tapY > maxSafeY) tapY = maxSafeY;
         floatyMod.appendLog(panel, "Double tap " + match.name + " at (" + tapX + "," + tapY + ")");
-        _doubleTap(tapX, tapY, panel);
+        _multiTap(tapX, tapY, panel, 4);
         opened = true;
         break;
       }
@@ -208,7 +211,7 @@ function feedPikmin(config, panel) {
           var maxSafeY = device.height - navBarHeight;
           if (tapY > maxSafeY) tapY = maxSafeY;
           floatyMod.appendLog(panel, "Double tap " + retryMatch.name + " (retry) at (" + tapX + "," + tapY + ")");
-          _doubleTap(tapX, tapY, panel);
+          _multiTap(tapX, tapY, panel, 4);
           opened = true;
           break;
         }
@@ -319,7 +322,7 @@ function feedPikmin(config, panel) {
   floatyMod.appendLog(panel, "Clicking middle of screen...");
   var midX = Math.round(device.width / 2);
   var midY = Math.round(device.height / 2);
-  _doubleTap(midX, midY, panel);
+  _multiTap(midX, midY, panel, 4);
 
   sleep(2000);
 

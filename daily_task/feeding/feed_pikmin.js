@@ -122,7 +122,7 @@ function _multiTap(x, y, panel, times) {
   if (y > maxSafeY) y = maxSafeY;
   floatyMod.withPanelHidden(panel, function () {
     for (var i = 0; i < times; i++) {
-      press(x, y, 1000);
+      press(x, y, 300);
       if (i < times - 1) {
         sleep(100);
       }

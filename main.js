@@ -85,5 +85,5 @@ if (settings.mode === "Advanture") {
   sleep(3000);
   floatyMod.destroy(panel);
 } else {
-  require("./mushroom_finder/main").run(settings);
+  require("./mushroom_finder/main").run(settings, panel);
 }

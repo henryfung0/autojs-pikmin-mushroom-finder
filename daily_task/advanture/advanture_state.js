@@ -219,16 +219,22 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
       if (!img) { sleep(500); continue; }
 
       // Step 1: Check if already on advanture page (look for "Advanture page" in mainTemplates)
+      var detectorFound = false;
       for (var i = 0; i < mainTemplates.length; i++) {
         var name = mainTemplates[i].name.toLowerCase();
         if (name.indexOf("advanture detector") !== -1) {
           var match = _matchOne(img, mainTemplates[i], threshold);
           if (match) {
-            console.info("isOnAdvanturePage: Advanture page found");
-            if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Advanture page found");
+            detectorFound = true;
+            console.info("isOnAdvanturePage: Advanture detector found");
+            if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Advanture detector found");
             return true;
           }
         }
+      }
+      if (!detectorFound) {
+        console.info("isOnAdvanturePage: Advanture detector not found");
+        if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Advanture detector not found");
       }
 
       // Step 2: Not on advanture page — navigate to main page first
@@ -284,6 +290,44 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
         console.info("isOnAdvanturePage: no entry button found to click");
         if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: no entry button found");
         sleep(1000);
+      } else {
+        // Step 3b: Wait up to 3 seconds for adventure detector to appear after clicking
+        var detectorTimeout = 3000;
+        var detectorStart = Date.now();
+        var detectorFound = false;
+        while (Date.now() - detectorStart < detectorTimeout) {
+          var checkImg = null;
+          try {
+            floatyMod.withPanelHidden(floaty, function() {
+              checkImg = captureScreen();
+            });
+            if (!checkImg) {
+              sleep(500);
+              continue;
+            }
+            for (var k = 0; k < mainTemplates.length; k++) {
+              var detName = mainTemplates[k].name.toLowerCase();
+              if (detName.indexOf("advanture detector") !== -1) {
+                var detMatch = _matchOne(checkImg, mainTemplates[k], threshold);
+                if (detMatch) {
+                  detectorFound = true;
+                  console.info("isOnAdvanturePage: Adventure detector found after click");
+                  if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Adventure detector found after click");
+                  break;
+                }
+              }
+            }
+          } finally {
+            if (checkImg) checkImg.recycle();
+          }
+          if (detectorFound) break;
+          sleep(500);
+        }
+        if (detectorFound) {
+          return true;
+        }
+        console.info("isOnAdvanturePage: Adventure detector not found after click, waiting " + (Date.now() - detectorStart) + "ms");
+        if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Adventure detector not found after click, waiting " + (Date.now() - detectorStart) + "ms");
       }
 
       // Loop back to step 1 (check if we're now on advanture page)

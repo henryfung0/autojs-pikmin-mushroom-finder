@@ -128,6 +128,9 @@ function appendLog(w, message) {
       updated = updated.slice(-500);
     }
     w.logArea.setText(updated);
+    w.logScroll.post(function() {
+      w.logScroll.scrollTo(0, w.logArea.getHeight());
+    });
   });
 }
 

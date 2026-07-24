@@ -45,6 +45,28 @@ function _loadTemplatesFromDir(baseDir, subDir) {
   return templates;
 }
 
+function _loadSpecificTemplates(baseDir, subDir, fileNames) {
+  var dir = files.join(baseDir, subDir);
+  var templates = [];
+  for (var i = 0; i < fileNames.length; i++) {
+    var filePath = files.join(dir, fileNames[i]);
+    try {
+      var img = images.read(filePath);
+      if (!img) continue;
+      var w = img.getWidth();
+      var h = img.getHeight();
+      if (w > 0 && h > 0) {
+        templates.push({ name: fileNames[i], image: img, w: w, h: h });
+      } else {
+        img.recycle();
+      }
+    } catch (e) {
+      console.warn("feed_pikmin: error reading '" + filePath + "': " + e);
+    }
+  }
+  return templates;
+}
+
 function _matchOne(screenImage, tpl, threshold) {
   if (!screenImage || !tpl || !tpl.image) return null;
   try {
@@ -188,7 +210,7 @@ function feedPikmin(config, panel) {
 
   sleep(2000);
 
-  var nectarPageTemplates = _loadTemplatesFromDir(templateDir, "feeding/nectar");
+  var nectarPageTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["Nector page.jpg"]);
   if (nectarPageTemplates.length === 0) {
     floatyMod.appendLog(panel, "No nectar page templates found");
     return;
@@ -225,7 +247,7 @@ function feedPikmin(config, panel) {
 
   sleep(2000);
 
-  var searchTemplates = _loadTemplatesFromDir(templateDir, "feeding/search");
+  var searchTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["search.jpg"]);
   if (searchTemplates.length === 0) {
     floatyMod.appendLog(panel, "No search templates found");
     return;
@@ -267,8 +289,12 @@ function feedPikmin(config, panel) {
     floatyMod.appendLog(panel, "Typing: " + keyword);
     var inputField = text("Search").findOne(3000) || text("搜索").findOne(3000);
     if (inputField) {
-      inputField.setText(keyword);
+      inputField.click();
+      sleep(300);
+      input(keyword);
       sleep(500);
+    } else {
+      floatyMod.appendLog(panel, "Search field not found!");
     }
   }
 
@@ -289,12 +315,12 @@ function feedPikmin(config, panel) {
       return;
     }
 
-    var flowersRegion = [200, 475, 327, 575];
+    var flowersRegion = [0, 475, 250, 575];
     var flowersResult = ocr(screenImg, flowersRegion);
     var flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
     floatyMod.appendLog(panel, "Flowers: " + flowers);
 
-    var nectarRegion = [85, 660, 300, 800];
+    var nectarRegion = [0, 660, 250, 800];
     var nectarResult = ocr(screenImg, nectarRegion);
     var numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
     floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);

@@ -473,12 +473,44 @@ function runAdvantureFlow(config, panel) {
         }
         sleep(3000);
 
-        // Wait to be back on adventure page
         var backAttempts = 0;
+        var closeClicked = false;
         while (backAttempts < 15 && !_shutdownRequested) {
-          if (advState.isOnAdvanturePage(mainTemplates, templates.nav, { floaty: panel, threshold: 0.7, dismissTemplates: commonTemplates, entryTemplates: advEntryTemplates })) {
-            floatyMod.appendLog(panel, "Back on adventure page");
-            break;
+          var checkImg = null;
+          try {
+            checkImg = captureScreen();
+            if (!checkImg) { sleep(1000); backAttempts++; continue; }
+
+            var onAdvPage = false;
+            for (var i = 0; i < mainTemplates.length; i++) {
+              if (mainTemplates[i].name.toLowerCase().indexOf("advanture detector") !== -1) {
+                if (_matchOne(checkImg, mainTemplates[i], 0.7)) {
+                  onAdvPage = true;
+                  break;
+                }
+              }
+            }
+
+            if (onAdvPage) {
+              floatyMod.appendLog(panel, "Back on adventure page");
+              break;
+            }
+
+            if (!closeClicked) {
+              for (var c = 0; c < commonTemplates.length; c++) {
+                if (commonTemplates[c].name.toLowerCase().indexOf("close") !== -1) {
+                  var closeMatch = _matchOne(checkImg, commonTemplates[c], 0.7);
+                  if (closeMatch) {
+                    _tapAt(closeMatch, "Tap Close (dismiss after adventure)", panel);
+                    closeClicked = true;
+                    sleep(2000);
+                    break;
+                  }
+                }
+              }
+            }
+          } finally {
+            if (checkImg) checkImg.recycle();
           }
           sleep(1000);
           backAttempts++;
@@ -517,16 +549,6 @@ function runAdvantureFlow(config, panel) {
 
     sleep(500);
   }
-
-  // ── Navigate back to main page ──────────────────────────────────────
-  floatyMod.appendLog(panel, "Returning to main page...");
-  advState.isOnMainPage(mainTemplates, {
-    threshold: 0.7,
-    timeout: 30000,
-    floaty: panel,
-    dismissTemplates: commonTemplates
-  });
-  floatyMod.appendLog(panel, "Main page reached");
 
   floatyMod.updateStatus(panel, "Stopped");
   floatyMod.appendLog(panel, "Adventure scan stopped");

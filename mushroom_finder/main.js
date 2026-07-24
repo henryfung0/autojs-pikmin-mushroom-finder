@@ -34,7 +34,7 @@ function cleanupAndExit(panel, statusText, toastMsg) {
   exit();
 }
 
-function run(settings) {
+function run(settings, panel) {
 
   // ── Merge UI dialog settings into config ──────────────────────────
   // The config dialog returns values that must be written into the
@@ -126,12 +126,11 @@ function run(settings) {
   console.info("Remaining templates after filtering: " + templates.length);
   toast("Templates: " + templates.length + " remaining");
 
-  var panel = floatyMod.createControlPanel(function() {
+  floatyMod.setCloseCallback(panel, function() {
     scanner.stopScanning();
     floatyMod.destroy(panel);
     exit();
   });
-  floatyMod.appendLog(panel, "Config applied, starting scan");
 
   // ---- onFound callback --------------------------------------------
   function onFound(match) {
@@ -139,17 +138,16 @@ function run(settings) {
   }
 
   // ===================================================================
-  // Phase 2 — Launch
+  // Phase 2 — App is already launched by main.js, just verify and proceed
   // ===================================================================
 
   var navTemplates = navModule.loadNavigationTemplates(config.detection.templateDir);
 
   if (settings.autoLaunch) {
-    floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
-    floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-    app.launchPackage(config.app.packageName);
+    floatyMod.updateStatus(panel, "Waiting for app to be ready...");
+    floatyMod.appendLog(panel, "App already launched by main.js, verifying...");
 
-    sleep(3000);
+    sleep(2000);
 
     var pkg = currentPackage();
     if (pkg === "com.android.systemui") {

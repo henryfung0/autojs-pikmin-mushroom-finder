@@ -305,9 +305,9 @@ function runCollectFeeding(config, panel) {
               "Double-click " + dcMatch.name + " (retry #" + retryCount + ")",
             );
             floatyMod.withPanelHidden(panel, function () {
-              press(dcX, dcY, 500);
-              sleep(100);
-              press(dcX, dcY, 500);
+              press(dcX, dcY, 40);
+              sleep(125);
+              press(dcX, dcY, 40);
             });
             break;
           }
@@ -349,9 +349,9 @@ function runCollectFeeding(config, panel) {
               "Double-click " + dcMatch.name + " (final #" + (dc + 1) + ")",
             );
             floatyMod.withPanelHidden(panel, function () {
-              press(dcX, dcY, 500);
-              sleep(100);
-              press(dcX, dcY, 500);
+              press(dcX, dcY, 40);
+              sleep(125);
+              press(dcX, dcY, 40);
             });
             break;
           }
@@ -396,9 +396,9 @@ function runCollectFeeding(config, panel) {
               ")",
           );
           floatyMod.withPanelHidden(panel, function () {
-            press(tapX, tapY, 500);
-            sleep(100);
-            press(tapX, tapY, 500);
+            press(tapX, tapY, 40);
+            sleep(125);
+            press(tapX, tapY, 40);
           });
           found = true;
           break;

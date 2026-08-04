@@ -3,6 +3,7 @@
 var floatyMod = require("../../ui/floaty");
 var advState = require("../advanture/advanture_state");
 var advConfig = require("../../ui/config");
+var scroll = require("../../lib/gestures");
 
 var searchKeywords = ["白色"];
 
@@ -334,19 +335,47 @@ function feedPikmin(config, panel) {
       return;
     }
 
-    var flowersRegion = [0, 475, 250, 575];
+    var flowersRegion = [0, 475, 250, 100];
     var flowersResult = ocr(screenImg, flowersRegion);
     var flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
     floatyMod.appendLog(panel, "Flowers: " + flowers);
 
-    var nectarRegion = [0, 660, 250, 800];
+    var nectarRegion = [0, 660, 250, 100];
     var nectarResult = ocr(screenImg, nectarRegion);
     var numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
     floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);
 
+    // Extract first number from OCR results
+    var flowersNum = parseInt(flowers.match(/\d+/), 10) || 0;
+    var nectarNum = parseInt(numberNectar.match(/\d+/), 10) || 0;
+
+    // Calculate how many to feed
+    var maxFlowers = 1200;
+    var flowersNeeded = Math.floor((maxFlowers - flowersNum) / 80);
+    var nectarCanFeed = Math.floor(nectarNum / 40);
+    var feedCount = Math.min(flowersNeeded, nectarCanFeed);
+
+    floatyMod.appendLog(panel, "Feed count: " + feedCount + " (flowers=" + flowersNum + ", nectar=" + nectarNum + ")");
+
+    if (feedCount > 0) {
+      var nectarTapX = 125;
+      var nectarTapY = 710;
+      floatyMod.appendLog(panel, "Clicking nectar at (" + nectarTapX + "," + nectarTapY + ")");
+      floatyMod.withPanelHidden(panel, function() {
+        press(nectarTapX, nectarTapY, 1000);
+      });
+      sleep(2000);
+
+      for (var i = 0; i < 3; i++) {
+        scroll.zoom("out", 1, panel);
+        sleep(500);
+      }
+    }
+
     console.log("=== Feed Pikmin Results ===");
     console.log("Flowers: " + flowers);
     console.log("Number Nectar: " + numberNectar);
+    console.log("Feed count: " + feedCount);
     console.log("===========================");
   } finally {
     if (screenImg) screenImg.recycle();

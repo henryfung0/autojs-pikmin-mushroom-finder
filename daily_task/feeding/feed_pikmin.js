@@ -156,6 +156,7 @@ function feedPikmin(config, panel) {
   _navigateToMainPage(templateDir, panel);
 
   var feedingPageTemplates = _loadTemplatesFromDir(templateDir, "feeding");
+  var reTriggerTemplates = _loadSpecificTemplates(templateDir, "feeding", ["Feeding page.jpg"]);
 
   if (feedingPageTemplates.length === 0) {
     floatyMod.appendLog(panel, "No feeding page templates found");
@@ -369,6 +370,82 @@ function feedPikmin(config, panel) {
       for (var i = 0; i < 3; i++) {
         scroll.zoom("out", 1, panel);
         sleep(500);
+      }
+
+      // feedNectar: feed nectar scroll path — edit freely.
+      var feedNectar = [
+        [576, 2000],
+        [358, 868],[763, 868],[763, 1332],[358, 1332],
+        [358, 868],[763, 868],[763, 1332],[358, 1332],
+        [358, 868],[763, 868],[763, 1332],[358, 1332],
+        [358, 868],[763, 868],[763, 1332],[358, 1332]
+      ];
+      // collectFlowers: collect flowers scroll path — edit freely.
+      var collectFlowers = [
+        [550, 1100],
+        [110, 620],[1000, 620],[1000, 710],[110, 710],
+        [110, 800],[1000, 800],[1000, 890],[110, 890],
+        [110, 980],[1000, 980],[1000, 1070],[110, 1070],
+        [110, 1160],[1000, 1160],[1000, 1250],[110, 1250],
+        [110, 1340],[1000, 1340],[1000, 1430],[110, 1430],
+        [110, 1520],[1000, 1520],[1000, 1610],[110, 1610],
+      ];
+
+      for (var round = 0; round < feedCount; round++) {
+        floatyMod.appendLog(panel, "Feed round " + (round + 1) + "/" + feedCount);
+
+        scroll.zoom("out", 1, panel);
+        sleep(500);
+
+        floatyMod.appendLog(panel, "Feeding nectar...");
+        try {
+          gestures([10000].concat(feedNectar));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Feed nectar gesture failed: " + e);
+        }
+        sleep(500);
+        floatyMod.appendLog(panel, "Collecting flowers...");
+        try {
+          gestures([3000].concat(collectFlowers));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Collect flowers gesture failed: " + e);
+        }
+        floatyMod.appendLog(panel, "Collecting flowers (mirrored)...");
+        try {
+          // mirror x-axis (110 ↔ 1000) so sweep direction reverses,
+          // same y-progression so the scroll continues downward, no backtrack
+          var collectFlowersMirrored = collectFlowers.map(function (p) {
+            return [1110 - p[0], p[1]];
+          });
+          gestures([3000].concat(collectFlowersMirrored));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Collect flowers mirrored gesture failed: " + e);
+        }
+        sleep(1000);
+
+        if (round < feedCount - 1) {
+          floatyMod.appendLog(panel, "Re-triggering feeding page...");
+          var reImg = null;
+          try {
+            reImg = captureScreen();
+            var reMatch = reImg ? _findFirstMatch(reImg, reTriggerTemplates, 0.7) : null;
+            if (reMatch) {
+              var rx = reMatch.x + Math.round(reMatch.w / 2);
+              var ry = reMatch.y + Math.round(reMatch.h / 2);
+              floatyMod.appendLog(panel, "Double-click " + reMatch.name + " (round re-trigger)");
+              floatyMod.withPanelHidden(panel, function () {
+                press(rx, ry, 40);
+                sleep(125);
+                press(rx, ry, 40);
+              });
+              sleep(2000);
+            } else {
+              floatyMod.appendLog(panel, "Feeding page not found for next round");
+            }
+          } finally {
+            if (reImg) reImg.recycle();
+          }
+        }
       }
     }
 

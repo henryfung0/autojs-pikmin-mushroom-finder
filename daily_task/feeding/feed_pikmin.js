@@ -325,34 +325,103 @@ function feedPikmin(config, panel) {
 
   var screenImg = null;
   try {
-    screenImg = captureScreen();
-    if (!screenImg) {
-      floatyMod.appendLog(panel, "Failed to capture screen for OCR");
-      return;
+    // Color rotation: the screen defaults to white. Click the current color's
+    // template (white → yellow → red → blue), then read flowers/nectar via OCR.
+    // If feedCount is 0 for a color, advance to the next color and redo the flow.
+    var colorNames = ["white", "yellow", "red", "blue"];
+    var feedCount = 0;
+    var flowers = "0";
+    var numberNectar = "0";
+    var usedColor = null;
+
+    for (var colorIdx = 0; colorIdx < colorNames.length; colorIdx++) {
+      var colorName = colorNames[colorIdx];
+      floatyMod.appendLog(panel, "Selecting color: " + colorName + " (" + (colorIdx + 1) + "/" + colorNames.length + ")");
+
+      // Click the specific color template (e.g. white.jpg).
+      var colorTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", [colorName + ".jpg"]);
+      if (colorTemplates.length === 0) {
+        floatyMod.appendLog(panel, "No template for " + colorName + ".jpg, skipping color");
+        continue;
+      }
+
+      var colorClicked = false;
+      for (var colorTry = 0; colorTry < 5; colorTry++) {
+        var startTime = Date.now();
+        var colorImg = null;
+        try {
+          colorImg = captureScreen();
+          if (!colorImg) {
+            sleep(1000);
+            continue;
+          }
+          var colorMatch = _findFirstMatch(colorImg, colorTemplates, 0.7);
+          if (colorMatch) {
+            _tapAt(colorMatch, "Tap " + colorMatch.name + " (color)", panel);
+            colorClicked = true;
+            break;
+          }
+        } finally {
+          if (colorImg) colorImg.recycle();
+        }
+        var elapsed = Date.now() - startTime;
+        if (elapsed < 2000) sleep(2000 - elapsed);
+      }
+
+      if (!colorClicked) {
+        floatyMod.appendLog(panel, "Could not find " + colorName + " on screen, trying next color");
+        continue;
+      }
+
+      sleep(2000);
+
+      // Read flowers/nectar numbers for this color via OCR.
+      var colorScreenImg = null;
+      try {
+        colorScreenImg = captureScreen();
+        if (!colorScreenImg) {
+          floatyMod.appendLog(panel, "Failed to capture screen for OCR on " + colorName);
+          continue;
+        }
+
+        var flowersRegion = [0, 475, 250, 100];
+        var flowersResult = ocr(colorScreenImg, flowersRegion);
+        flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
+        floatyMod.appendLog(panel, "Flowers: " + flowers);
+
+        var nectarRegion = [0, 660, 250, 100];
+        var nectarResult = ocr(colorScreenImg, nectarRegion);
+        numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
+        floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);
+
+        // Extract numbers from OCR results — strip all non-digits so that
+        // "1,044" (comma in thousand separator) parses as 1044, not 1.
+        var flowersNum = parseInt(flowers.replace(/[^\d]/g, ""), 10) || 0;
+        var nectarNum = parseInt(numberNectar.replace(/[^\d]/g, ""), 10) || 0;
+
+        // Calculate how many to feed
+        var maxFlowers = 1200;
+        var flowersNeeded = Math.floor((maxFlowers - flowersNum) / 80);
+        var nectarCanFeed = Math.floor(nectarNum / 40);
+        feedCount = Math.min(flowersNeeded, nectarCanFeed);
+
+        floatyMod.appendLog(panel, "Feed count: " + feedCount + " (flowers=" + flowersNum + ", nectar=" + nectarNum + ")");
+      } finally {
+        if (colorScreenImg) colorScreenImg.recycle();
+      }
+
+      if (feedCount > 0) {
+        usedColor = colorName;
+        floatyMod.appendLog(panel, "Feed count > 0 for " + colorName + ", proceeding to feed");
+        break;
+      }
+
+      floatyMod.appendLog(panel, "Feed count is 0 for " + colorName + ", moving to next color");
     }
 
-    var flowersRegion = [0, 475, 250, 100];
-    var flowersResult = ocr(screenImg, flowersRegion);
-    var flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
-    floatyMod.appendLog(panel, "Flowers: " + flowers);
-
-    var nectarRegion = [0, 660, 250, 100];
-    var nectarResult = ocr(screenImg, nectarRegion);
-    var numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
-    floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);
-
-    // Extract numbers from OCR results — strip all non-digits so that
-    // "1,044" (comma in thousand separator) parses as 1044, not 1.
-    var flowersNum = parseInt(flowers.replace(/[^\d]/g, ""), 10) || 0;
-    var nectarNum = parseInt(numberNectar.replace(/[^\d]/g, ""), 10) || 0;
-
-    // Calculate how many to feed
-    var maxFlowers = 1200;
-    var flowersNeeded = Math.floor((maxFlowers - flowersNum) / 80);
-    var nectarCanFeed = Math.floor(nectarNum / 40);
-    var feedCount = Math.min(flowersNeeded, nectarCanFeed);
-
-    floatyMod.appendLog(panel, "Feed count: " + feedCount + " (flowers=" + flowersNum + ", nectar=" + nectarNum + ")");
+    if (feedCount === 0) {
+      floatyMod.appendLog(panel, "Feed count is 0 for all colors, no feeding this run");
+    }
 
     if (feedCount > 0) {
       var nectarTapX = 125;
@@ -621,6 +690,7 @@ function feedPikmin(config, panel) {
     }
 
     console.log("=== Feed Pikmin Results ===");
+    console.log("Color: " + usedColor);
     console.log("Flowers: " + flowers);
     console.log("Number Nectar: " + numberNectar);
     console.log("Feed count: " + feedCount);

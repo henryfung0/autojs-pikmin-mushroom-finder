@@ -38,13 +38,12 @@ var panel = floatyMod.createControlPanel(function() {
 });
 
 if (settings.autoLaunch) {
-  floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-  app.launchPackage(config.app.packageName);
-  sleep(5000);
-
-  var account = config.account.pikminAccount || 1;
-  pikminIcon.detectAndClickIcon(config.detection.templateDir, account, panel);
-  sleep(2000);
+  pikminIcon.launchAndDetectIcon(
+    config.app.packageName,
+    config.detection.templateDir,
+    config.account.pikminAccount || 1,
+    panel
+  );
 } else {
   floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
   sleep(5000);

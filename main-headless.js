@@ -48,12 +48,11 @@ var panel = floatyMod.createControlPanel(function() {
 });
 
 floatyMod.appendLog(panel, "Headless mode starting...");
-floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-app.launchPackage(config.app.packageName);
-sleep(5000);
-
-var account = config.account.pikminAccount || 1;
-pikminIcon.detectAndClickIcon(config.detection.templateDir, account, panel);
-sleep(2000);
+pikminIcon.launchAndDetectIcon(
+  config.app.packageName,
+  config.detection.templateDir,
+  config.account.pikminAccount || 1,
+  panel
+);
 
 require("./mushroom_finder/main").run(settings, panel);

@@ -4,8 +4,11 @@ var floatyMod = require("../../ui/floaty");
 var advState = require("../advanture/advanture_state");
 var advConfig = require("../../ui/config");
 var scroll = require("../../lib/gestures");
+var feedingActions = require("../../lib/feeding_actions");
 
-var searchKeywords = ["白色"];
+// Search keywords: the search filter is re-typed for each keyword, and the
+// full color rotation (white → yellow → red → blue) runs for every keyword.
+var searchKeywords = ["", "扶桑花", "風鈴草", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花"];
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -156,7 +159,6 @@ function feedPikmin(config, panel) {
   _navigateToMainPage(templateDir, panel);
 
   var feedingPageTemplates = _loadTemplatesFromDir(templateDir, "feeding");
-  var reTriggerTemplates = _loadSpecificTemplates(templateDir, "feeding", ["Feeding page.jpg"]);
 
   if (feedingPageTemplates.length === 0) {
     floatyMod.appendLog(panel, "No feeding page templates found");
@@ -285,58 +287,484 @@ function feedPikmin(config, panel) {
     return;
   }
 
-  floatyMod.appendLog(panel, "Looking for search button...");
-  var searchFound = false;
-  for (var attempt = 0; attempt < 5; attempt++) {
-    var startTime = Date.now();
-    var img = null;
-    try {
-      img = captureScreen();
-      if (!img) {
-        sleep(1000);
-        continue;
-      }
-      var match = _findFirstMatch(img, searchTemplates, 0.7);
-      if (match) {
-        _tapAt(match, "Tap " + match.name + " (search)", panel);
-        searchFound = true;
-        break;
-      }
-    } finally {
-      if (img) img.recycle();
-    }
-    var elapsed = Date.now() - startTime;
-    if (elapsed < 2000) sleep(2000 - elapsed);
-  }
-
-  if (!searchFound) {
-    floatyMod.appendLog(panel, "Could not find search button");
-    return;
-  }
-
-  sleep(1000);
-
-  floatyMod.appendLog(panel, "Clicking middle of screen...");
   var midX = Math.round(device.width / 2);
   var midY = Math.round(device.height / 2);
-  _multiTap(midX, midY, panel, 2);
 
-  sleep(2000);
+  // can-feed gate templates + back button (used inside feeding rounds).
+  var canFeedTemplates = _loadTemplatesFromDir(templateDir, "feeding/feed/can feed");
+  if (canFeedTemplates.length === 0) {
+    floatyMod.appendLog(panel, "Warning: no templates in feeding/feed/can feed, nectar will be skipped");
+  }
+  var backTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["back.jpg"]);
 
-  var screenImg = null;
-  try {
-    // Color rotation: the screen defaults to white. Click the current color's
-    // template (white → yellow → red → blue), then read flowers/nectar via OCR.
-    // If feedCount is 0 for a color, advance to the next color and redo the flow.
-    var colorNames = ["white", "yellow", "red", "blue"];
-    var feedCount = 0;
-    var flowers = "0";
-    var numberNectar = "0";
-    var usedColor = null;
+  // Close-family templates from common/ (Close*.jpg, closebtn.jpg) — used to
+  // dismiss the search dialog BEFORE color detection. The dialog stays open
+  // after typing + Enter (Enter only closes the keyboard) and covers the
+  // color filter chips. Only Close-named templates are used here — NOT the
+  // full common/ set (Confirm/Collect/Back would tap the wrong action).
+  var closeDialogTemplates = [];
+  (function () {
+    var allCommon = _loadTemplatesFromDir(templateDir, "common");
+    for (var c = 0; c < allCommon.length; c++) {
+      if (allCommon[c].name.toLowerCase().indexOf("close") !== -1) {
+        closeDialogTemplates.push(allCommon[c]);
+      }
+    }
+  })();
 
-    for (var colorIdx = 0; colorIdx < colorNames.length; colorIdx++) {
-      var colorName = colorNames[colorIdx];
-      floatyMod.appendLog(panel, "Selecting color: " + colorName + " (" + (colorIdx + 1) + "/" + colorNames.length + ")");
+  // Tap the search button (search.jpg). Must already be on the nectar page.
+  function _tapSearch() {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      var startTime = Date.now();
+      var img = null;
+      try {
+        img = captureScreen();
+        if (!img) {
+          sleep(1000);
+          continue;
+        }
+        var match = _findFirstMatch(img, searchTemplates, 0.7);
+        if (match) {
+          _tapAt(match, "Tap " + match.name + " (search)", panel);
+          sleep(1000);
+          return true;
+        }
+      } finally {
+        if (img) img.recycle();
+      }
+      var elapsed = Date.now() - startTime;
+      if (elapsed < 2000) sleep(2000 - elapsed);
+    }
+    floatyMod.appendLog(panel, "Could not find search button");
+    return false;
+  }
+
+  // From the BASE screen back to the search UI:
+  //   double-click Feeding page → click nectar page → tap search.
+  function _reopenSearch() {
+    var reClicked = feedingActions.doubleClickFeedingPage(templateDir, 2000, "reopen feeding", panel);
+    if (!reClicked) {
+      floatyMod.appendLog(panel, "Feeding page not found while reopening");
+    }
+    sleep(2000);
+    floatyMod.appendLog(panel, "Clicking nectar page at fixed position (550,2012)...");
+    floatyMod.withPanelHidden(panel, function () {
+      press(nectarPageX, nectarPageY, 1000);
+    });
+    sleep(2000);
+    return _tapSearch();
+  }
+
+  // Press Enter to confirm the search AND close the keyboard. KeyCode(code)
+  // is the AutoJS6 API for hardware keys — automator.press() only accepts
+  // coordinates and crashes with a bare keycode (seen on device: "Invalid
+  // arguments [(66.0)] for automator.press"). Falls back to the old
+  // middle-of-screen double tap if KeyCode is unavailable.
+  function _pressEnter() {
+    // Use middle-tap directly to close keyboard — KeyCode can hang
+    floatyMod.appendLog(panel, "Tapping middle to close keyboard");
+    _multiTap(midX, midY, panel, 1);
+    return true;
+  }
+
+  // Bounded, NON-BLOCKING field lookup. findOne(timeout) can hang the whole
+  // script forever on Pikmin Bloom's game UI (seen on device: froze at
+  // "Typing search keyword" with no further logs, no error thrown). findOnce()
+  // returns immediately (null when nothing found yet), so we poll it until our
+  // own deadline — the script ALWAYS makes progress.
+  function _findInputField(timeoutMs) {
+    var deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      var node = null;
+      try {
+        node =
+          text("Search").findOnce() ||
+          text("搜索").findOnce() ||
+          className("EditText").findOnce();
+      } catch (e) {
+        // A single query error must not abort the poll — keep trying until
+        // the deadline so the script can never freeze here.
+        node = null;
+      }
+      if (node) return node;
+      sleep(200);
+    }
+    return null;
+  }
+
+  // Type the keyword into the search field. Primary path is the old proven
+  // method: find the field with a UI selector, then setText on the returned
+  // object. The global setText(0, ...)/input(0, ...) index-based calls only
+  // work when the game exposes the field to accessibility — Pikmin Bloom
+  // does not, so they are last-resort fallbacks only.
+  function _typeKeyword(keyword) {
+    floatyMod.appendLog(panel, "Typing search keyword: " + keyword);
+    var typed = false;
+
+    // Click search field at (300, 510) before trying to type
+    sleep(1000);
+    floatyMod.appendLog(panel, "Clicking search field at (300, 510)...");
+    click(300, 510);
+    sleep(500);
+
+    // 1. Old proven method: find the field via UI selector, then setText on
+    //    the object (NOT the global setText(index, text)). Uses findOnce()
+    //    polling so it can never freeze like findOne(timeout) did.
+    var inputField = _findInputField(4000);
+    if (inputField) {
+      try {
+        typed = inputField.setText(keyword) !== false;
+        floatyMod.appendLog(panel, "Typed via inputField.setText");
+      } catch (e) {
+        typed = false;
+        floatyMod.appendLog(panel, "inputField.setText failed: " + e);
+      }
+    }
+
+    // 2. The field may need a moment to appear — retry the poll once.
+    if (!typed) {
+      sleep(500);
+      inputField = _findInputField(2000);
+      if (inputField) {
+        try {
+          typed = inputField.setText(keyword) !== false;
+          floatyMod.appendLog(panel, "Typed via inputField.setText (retry)");
+        } catch (e2) {
+          floatyMod.appendLog(panel, "find/setText retry failed: " + e2);
+        }
+      }
+    }
+
+    // 3. Last resorts: global setText / input by field index.
+    if (!typed) {
+      try {
+        typed = setText(0, keyword) !== false;
+      } catch (e3) {
+        floatyMod.appendLog(panel, "setText failed: " + e3);
+      }
+    }
+    if (!typed) {
+      try {
+        typed = input(0, keyword) !== false;
+      } catch (e4) {
+        floatyMod.appendLog(panel, "input fallback failed: " + e4);
+      }
+    }
+
+    if (!typed) {
+      floatyMod.appendLog(panel, "Warning: could not type keyword via any method, clicking middle of screen to close keyboard/dialog");
+      _multiTap(midX, midY, panel, 1);
+    } else {
+      sleep(500);
+      _pressEnter();
+    }
+    sleep(2000);
+  }
+
+  // Close the search overlay WITHOUT retyping (the keyword already sits in
+  // the field). Used between colors of the same keyword.
+  function _closeSearch() {
+    _pressEnter();
+    sleep(2000);
+  }
+
+  // Dismiss any open dialog (e.g. the search overlay that stays open after
+  // typing + Enter) BEFORE detecting a color template — the dialog covers
+  // the color filter chips until dismissed. Uses only the Close-family
+  // templates from common/. Returns true if a dialog was closed.
+  // Feed all feedCount rounds for one color. Returns { rounds, stoppedEarly }.
+  function _feedRounds(colorName, feedCount, flowersRegion, nectarRegion) {
+    // feedNectar: feed nectar scroll path — edit freely.
+    var feedNectar = [
+      [576, 2000],
+      [358, 868],[550, 1100],[763, 868],[550, 1100],
+      [358, 868],[550, 1100],[763, 868],[550, 1100],
+      [358, 868],[550, 1100],[763, 868],[550, 1100],
+    ];
+    // collectFlowers: collect flowers scroll path — edit freely.
+    var collectFlowers = [
+      [540, 1100],
+      [110, 620],[1000, 620],[1000, 710],[110, 710],
+      [110, 800],[1000, 800],[1000, 890],[110, 890],
+      [110, 980],[1000, 980],[1000, 1070],[110, 1070],
+      [110, 1160],[1000, 1160],[1000, 1250],[110, 1250],
+    ];
+
+    // Only a SUCCESSFUL feed round counts toward feedCount; a failed
+    // (no can-feed match) attempt retries WITHOUT consuming a round.
+    var completedRounds = 0;
+    var maxAttempts = feedCount * 3;
+    var attempt = 0;
+    var consecutiveFailures = 0;
+    var stoppedEarly = false;
+    while (completedRounds < feedCount && attempt < maxAttempts) {
+      attempt++;
+      floatyMod.appendLog(panel, "Feed round " + (completedRounds + 1) + "/" + feedCount + " (" + colorName + ")");
+
+      // 0. Tap middle between flowers and nectar regions
+      var middleX = Math.round(flowersRegion[0] + flowersRegion[2] / 2);
+      var flowersCenterY = flowersRegion[1] + flowersRegion[3] / 2;
+      var nectarCenterY = nectarRegion[1] + nectarRegion[3] / 2;
+      var middleY = Math.round((flowersCenterY + nectarCenterY) / 2);
+      floatyMod.appendLog(panel, "Tapping middle between flowers and nectar at (" + middleX + ", " + middleY + ")...");
+      click(middleX, middleY);
+      sleep(1500);
+
+      // 1. Open the pikmin page so the can-feed state is visible (timeout ~10s).
+      floatyMod.appendLog(panel, "Opening pikmin page...");
+      var pikminOpened = false;
+      for (var pikminTry = 0; pikminTry < 5; pikminTry++) {
+        var startTime = Date.now();
+        var pikminImg = null;
+        try {
+          pikminImg = captureScreen();
+          if (!pikminImg) {
+            sleep(1000);
+            continue;
+          }
+          var pikminMatch = _findFirstMatch(pikminImg, pikminPageTemplates, 0.7);
+          if (pikminMatch) {
+            _tapAt(pikminMatch, "Tap " + pikminMatch.name + " (pikmin page)", panel);
+            pikminOpened = true;
+            break;
+          }
+        } finally {
+          if (pikminImg) pikminImg.recycle();
+        }
+        var elapsed = Date.now() - startTime;
+        if (elapsed < 2000) sleep(2000 - elapsed);
+      }
+      if (!pikminOpened) {
+        floatyMod.appendLog(panel, "Pikmin page template not found within timeout");
+      }
+
+      // 1b. Wait until the pikmin page has opened: back.jpg must be visible.
+      floatyMod.appendLog(panel, "Waiting for back button...");
+      var backVisible = false;
+      for (var waitTry = 0; waitTry < 5; waitTry++) {
+        var startTime = Date.now();
+        var waitImg = null;
+        try {
+          waitImg = captureScreen();
+          if (!waitImg) {
+            sleep(1000);
+            continue;
+          }
+          var waitMatch = _findFirstMatch(waitImg, backTemplates, 0.7);
+          if (waitMatch) {
+            backVisible = true;
+            break;
+          }
+        } finally {
+          if (waitImg) waitImg.recycle();
+        }
+        var elapsed = Date.now() - startTime;
+        if (elapsed < 2000) sleep(2000 - elapsed);
+      }
+      if (!backVisible) {
+        floatyMod.appendLog(panel, "Back button not visible within timeout");
+      }
+      sleep(500);
+
+      // 2. Scan can-feed templates (up to 3 attempts, raised threshold
+      //    0.8 for stricter matching to avoid false positives) BEFORE any zoom.
+      var canFeed = false;
+      for (var scan = 0; scan < 3; scan++) {
+        var canFeedImg = null;
+        var canFeedMatch = null;
+        try {
+          canFeedImg = captureScreen();
+          if (canFeedImg) {
+            canFeedMatch = _findFirstMatch(canFeedImg, canFeedTemplates, 0.8);
+          }
+        } finally {
+          if (canFeedImg) canFeedImg.recycle();
+        }
+        if (canFeedMatch) {
+          floatyMod.appendLog(panel, "Can feed detected (" + canFeedMatch.name + ") on scan " + (scan + 1) + "/3");
+          canFeed = true;
+          break;
+        }
+        floatyMod.appendLog(panel, "No can-feed match on scan " + (scan + 1) + "/3, rescanning...");
+        sleep(500);
+      }
+
+      // 3. Click back regardless of the scan result (timeout ~10s).
+      floatyMod.appendLog(panel, "Clicking back...");
+      var backClicked = false;
+      for (var backTry = 0; backTry < 5; backTry++) {
+        var startTime = Date.now();
+        var backImg = null;
+        try {
+          backImg = captureScreen();
+          if (!backImg) {
+            sleep(1000);
+            continue;
+          }
+          var backMatch = _findFirstMatch(backImg, backTemplates, 0.7);
+          if (backMatch) {
+            _tapAt(backMatch, "Tap " + backMatch.name + " (back)", panel);
+            backClicked = true;
+            break;
+          }
+        } finally {
+          if (backImg) backImg.recycle();
+        }
+        var elapsed = Date.now() - startTime;
+        if (elapsed < 2000) sleep(2000 - elapsed);
+      }
+      if (!backClicked) {
+        floatyMod.appendLog(panel, "Back template not found within timeout");
+      }
+
+      // 3b. Wait until we are back on the base screen: pikmin page.jpg must be visible again.
+      floatyMod.appendLog(panel, "Waiting for pikmin page...");
+      var pikminBackVisible = false;
+      for (var waitBackTry = 0; waitBackTry < 5; waitBackTry++) {
+        var startTime = Date.now();
+        var waitBackImg = null;
+        try {
+          waitBackImg = captureScreen();
+          if (!waitBackImg) {
+            sleep(1000);
+            continue;
+          }
+          var waitBackMatch = _findFirstMatch(waitBackImg, pikminPageTemplates, 0.7);
+          if (waitBackMatch) {
+            pikminBackVisible = true;
+            break;
+          }
+        } finally {
+          if (waitBackImg) waitBackImg.recycle();
+        }
+        var elapsed = Date.now() - startTime;
+        if (elapsed < 2000) sleep(2000 - elapsed);
+      }
+      if (!pikminBackVisible) {
+        floatyMod.appendLog(panel, "Pikmin page not visible within timeout");
+      }
+      sleep(500);
+
+      // 4. Only when can-feed was detected: zoom out → feed nectar → collect flowers.
+      if (canFeed) {
+        scroll.zoom("out", 1, panel);
+        sleep(500);
+
+        floatyMod.appendLog(panel, "Feeding nectar...");
+        try {
+          gestures([10000].concat(feedNectar));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Feed nectar gesture failed: " + e);
+        }
+        sleep(500);
+        floatyMod.appendLog(panel, "Collecting flowers...");
+        try {
+          gestures([3000].concat(collectFlowers));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Collect flowers gesture failed: " + e);
+        }
+        floatyMod.appendLog(panel, "Collecting flowers (mirrored)...");
+        try {
+          // mirror x-axis (110 ↔ 1000) so sweep direction reverses,
+          // same y-progression so the scroll continues downward, no backtrack
+          var collectFlowersMirrored = collectFlowers.map(function (p) {
+            return [1110 - p[0], p[1]];
+          });
+          gestures([3000].concat(collectFlowersMirrored));
+        } catch (e) {
+          floatyMod.appendLog(panel, "Collect flowers mirrored gesture failed: " + e);
+        }
+        sleep(1000);
+        completedRounds++;
+        consecutiveFailures = 0;
+      } else {
+        // Cannot feed: skip zoom/feed/collect. This attempt does NOT
+        // count toward feedCount — re-trigger and retry.
+        consecutiveFailures++;
+        floatyMod.appendLog(panel, "Cannot feed now (no can-feed match after 3 scans), retrying without counting round (" + consecutiveFailures + " consecutive)");
+        sleep(1000);
+      }
+
+      // Abort after 3 CONSECUTIVE cannot-feed attempts: end the feeding
+      // logic (housekeeping back to main page happens after the loop).
+      if (consecutiveFailures >= 3) {
+        floatyMod.appendLog(panel, "3 consecutive cannot-feed attempts, ending feeding logic");
+        stoppedEarly = true;
+        break;
+      }
+
+      if (completedRounds < feedCount) {
+        floatyMod.appendLog(panel, "Re-triggering feeding page...");
+        var reClicked = feedingActions.doubleClickFeedingPage(templateDir, 2000, "round re-trigger", panel);
+        if (reClicked) {
+          sleep(2000);
+        } else {
+          floatyMod.appendLog(panel, "Feeding page not found for next round");
+        }
+      }
+    }
+
+    if (completedRounds < feedCount) {
+      floatyMod.appendLog(panel, "Stopped after " + attempt + " attempts (" + completedRounds + "/" + feedCount + " rounds completed)");
+    }
+
+    // Housekeeping: if the feeding logic was aborted early (3 consecutive
+    // cannot-feed attempts), return to the main page via the common helper.
+    if (stoppedEarly) {
+      floatyMod.appendLog(panel, "Housekeeping: returning to main page...");
+      _navigateToMainPage(templateDir, panel);
+    }
+
+    return { rounds: completedRounds, stoppedEarly: stoppedEarly };
+  }
+
+  // =====================================================================
+  // Main: for EACH search keyword, rotate through ALL colors
+  // (white → yellow → red → blue) and feed every color that has
+  // feedCount > 0. After blue, the next keyword restarts the rotation.
+  // =====================================================================
+  var colorNames = ["white", "yellow", "red", "blue"];
+  var results = [];
+  var totalRounds = 0;
+  var needReopen = false;   // true when the last action left us on the BASE screen
+  var aborted = false;
+
+  for (var kwIdx = 0; kwIdx < searchKeywords.length; kwIdx++) {
+    var keyword = searchKeywords[kwIdx];
+    floatyMod.appendLog(panel, "=== Search keyword " + (kwIdx + 1) + "/" + searchKeywords.length + ": " + keyword + " ===");
+
+    // Reach the search UI for this keyword.
+    if (kwIdx === 0) {
+      // Initial navigation ended on the nectar page — open the search overlay,
+      // then type the first keyword.
+      _tapSearch();
+      _typeKeyword(keyword);
+    } else if (needReopen) {
+      // Previous keyword's last color was fed → we are on the base screen.
+      _reopenSearch();
+      _typeKeyword(keyword);
+    } else {
+      // Previous keyword's last color was NOT fed → still on the nectar page.
+      if (!_tapSearch()) {
+        floatyMod.appendLog(panel, "Cannot find search for keyword '" + keyword + "', skipping");
+        continue;
+      }
+      _typeKeyword(keyword);
+    }
+    needReopen = false;
+
+    var anyFedThisKeyword = false;
+    for (var ci = 0; ci < colorNames.length; ci++) {
+      var colorName = colorNames[ci];
+
+      if (needReopen) {
+        // Previous color was fed → we are on the base screen. Reopen the
+        // color screen; the keyword persists in the field, so just close
+        // the search overlay (no retyping needed between colors).
+        _reopenSearch();
+        _closeSearch();
+        needReopen = false;
+      }
 
       // Click the specific color template (e.g. white.jpg).
       var colorTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", [colorName + ".jpg"]);
@@ -349,21 +777,24 @@ function feedPikmin(config, panel) {
       for (var colorTry = 0; colorTry < 5; colorTry++) {
         var startTime = Date.now();
         var colorImg = null;
-        try {
-          colorImg = captureScreen();
-          if (!colorImg) {
-            sleep(1000);
-            continue;
+        var colorMatch = null;
+        floatyMod.withPanelHidden(panel, function () {
+          try {
+            colorImg = captureScreen();
+            if (!colorImg) {
+              sleep(1000);
+              return;
+            }
+            colorMatch = _findFirstMatch(colorImg, colorTemplates, 0.7);
+            if (colorMatch) {
+              _tapAt(colorMatch, "Tap " + colorMatch.name + " (color)", panel);
+              colorClicked = true;
+            }
+          } finally {
+            if (colorImg) colorImg.recycle();
           }
-          var colorMatch = _findFirstMatch(colorImg, colorTemplates, 0.7);
-          if (colorMatch) {
-            _tapAt(colorMatch, "Tap " + colorMatch.name + " (color)", panel);
-            colorClicked = true;
-            break;
-          }
-        } finally {
-          if (colorImg) colorImg.recycle();
-        }
+        });
+        if (colorClicked) break;
         var elapsed = Date.now() - startTime;
         if (elapsed < 2000) sleep(2000 - elapsed);
       }
@@ -376,6 +807,9 @@ function feedPikmin(config, panel) {
       sleep(2000);
 
       // Read flowers/nectar numbers for this color via OCR.
+      var flowers = "0";
+      var numberNectar = "0";
+      var feedCount = 0;
       var colorScreenImg = null;
       try {
         colorScreenImg = captureScreen();
@@ -411,293 +845,34 @@ function feedPikmin(config, panel) {
       }
 
       if (feedCount > 0) {
-        usedColor = colorName;
-        floatyMod.appendLog(panel, "Feed count > 0 for " + colorName + ", proceeding to feed");
-        break;
-      }
-
-      floatyMod.appendLog(panel, "Feed count is 0 for " + colorName + ", moving to next color");
-    }
-
-    if (feedCount === 0) {
-      floatyMod.appendLog(panel, "Feed count is 0 for all colors, no feeding this run");
-    }
-
-    if (feedCount > 0) {
-      var nectarTapX = 125;
-      var nectarTapY = 710;
-      floatyMod.appendLog(panel, "Clicking nectar at (" + nectarTapX + "," + nectarTapY + ")");
-      floatyMod.withPanelHidden(panel, function() {
-        press(nectarTapX, nectarTapY, 1000);
-      });
-      sleep(2000);
-
-      // feedNectar: feed nectar scroll path — edit freely.
-      var feedNectar = [
-        [576, 2000],[358, 868],[550, 1100],[763, 868],[550, 1100],[763, 1332],[550, 1100],[358, 1332],
-        [576, 2000],[358, 868],[550, 1100],[763, 868],[550, 1100],[763, 1332],[550, 1100],[358, 1332],
-        [576, 2000],[358, 868],[550, 1100],[763, 868],[550, 1100],[763, 1332],[550, 1100],[358, 1332],
-      ];
-      // collectFlowers: collect flowers scroll path — edit freely.
-      var collectFlowers = [
-        [550, 1100],
-        [110, 620],[1000, 620],[1000, 710],[110, 710],
-        [110, 800],[1000, 800],[1000, 890],[110, 890],
-        [110, 980],[1000, 980],[1000, 1070],[110, 1070],
-        [110, 1160],[1000, 1160],[1000, 1250],[110, 1250],
-        [110, 1340],[1000, 1340],[1000, 1430],[110, 1430],
-        [110, 1520],[1000, 1520],[1000, 1610],[110, 1610],
-      ];
-
-      // can feed templates: gate whether nectar feeding is possible each round.
-      var canFeedTemplates = _loadTemplatesFromDir(templateDir, "feeding/feed/can feed");
-      if (canFeedTemplates.length === 0) {
-        floatyMod.appendLog(panel, "Warning: no templates in feeding/feed/can feed, nectar will be skipped");
-      }
-      // back button used around the can-feed scan (pikminPageTemplates is
-      // already loaded earlier, before the nectar page click).
-      var backTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["back.jpg"]);
-
-      // Only a SUCCESSFUL feed round counts toward feedCount; a failed
-      // (no can-feed match) attempt retries WITHOUT consuming a round.
-      var completedRounds = 0;
-      var maxAttempts = feedCount * 3;
-      var attempt = 0;
-      var consecutiveFailures = 0;
-      var stoppedEarly = false;
-      while (completedRounds < feedCount && attempt < maxAttempts) {
-        attempt++;
-        floatyMod.appendLog(panel, "Feed round " + (completedRounds + 1) + "/" + feedCount);
-
-        // 1. Open the pikmin page so the can-feed state is visible (timeout ~10s).
-        floatyMod.appendLog(panel, "Opening pikmin page...");
-        var pikminOpened = false;
-        for (var pikminTry = 0; pikminTry < 5; pikminTry++) {
-          var startTime = Date.now();
-          var pikminImg = null;
-          try {
-            pikminImg = captureScreen();
-            if (!pikminImg) {
-              sleep(1000);
-              continue;
-            }
-            var pikminMatch = _findFirstMatch(pikminImg, pikminPageTemplates, 0.7);
-            if (pikminMatch) {
-              _tapAt(pikminMatch, "Tap " + pikminMatch.name + " (pikmin page)", panel);
-              pikminOpened = true;
-              break;
-            }
-          } finally {
-            if (pikminImg) pikminImg.recycle();
-          }
-          var elapsed = Date.now() - startTime;
-          if (elapsed < 2000) sleep(2000 - elapsed);
-        }
-        if (!pikminOpened) {
-          floatyMod.appendLog(panel, "Pikmin page template not found within timeout");
-        }
-
-        // 1b. Wait until the pikmin page has opened: back.jpg must be visible.
-        floatyMod.appendLog(panel, "Waiting for back button...");
-        var backVisible = false;
-        for (var waitTry = 0; waitTry < 5; waitTry++) {
-          var startTime = Date.now();
-          var waitImg = null;
-          try {
-            waitImg = captureScreen();
-            if (!waitImg) {
-              sleep(1000);
-              continue;
-            }
-            var waitMatch = _findFirstMatch(waitImg, backTemplates, 0.7);
-            if (waitMatch) {
-              backVisible = true;
-              break;
-            }
-          } finally {
-            if (waitImg) waitImg.recycle();
-          }
-          var elapsed = Date.now() - startTime;
-          if (elapsed < 2000) sleep(2000 - elapsed);
-        }
-        if (!backVisible) {
-          floatyMod.appendLog(panel, "Back button not visible within timeout");
-        }
-        sleep(500);
-
-        // 2. Scan can-feed templates (up to 3 attempts, raised threshold
-        //    0.8 for stricter matching to avoid false positives) BEFORE any zoom.
-        var canFeed = false;
-        for (var scan = 0; scan < 3; scan++) {
-          var canFeedImg = null;
-          var canFeedMatch = null;
-          try {
-            canFeedImg = captureScreen();
-            if (canFeedImg) {
-              canFeedMatch = _findFirstMatch(canFeedImg, canFeedTemplates, 0.8);
-            }
-          } finally {
-            if (canFeedImg) canFeedImg.recycle();
-          }
-          if (canFeedMatch) {
-            floatyMod.appendLog(panel, "Can feed detected (" + canFeedMatch.name + ") on scan " + (scan + 1) + "/3");
-            canFeed = true;
-            break;
-          }
-          floatyMod.appendLog(panel, "No can-feed match on scan " + (scan + 1) + "/3, rescanning...");
-          sleep(500);
-        }
-
-        // 3. Click back regardless of the scan result (timeout ~10s).
-        floatyMod.appendLog(panel, "Clicking back...");
-        var backClicked = false;
-        for (var backTry = 0; backTry < 5; backTry++) {
-          var startTime = Date.now();
-          var backImg = null;
-          try {
-            backImg = captureScreen();
-            if (!backImg) {
-              sleep(1000);
-              continue;
-            }
-            var backMatch = _findFirstMatch(backImg, backTemplates, 0.7);
-            if (backMatch) {
-              _tapAt(backMatch, "Tap " + backMatch.name + " (back)", panel);
-              backClicked = true;
-              break;
-            }
-          } finally {
-            if (backImg) backImg.recycle();
-          }
-          var elapsed = Date.now() - startTime;
-          if (elapsed < 2000) sleep(2000 - elapsed);
-        }
-        if (!backClicked) {
-          floatyMod.appendLog(panel, "Back template not found within timeout");
-        }
-
-        // 3b. Wait until we are back on the base screen: pikmin page.jpg must be visible again.
-        floatyMod.appendLog(panel, "Waiting for pikmin page...");
-        var pikminBackVisible = false;
-        for (var waitBackTry = 0; waitBackTry < 5; waitBackTry++) {
-          var startTime = Date.now();
-          var waitBackImg = null;
-          try {
-            waitBackImg = captureScreen();
-            if (!waitBackImg) {
-              sleep(1000);
-              continue;
-            }
-            var waitBackMatch = _findFirstMatch(waitBackImg, pikminPageTemplates, 0.7);
-            if (waitBackMatch) {
-              pikminBackVisible = true;
-              break;
-            }
-          } finally {
-            if (waitBackImg) waitBackImg.recycle();
-          }
-          var elapsed = Date.now() - startTime;
-          if (elapsed < 2000) sleep(2000 - elapsed);
-        }
-        if (!pikminBackVisible) {
-          floatyMod.appendLog(panel, "Pikmin page not visible within timeout");
-        }
-        sleep(500);
-
-        // 4. Only when can-feed was detected: zoom out → feed nectar → collect flowers.
-        if (canFeed) {
-          scroll.zoom("out", 1, panel);
-          sleep(500);
-
-          floatyMod.appendLog(panel, "Feeding nectar...");
-          try {
-            gestures([10000].concat(feedNectar));
-          } catch (e) {
-            floatyMod.appendLog(panel, "Feed nectar gesture failed: " + e);
-          }
-          sleep(500);
-          floatyMod.appendLog(panel, "Collecting flowers...");
-          try {
-            gestures([3000].concat(collectFlowers));
-          } catch (e) {
-            floatyMod.appendLog(panel, "Collect flowers gesture failed: " + e);
-          }
-          floatyMod.appendLog(panel, "Collecting flowers (mirrored)...");
-          try {
-            // mirror x-axis (110 ↔ 1000) so sweep direction reverses,
-            // same y-progression so the scroll continues downward, no backtrack
-            var collectFlowersMirrored = collectFlowers.map(function (p) {
-              return [1110 - p[0], p[1]];
-            });
-            gestures([3000].concat(collectFlowersMirrored));
-          } catch (e) {
-            floatyMod.appendLog(panel, "Collect flowers mirrored gesture failed: " + e);
-          }
-          sleep(1000);
-          completedRounds++;
-          consecutiveFailures = 0;
-        } else {
-          // Cannot feed: skip zoom/feed/collect. This attempt does NOT
-          // count toward feedCount — re-trigger and retry.
-          consecutiveFailures++;
-          floatyMod.appendLog(panel, "Cannot feed now (no can-feed match after 3 scans), retrying without counting round (" + consecutiveFailures + " consecutive)");
-          sleep(1000);
-        }
-
-        // Abort after 3 CONSECUTIVE cannot-feed attempts: end the feeding
-        // logic (housekeeping back to main page happens after the loop).
-        if (consecutiveFailures >= 3) {
-          floatyMod.appendLog(panel, "3 consecutive cannot-feed attempts, ending feeding logic");
-          stoppedEarly = true;
+        anyFedThisKeyword = true;
+        floatyMod.appendLog(panel, "Feeding " + feedCount + " round(s) of " + colorName);
+        var feedResult = _feedRounds(colorName, feedCount, flowersRegion, nectarRegion);
+        totalRounds += feedResult.rounds;
+        results.push(colorName + ":" + feedResult.rounds);
+        if (feedResult.stoppedEarly) {
+          // Housekeeping already returned to the main page — cannot continue.
+          aborted = true;
           break;
         }
-
-        if (completedRounds < feedCount) {
-          floatyMod.appendLog(panel, "Re-triggering feeding page...");
-          var reImg = null;
-          try {
-            reImg = captureScreen();
-            var reMatch = reImg ? _findFirstMatch(reImg, reTriggerTemplates, 0.7) : null;
-            if (reMatch) {
-              var rx = reMatch.x + Math.round(reMatch.w / 2);
-              var ry = reMatch.y + Math.round(reMatch.h / 2);
-              floatyMod.appendLog(panel, "Double-click " + reMatch.name + " (round re-trigger)");
-              floatyMod.withPanelHidden(panel, function () {
-                press(rx, ry, 40);
-                sleep(125);
-                press(rx, ry, 40);
-              });
-              sleep(2000);
-            } else {
-              floatyMod.appendLog(panel, "Feeding page not found for next round");
-            }
-          } finally {
-            if (reImg) reImg.recycle();
-          }
-        }
-      }
-
-      if (completedRounds < feedCount) {
-        floatyMod.appendLog(panel, "Stopped after " + attempt + " attempts (" + completedRounds + "/" + feedCount + " rounds completed)");
-      }
-
-      // Housekeeping: if the feeding logic was aborted early (3 consecutive
-      // cannot-feed attempts), return to the main page via the common helper.
-      if (stoppedEarly) {
-        floatyMod.appendLog(panel, "Housekeeping: returning to main page...");
-        _navigateToMainPage(templateDir, panel);
+        needReopen = true;   // feeding ends on the base screen
+      } else {
+        floatyMod.appendLog(panel, "Feed count is 0 for " + colorName + ", moving to next color");
       }
     }
 
-    console.log("=== Feed Pikmin Results ===");
-    console.log("Color: " + usedColor);
-    console.log("Flowers: " + flowers);
-    console.log("Number Nectar: " + numberNectar);
-    console.log("Feed count: " + feedCount);
-    console.log("===========================");
-  } finally {
-    if (screenImg) screenImg.recycle();
+    if (aborted) break;
+
+    if (!anyFedThisKeyword) {
+      floatyMod.appendLog(panel, "No color could be fed for keyword '" + keyword + "'");
+    }
   }
+
+  console.log("=== Feed Pikmin Results ===");
+  console.log("Search keywords: " + searchKeywords.join(", "));
+  console.log("Fed: " + (results.length > 0 ? results.join(", ") : "none"));
+  console.log("Total rounds: " + totalRounds);
+  console.log("===========================");
 }
 
 module.exports = { feedPikmin: feedPikmin };

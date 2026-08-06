@@ -113,15 +113,18 @@ function run(settings, panel) {
     }
     
     if (settings && settings.autoLaunch) {
-      floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
-      floatyMod.appendLog(panel, "Launching " + config.app.packageName + "...");
-      app.launchPackage(config.app.packageName);
-      sleep(5000);
-
-      pikminIcon.detectAndClickIcon(config.detection.templateDir, currentAccount, panel);
-      sleep(2000);
-      
-      floatyMod.appendLog(panel, "App in foreground (account " + currentAccount + ")");
+      // main.js already launched the game for the FIRST account; only
+      // relaunch + detect icon when switching to a subsequent account.
+      if (accIdx > 0) {
+        floatyMod.updateStatus(panel, "Launching Pikmin Bloom...");
+        pikminIcon.launchAndDetectIcon(
+          config.app.packageName,
+          config.detection.templateDir,
+          currentAccount,
+          panel
+        );
+        floatyMod.appendLog(panel, "App in foreground (account " + currentAccount + ")");
+      }
     } else {
       floatyMod.updateStatus(panel, "Open the game manually...");
       floatyMod.appendLog(panel, "Auto-launch disabled. Open game manually.");
@@ -150,9 +153,8 @@ function run(settings, panel) {
 
     if (accIdx < accountsToRun.length - 1) {
       floatyMod.appendLog(panel, "Account " + currentAccount + " done, preparing next account...");
+      // Next loop iteration relaunches via launchAndDetectIcon (accIdx > 0).
       sleep(2000);
-      app.launchPackage(config.app.packageName);
-      sleep(3000);
     }
   }
 

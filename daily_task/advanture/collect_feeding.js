@@ -3,6 +3,7 @@
 var floatyMod = require("../../ui/floaty");
 var advState = require("./advanture_state");
 var advConfig = require("../../ui/config");
+var feedingActions = require("../../lib/feeding_actions");
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -282,40 +283,7 @@ function runCollectFeeding(config, panel) {
     );
 
     for (var dc = 0; dc < doubleClickCount; dc++) {
-      var dcStart = Date.now();
-      while (Date.now() - dcStart < 2000) {
-        var dcImg = null;
-        try {
-          dcImg = captureScreen();
-          if (!dcImg) {
-            sleep(500);
-            continue;
-          }
-          var dcMatch = _findFirstMatch(dcImg, feedingPageTemplates, 0.7);
-          if (dcMatch) {
-            var dcX = dcMatch.x + Math.round(dcMatch.w / 2);
-            var dcY = dcMatch.y + Math.round(dcMatch.h / 2);
-            var navBarH =
-              (advConfig.ui && advConfig.ui.navBarHeight) ||
-              Math.round(device.height * 0.07);
-            var maxSafeY = device.height - navBarH;
-            if (dcY > maxSafeY) dcY = maxSafeY;
-            floatyMod.appendLog(
-              panel,
-              "Double-click " + dcMatch.name + " (retry #" + retryCount + ")",
-            );
-            floatyMod.withPanelHidden(panel, function () {
-              press(dcX, dcY, 40);
-              sleep(125);
-              press(dcX, dcY, 40);
-            });
-            break;
-          }
-        } finally {
-          if (dcImg) dcImg.recycle();
-        }
-        sleep(500);
-      }
+      feedingActions.doubleClickFeedingPage(templateDir, 2000, "retry #" + retryCount, panel);
       sleep(500);
     }
 
@@ -326,40 +294,7 @@ function runCollectFeeding(config, panel) {
   if (retryCount >= maxRetries) {
     floatyMod.appendLog(panel, "3 consecutive misses — double click 3x (final)");
     for (var dc = 0; dc < 3; dc++) {
-      var dcStart = Date.now();
-      while (Date.now() - dcStart < 2000) {
-        var dcImg = null;
-        try {
-          dcImg = captureScreen();
-          if (!dcImg) {
-            sleep(500);
-            continue;
-          }
-          var dcMatch = _findFirstMatch(dcImg, feedingPageTemplates, 0.7);
-          if (dcMatch) {
-            var dcX = dcMatch.x + Math.round(dcMatch.w / 2);
-            var dcY = dcMatch.y + Math.round(dcMatch.h / 2);
-            var navBarH =
-              (advConfig.ui && advConfig.ui.navBarHeight) ||
-              Math.round(device.height * 0.07);
-            var maxSafeY = device.height - navBarH;
-            if (dcY > maxSafeY) dcY = maxSafeY;
-            floatyMod.appendLog(
-              panel,
-              "Double-click " + dcMatch.name + " (final #" + (dc + 1) + ")",
-            );
-            floatyMod.withPanelHidden(panel, function () {
-              press(dcX, dcY, 40);
-              sleep(125);
-              press(dcX, dcY, 40);
-            });
-            break;
-          }
-        } finally {
-          if (dcImg) dcImg.recycle();
-        }
-        sleep(500);
-      }
+      feedingActions.doubleClickFeedingPage(templateDir, 2000, "final #" + (dc + 1), panel);
       sleep(500);
     }
   }
@@ -368,47 +303,8 @@ function runCollectFeeding(config, panel) {
 
   floatyMod.appendLog(panel, "Closing feeding page (3 double-clicks)...");
   for (var clickNum = 0; clickNum < 3; clickNum++) {
-    var found = false;
-    var startTime = Date.now();
-    while (Date.now() - startTime < 2000) {
-      var closeImg = null;
-      try {
-        closeImg = captureScreen();
-        if (!closeImg) {
-          sleep(500);
-          continue;
-        }
-        var closeMatch = _findFirstMatch(closeImg, feedingPageTemplates, 0.7);
-        if (closeMatch) {
-          var tapX = closeMatch.x + Math.round(closeMatch.w / 2);
-          var tapY = closeMatch.y + Math.round(closeMatch.h / 2);
-          var navBarHeight =
-            (advConfig.ui && advConfig.ui.navBarHeight) ||
-            Math.round(device.height * 0.07);
-          var maxSafeY = device.height - navBarHeight;
-          if (tapY > maxSafeY) tapY = maxSafeY;
-          floatyMod.appendLog(
-            panel,
-            "Double-click " +
-              closeMatch.name +
-              " (close #" +
-              (clickNum + 1) +
-              ")",
-          );
-          floatyMod.withPanelHidden(panel, function () {
-            press(tapX, tapY, 40);
-            sleep(125);
-            press(tapX, tapY, 40);
-          });
-          found = true;
-          break;
-        }
-      } finally {
-        if (closeImg) closeImg.recycle();
-      }
-      sleep(500);
-    }
-    if (!found) {
+    var clicked = feedingActions.doubleClickFeedingPage(templateDir, 2000, "close #" + (clickNum + 1), panel);
+    if (!clicked) {
       floatyMod.appendLog(
         panel,
         "Feeding page button not found for click #" + (clickNum + 1),

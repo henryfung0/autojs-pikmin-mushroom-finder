@@ -29,7 +29,7 @@ var advState      = require("../advanture/advanture_state");
 
 // ---------------------------------------------------------------------------
 // Navigate to Seedling Page 1 — delegates to shared seedling_utils logic
-// Clicks "Seedling page.jpg" entry button, confirms with "to seedling page.jpg"
+// Clicks "seedling page.jpg" entry button, confirms with "to seedling page.jpg"
 // ---------------------------------------------------------------------------
 
 function navigateToSeedlingPage(templates, panel) {

@@ -8,7 +8,14 @@ var feedingActions = require("../../lib/feeding_actions");
 
 // Search keywords: the search filter is re-typed for each keyword, and the
 // full color rotation (white → yellow → red → blue) runs for every keyword.
-var searchKeywords = ["", "扶桑花", "風鈴草", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花"];
+var searchKeywords = [
+  "", 
+  "扶桑花", "風鈴草", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花",
+  "銀蓮花", "菊花", "大理花", "石竹", "曇花", "勿忘草", "小蒼蘭",
+  "龍膽", "聖誕玫瑰", "風信子", "繡球花", "鳶尾花", "牽牛花", "蝴蝶蘭", "粉蝶花",
+  "睡蓮", "三色堇", "牡丹", "矮牽牛", "聖誕紅", "櫻草花", "玫瑰", "週年紀念玫瑰",
+  "鼠尾草", "金魚草", "豌豆花", "鬱金香", "鸚鵡鬱金香"
+];
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -303,6 +310,7 @@ function feedPikmin(config, panel) {
   sleep(2000);
 
   var searchTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["search.jpg"]);
+  var closeSearchTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["close search.jpg"]);
   if (searchTemplates.length === 0) {
     floatyMod.appendLog(panel, "No search templates found");
     return;
@@ -334,6 +342,7 @@ function feedPikmin(config, panel) {
   })();
 
   // Tap the search button (search.jpg). Must already be on the nectar page.
+  // If search.jpg not found, try closing the search overlay first.
   function _tapSearch() {
     for (var attempt = 0; attempt < 5; attempt++) {
       var startTime = Date.now();
@@ -356,6 +365,48 @@ function feedPikmin(config, panel) {
       var elapsed = Date.now() - startTime;
       if (elapsed < 2000) sleep(2000 - elapsed);
     }
+
+    // Could not find search.jpg — try closing search overlay first
+    if (closeSearchTemplates.length > 0) {
+      floatyMod.appendLog(panel, "Search not found, trying to close search overlay...");
+      var closeImg = null;
+      try {
+        closeImg = captureScreen();
+        if (closeImg) {
+          var closeMatch = _findFirstMatch(closeImg, closeSearchTemplates, 0.7);
+          if (closeMatch) {
+            _tapAt(closeMatch, "Tap " + closeMatch.name + " (close search)", panel);
+            sleep(2000);
+          }
+        }
+      } finally {
+        if (closeImg) closeImg.recycle();
+      }
+    }
+
+    // Retry finding search.jpg after closing overlay
+    for (var retryAttempt = 0; retryAttempt < 5; retryAttempt++) {
+      var startTime = Date.now();
+      var img = null;
+      try {
+        img = captureScreen();
+        if (!img) {
+          sleep(1000);
+          continue;
+        }
+        var match = _findFirstMatch(img, searchTemplates, 0.7);
+        if (match) {
+          _tapAt(match, "Tap " + match.name + " (search)", panel);
+          sleep(1000);
+          return true;
+        }
+      } finally {
+        if (img) img.recycle();
+      }
+      var elapsed = Date.now() - startTime;
+      if (elapsed < 2000) sleep(2000 - elapsed);
+    }
+
     floatyMod.appendLog(panel, "Could not find search button");
     return false;
   }
@@ -363,6 +414,24 @@ function feedPikmin(config, panel) {
   // From the BASE screen back to the search UI:
   //   double-click Feeding page → wait for pikmin page → click nectar page → tap search.
   function _reopenSearch() {
+    // First, try to close search overlay if it's open (from previous keyword)
+    if (closeSearchTemplates.length > 0) {
+      var closeBeforeImg = null;
+      try {
+        closeBeforeImg = captureScreen();
+        if (closeBeforeImg) {
+          var closeBeforeMatch = _findFirstMatch(closeBeforeImg, closeSearchTemplates, 0.7);
+          if (closeBeforeMatch) {
+            floatyMod.appendLog(panel, "Closing existing search overlay before reopen...");
+            _tapAt(closeBeforeMatch, "Tap " + closeBeforeMatch.name + " (close search)", panel);
+            sleep(2000);
+          }
+        }
+      } finally {
+        if (closeBeforeImg) closeBeforeImg.recycle();
+      }
+    }
+
     var reClicked = feedingActions.doubleClickFeedingPage(templateDir, 2000, "reopen feeding", panel);
     if (!reClicked) {
       floatyMod.appendLog(panel, "Feeding page not found while reopening");
@@ -533,7 +602,10 @@ function feedPikmin(config, panel) {
       [110, 1100],[1000, 1100],[1000, 1190],[110, 1190],
       [110, 1280],[1000, 1280],[1000, 1370],[110, 1370],
       [110, 1460],[1000, 1460],[1000, 1550],[110, 1550],
-
+      [110, 1640],[1000, 1640],[1000, 1730],[110, 1730],
+      [110, 1820],[1000, 1820],[1000, 1910],[110, 1910],
+      [110, 1910],[1000, 1910],[1000, 1820],[110, 1820],
+      [110, 1730],[1000, 1730],[1000, 1640],[110, 1640],
       [110, 1505],[1000, 1505],[1000, 1415],[110, 1415],
       [110, 1325],[1000, 1325],[1000, 1235],[110, 1235],
       [110, 1145],[1000, 1145],[1000, 1055],[110, 1055],
@@ -713,7 +785,7 @@ function feedPikmin(config, panel) {
         } catch (e) {
           floatyMod.appendLog(panel, "Collect flowers gesture failed: " + e);
         }
-        sleep(1000);
+        sleep(2500);
         completedRounds++;
         consecutiveFailures = 0;
       } else {

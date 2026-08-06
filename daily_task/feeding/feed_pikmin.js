@@ -264,7 +264,28 @@ function feedPikmin(config, panel) {
   }
 
   if (!pikminPageVisible) {
-    floatyMod.appendLog(panel, "Pikmin page not visible within timeout; clicking fixed position anyway");
+    floatyMod.appendLog(panel, "Pikmin page not visible within timeout; waiting and retrying...");
+    // Wait and retry until pikmin page is visible
+    for (var nectarRetry = 0; nectarRetry < 10; nectarRetry++) {
+      sleep(2000);
+      var retryImg = null;
+      try {
+        retryImg = captureScreen();
+        if (retryImg) {
+          var retryMatch = _findFirstMatch(retryImg, pikminPageTemplates, 0.7);
+          if (retryMatch) {
+            pikminPageVisible = true;
+            floatyMod.appendLog(panel, "Pikmin page found on retry " + (nectarRetry + 1));
+            break;
+          }
+        }
+      } finally {
+        if (retryImg) retryImg.recycle();
+      }
+    }
+  }
+  if (!pikminPageVisible) {
+    floatyMod.appendLog(panel, "Pikmin page still not visible, proceeding anyway...");
   }
 
   floatyMod.appendLog(panel, "Clicking nectar page at fixed position (550,2012)...");
@@ -340,13 +361,37 @@ function feedPikmin(config, panel) {
   }
 
   // From the BASE screen back to the search UI:
-  //   double-click Feeding page → click nectar page → tap search.
+  //   double-click Feeding page → wait for pikmin page → click nectar page → tap search.
   function _reopenSearch() {
     var reClicked = feedingActions.doubleClickFeedingPage(templateDir, 2000, "reopen feeding", panel);
     if (!reClicked) {
       floatyMod.appendLog(panel, "Feeding page not found while reopening");
     }
     sleep(2000);
+
+    // Wait for pikmin page to be visible before clicking nectar page
+    floatyMod.appendLog(panel, "Waiting for pikmin page before clicking nectar page...");
+    var pikminVisibleForReopen = false;
+    for (var reopenWait = 0; reopenWait < 10; reopenWait++) {
+      var reopenImg = null;
+      try {
+        reopenImg = captureScreen();
+        if (reopenImg) {
+          var reopenMatch = _findFirstMatch(reopenImg, pikminPageTemplates, 0.7);
+          if (reopenMatch) {
+            pikminVisibleForReopen = true;
+            break;
+          }
+        }
+      } finally {
+        if (reopenImg) reopenImg.recycle();
+      }
+      sleep(2000);
+    }
+    if (!pikminVisibleForReopen) {
+      floatyMod.appendLog(panel, "Pikmin page not visible in reopen, proceeding anyway...");
+    }
+
     floatyMod.appendLog(panel, "Clicking nectar page at fixed position (550,2012)...");
     floatyMod.withPanelHidden(panel, function () {
       press(nectarPageX, nectarPageY, 1000);
@@ -477,17 +522,22 @@ function feedPikmin(config, panel) {
     // feedNectar: feed nectar scroll path — edit freely.
     var feedNectar = [
       [576, 2000],
-      [358, 868],[550, 1100],[763, 868],[550, 1100],
-      [358, 868],[550, 1100],[763, 868],[550, 1100],
-      [358, 868],[550, 1100],[763, 868],[550, 1100],
+      [358, 1450],[763, 1450],
+      [358, 1450],[763, 1450],
+      [358, 1450],[763, 1450],
     ];
     // collectFlowers: collect flowers scroll path — edit freely.
     var collectFlowers = [
-      [540, 1100],
-      [110, 620],[1000, 620],[1000, 710],[110, 710],
-      [110, 800],[1000, 800],[1000, 890],[110, 890],
-      [110, 980],[1000, 980],[1000, 1070],[110, 1070],
-      [110, 1160],[1000, 1160],[1000, 1250],[110, 1250],
+      [540, 1450],
+      [110, 920],[1000, 920],[1000, 1010],[110, 1010],
+      [110, 1100],[1000, 1100],[1000, 1190],[110, 1190],
+      [110, 1280],[1000, 1280],[1000, 1370],[110, 1370],
+      [110, 1460],[1000, 1460],[1000, 1550],[110, 1550],
+
+      [110, 1505],[1000, 1505],[1000, 1415],[110, 1415],
+      [110, 1325],[1000, 1325],[1000, 1235],[110, 1235],
+      [110, 1145],[1000, 1145],[1000, 1055],[110, 1055],
+      [110, 965],[1000, 965],[1000, 875],[110, 875],
     ];
 
     // Only a SUCCESSFUL feed round counts toward feedCount; a failed
@@ -659,20 +709,9 @@ function feedPikmin(config, panel) {
         sleep(500);
         floatyMod.appendLog(panel, "Collecting flowers...");
         try {
-          gestures([3000].concat(collectFlowers));
+          gestures([6000].concat(collectFlowers));
         } catch (e) {
           floatyMod.appendLog(panel, "Collect flowers gesture failed: " + e);
-        }
-        floatyMod.appendLog(panel, "Collecting flowers (mirrored)...");
-        try {
-          // mirror x-axis (110 ↔ 1000) so sweep direction reverses,
-          // same y-progression so the scroll continues downward, no backtrack
-          var collectFlowersMirrored = collectFlowers.map(function (p) {
-            return [1110 - p[0], p[1]];
-          });
-          gestures([3000].concat(collectFlowersMirrored));
-        } catch (e) {
-          floatyMod.appendLog(panel, "Collect flowers mirrored gesture failed: " + e);
         }
         sleep(1000);
         completedRounds++;
@@ -818,12 +857,14 @@ function feedPikmin(config, panel) {
           continue;
         }
 
-        var flowersRegion = [0, 475, 250, 100];
+        // Adjust OCR regions: when keyword is not empty, search bar occupies space so shift y +100
+        var yOffset = keyword.length > 0 ? 100 : 0;
+        var flowersRegion = [0, 475 + yOffset, 300, 100];
         var flowersResult = ocr(colorScreenImg, flowersRegion);
         flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
         floatyMod.appendLog(panel, "Flowers: " + flowers);
 
-        var nectarRegion = [0, 660, 250, 100];
+        var nectarRegion = [0, 660 + yOffset, 300, 100];
         var nectarResult = ocr(colorScreenImg, nectarRegion);
         numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
         floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);

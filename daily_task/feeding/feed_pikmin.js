@@ -5,6 +5,7 @@ var advState = require("../advanture/advanture_state");
 var advConfig = require("../../ui/config");
 var scroll = require("../../lib/gestures");
 var feedingActions = require("../../lib/feeding_actions");
+var collectFeedingMod = require("../advanture/collect_feeding");
 
 // Search keywords: the search filter is re-typed for each keyword, and the
 // full color rotation (white → yellow → red → blue) runs for every keyword.
@@ -325,6 +326,10 @@ function feedPikmin(config, panel) {
     floatyMod.appendLog(panel, "Warning: no templates in feeding/feed/can feed, nectar will be skipped");
   }
   var backTemplates = _loadSpecificTemplates(templateDir, "feeding/feed", ["back.jpg"]);
+
+  // Collectible items (templates/feeding/collect/ click/ + hold/) — collected
+  // after zoom-out in each feed round, before the scroll gestures.
+  var collectTemplates = collectFeedingMod.loadCollectTemplates(templateDir);
 
   // Close-family templates from common/ (Close*.jpg, closebtn.jpg) — used to
   // dismiss the search dialog BEFORE color detection. The dialog stays open
@@ -767,11 +772,27 @@ function feedPikmin(config, panel) {
       }
       sleep(500);
 
-      // 4. Only when can-feed was detected: zoom out → feed nectar → collect flowers.
+      // 4. Only when can-feed was detected: zoom out → collect any visible
+      //    collectible items (feeding/collect) → feed nectar → collect flowers.
       if (canFeed) {
         scroll.zoom("out", 1, panel);
         sleep(500);
 
+        // Collect every visible collectible item (fruit/seedling) on the
+        // zoomed-out view before the scroll gestures, reusing the shared
+        // collect loop from collect_feeding.js.
+        if (collectTemplates.length > 0) {
+          floatyMod.appendLog(panel, "Collecting visible feeding items...");
+          collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
+            threshold: 0.7,
+          });
+        } else {
+          floatyMod.appendLog(panel, "No collect templates in feeding/collect, skipping collect loop");
+        }
+
+        // NOTE: The scroll gestures below ALWAYS run after the collect loop,
+        // whether or not any collectible item matched — zoom-out → feed
+        // nectar → collect flowers, guaranteed.
         floatyMod.appendLog(panel, "Feeding nectar...");
         try {
           gestures([10000].concat(feedNectar));

@@ -66,6 +66,24 @@ function _loadSpecificTemplates(baseDir, subDir, fileNames) {
   return templates;
 }
 
+// Collectible templates are split into click/ and hold/ subfolders:
+//   click/ — matched images are simply tapped (existing collect behavior)
+//   hold/  — matched images require a 10s long-press to collect
+// Each template is tagged with a `mode` field so collectVisibleItems()
+// knows how to interact with it. Any image still sitting directly in
+// feeding/collect/ (legacy layout) is treated as click-type.
+function loadCollectTemplates(templateDir) {
+  var clickTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect/click");
+  var holdTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect/hold");
+  var legacyTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect");
+
+  for (var i = 0; i < clickTemplates.length; i++) clickTemplates[i].mode = "click";
+  for (var j = 0; j < holdTemplates.length; j++) holdTemplates[j].mode = "hold";
+  for (var k = 0; k < legacyTemplates.length; k++) legacyTemplates[k].mode = "click";
+
+  return clickTemplates.concat(holdTemplates).concat(legacyTemplates);
+}
+
 // Per-template threshold overrides (filename → threshold)
 var TEMPLATE_THRESHOLDS = {
   "Grape(1).jpg": 0.8,
@@ -98,7 +116,7 @@ function _matchOne(screenImage, tpl, threshold) {
   return null;
 }
 
-function _tapAt(match, label, panel) {
+function _tapAt(match, label, panel, pressDuration) {
   var tapX = match.x + Math.round(match.w / 2);
   var tapY = match.y + Math.round(match.h / 2);
   var navBarHeight =
@@ -106,9 +124,10 @@ function _tapAt(match, label, panel) {
     Math.round(device.height * 0.07);
   var maxSafeY = device.height - navBarHeight;
   if (tapY > maxSafeY) tapY = maxSafeY;
+  var duration = pressDuration || 1000;
   floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")");
   floatyMod.withPanelHidden(panel, function () {
-    press(tapX, tapY, 1000);
+    press(tapX, tapY, duration);
   });
 }
 
@@ -119,6 +138,74 @@ function _findFirstMatch(screenImage, templates, threshold) {
     if (match) return match;
   }
   return null;
+}
+
+/**
+ * Scan the current screen for any template in `collectTemplates`
+ * (templates/feeding/collect/ click/ + hold/) and interact with every one
+ * found, until `maxConsecutiveMisses` consecutive frames contain no
+ * collectible item. Click-type templates are tapped; hold-type templates
+ * are long-pressed for 10s.
+ *
+ * Shared by runCollectFeeding() (feed-collect mode) and the feed-pikmin
+ * flow (feed_pikmin.js), which collects visible items after zooming out.
+ *
+ * Options:
+ *   threshold             — match confidence (default 0.7)
+ *   maxConsecutiveMisses  — empty frames before giving up (default 3)
+ *
+ * Returns the number of items collected in this call.
+ */
+function collectVisibleItems(collectTemplates, panel, options) {
+  var threshold = (options && options.threshold) || 0.7;
+  var maxConsecutiveMisses =
+    (options && options.maxConsecutiveMisses) || 3;
+  var collectedCount = 0;
+  var consecutiveMisses = 0;
+
+  while (consecutiveMisses < maxConsecutiveMisses) {
+    var startTime = Date.now();
+    var screenImg = null;
+    try {
+      screenImg = captureScreen();
+      if (!screenImg) {
+        sleep(500);
+        continue;
+      }
+
+      var collectMatch = _findFirstMatch(
+        screenImg,
+        collectTemplates,
+        threshold,
+      );
+      if (collectMatch) {
+        collectedCount++;
+        consecutiveMisses = 0;
+        if (collectMatch.mode === "hold") {
+          // Hold-type collectible (fruit/seedling): long-press 10s.
+          _tapAt(collectMatch, "Hold " + collectMatch.name, panel, 10000);
+        } else {
+          // Click-type (e.g. UI buttons): normal collect tap.
+          _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
+        }
+        sleep(1500);
+      } else {
+        consecutiveMisses++;
+        if (consecutiveMisses < maxConsecutiveMisses) {
+          floatyMod.appendLog(
+            panel,
+            "No collect item (" + consecutiveMisses + "/" + maxConsecutiveMisses + ")",
+          );
+        }
+      }
+    } finally {
+      if (screenImg) screenImg.recycle();
+    }
+    var elapsed = Date.now() - startTime;
+    if (elapsed < 1000) sleep(1000 - elapsed);
+  }
+
+  return collectedCount;
 }
 
 function runCollectFeeding(config, panel) {
@@ -179,7 +266,7 @@ function runCollectFeeding(config, panel) {
   sleep(1000);
 
   var feedingPageTemplates = _loadSpecificTemplates(templateDir, "feeding", ["Feeding page.jpg"]);
-  var collectTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect");
+  var collectTemplates = loadCollectTemplates(templateDir);
 
   if (feedingPageTemplates.length === 0) {
     floatyMod.appendLog(panel, "No feeding page templates found");
@@ -229,49 +316,15 @@ function runCollectFeeding(config, panel) {
   var collectThreshold = 0.7;
   var collectedCount = 0;
 
-  var maxConsecutiveMisses = 3;
-  var consecutiveMisses = 0;
   var retryCount = 0;
   var maxRetries = 3;
 
   while (retryCount < maxRetries) {
     floatyMod.appendLog(panel, "Scanning for collect items (retry " + (retryCount + 1) + ")...");
 
-    while (consecutiveMisses < maxConsecutiveMisses) {
-      var startTime = Date.now();
-      var screenImg = null;
-      try {
-        screenImg = captureScreen();
-        if (!screenImg) {
-          sleep(500);
-          continue;
-        }
-
-        var collectMatch = _findFirstMatch(
-          screenImg,
-          collectTemplates,
-          collectThreshold,
-        );
-        if (collectMatch) {
-          collectedCount++;
-          consecutiveMisses = 0;
-          _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
-          sleep(1500);
-        } else {
-          consecutiveMisses++;
-          if (consecutiveMisses < maxConsecutiveMisses) {
-            floatyMod.appendLog(
-              panel,
-              "No collect item (" + consecutiveMisses + "/" + maxConsecutiveMisses + ")",
-            );
-          }
-        }
-      } finally {
-        if (screenImg) screenImg.recycle();
-      }
-      var elapsed = Date.now() - startTime;
-      if (elapsed < 1000) sleep(1000 - elapsed);
-    }
+    collectedCount += collectVisibleItems(collectTemplates, panel, {
+      threshold: collectThreshold,
+    });
 
     retryCount++;
     if (retryCount >= maxRetries) break;
@@ -287,7 +340,6 @@ function runCollectFeeding(config, panel) {
       sleep(500);
     }
 
-    consecutiveMisses = 0;
     sleep(2000);
   }
 
@@ -317,4 +369,8 @@ function runCollectFeeding(config, panel) {
   floatyMod.appendLog(panel, "Collect feeding complete");
 }
 
-module.exports = { runCollectFeeding: runCollectFeeding };
+module.exports = {
+  runCollectFeeding: runCollectFeeding,
+  collectVisibleItems: collectVisibleItems,
+  loadCollectTemplates: loadCollectTemplates,
+};

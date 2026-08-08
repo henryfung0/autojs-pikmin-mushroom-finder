@@ -86,9 +86,9 @@ function loadCollectTemplates(templateDir) {
 
 // Per-template threshold overrides (filename → threshold)
 var TEMPLATE_THRESHOLDS = {
-  "Grape(1).jpg": 0.8,
-  "Grape.jpg": 0.8,
-  "Peach1.jpg": 0.8,
+  "Grape(1).jpg": 0.7,
+  "Grape.jpg": 0.7,
+  "Peach1.jpg": 0.7,
 };
 
 function _matchOne(screenImage, tpl, threshold) {

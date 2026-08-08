@@ -170,6 +170,10 @@ function isOnMainPage(navTemplates, options) {
       }
 
       if (!clicked) {
+        // Log this so we can distinguish "nothing on screen to click" from
+        // "buttons visible but not matching".  Repeated every 1s is fine.
+        console.info("isOnMainPage: no dismiss buttons found on screen");
+        if (floaty) floatyMod.appendLog(floaty, "isOnMainPage: no dismiss buttons found");
         sleep(1000);
       }
     } catch(e) {

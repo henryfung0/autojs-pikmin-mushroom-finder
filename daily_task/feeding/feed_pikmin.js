@@ -189,18 +189,30 @@ function _multiTap(x, y, panel, times) {
 
 function _navigateToMainPage(templateDir, panel) {
   floatyMod.appendLog(panel, "Navigating to main page...");
-  var navDir = files.join(templateDir, "navigation");
-  var commonDir = files.join(templateDir, "common");
   var navTemplates = _loadTemplatesFromDir(templateDir, "navigation");
   var commonTemplates = _loadTemplatesFromDir(templateDir, "common");
   var allNav = navTemplates.concat(commonTemplates);
 
-  advState.isOnMainPage(allNav, {
+  var onMain = advState.isOnMainPage(allNav, {
     threshold: 0.7,
     timeout: 30000,
     floaty: panel,
     dismissTemplates: commonTemplates,
   });
+  if (!onMain) {
+    floatyMod.appendLog(panel, "isOnMainPage timed out — retrying once...");
+    sleep(5000);
+    onMain = advState.isOnMainPage(allNav, {
+      threshold: 0.7,
+      timeout: 30000,
+      floaty: panel,
+      dismissTemplates: commonTemplates,
+    });
+    if (!onMain) {
+      floatyMod.appendLog(panel, "isOnMainPage failed twice — cannot reach main page, exiting feed pikmin");
+      return;
+    }
+  }
   sleep(1000);
 }
 

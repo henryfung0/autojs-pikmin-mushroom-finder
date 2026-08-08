@@ -106,6 +106,7 @@ function _matchOne(screenImage, tpl, threshold) {
         w: tpl.w,
         h: tpl.h,
         name: tpl.name,
+        mode: tpl.mode,
         confidence:
           result.confidence !== undefined ? result.confidence : t,
       };

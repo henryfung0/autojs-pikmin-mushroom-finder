@@ -261,7 +261,7 @@ function runCollectFeeding(config, panel) {
   } catch (e) {}
   var allNav = navTemplates.concat(commonTemplates);
   var onMain = advState.isOnMainPage(allNav, {
-    threshold: 0.7,
+    threshold: 0.6,
     timeout: 30000,
     floaty: panel,
     dismissTemplates: commonTemplates,
@@ -270,7 +270,7 @@ function runCollectFeeding(config, panel) {
     floatyMod.appendLog(panel, "isOnMainPage timed out — retrying once...");
     sleep(5000);
     onMain = advState.isOnMainPage(allNav, {
-      threshold: 0.7,
+      threshold: 0.6,
       timeout: 30000,
       floaty: panel,
       dismissTemplates: commonTemplates,

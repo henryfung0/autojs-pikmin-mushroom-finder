@@ -25,11 +25,22 @@
  * No background — transparent, red log text, scrollable.
  * Close button on the top-right; drag via the title bar.
  *
+ * Singleton guard: if a panel was already created in this engine's
+ * lifetime, returns that same instance instead of creating a second one.
+ * This prevents duplicate panels if createControlPanel() is accidentally
+ * called multiple times (e.g. from nested require paths).
+ *
  * @param {Function} [closeCallback] - Called when × is tapped
  *
  * @returns {Object} The floaty raw window object
  */
+var _panelInstance = null;
+
 function createControlPanel(closeCallback) {
+  if (_panelInstance !== null) {
+    return _panelInstance;
+  }
+
   var w = floaty.rawWindow(
     <vertical w="300dp">
       <horizontal id="titleBar" gravity="center_vertical">
@@ -90,6 +101,7 @@ function createControlPanel(closeCallback) {
     }
   });
 
+  _panelInstance = w;
   return w;
 }
 
@@ -219,6 +231,9 @@ function destroy(w) {
     w.close();
   } catch (e) {
     // Ignore — window may already be closed
+  }
+  if (w === _panelInstance) {
+    _panelInstance = null;
   }
 }
 

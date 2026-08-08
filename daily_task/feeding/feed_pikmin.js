@@ -189,6 +189,9 @@ function _multiTap(x, y, panel, times) {
 
 function _navigateToMainPage(templateDir, panel) {
   floatyMod.appendLog(panel, "Navigating to main page...");
+
+  sleep(5000);
+
   var navTemplates = _loadTemplatesFromDir(templateDir, "navigation");
   var commonTemplates = _loadTemplatesFromDir(templateDir, "common");
   var allNav = navTemplates.concat(commonTemplates);

@@ -215,6 +215,8 @@ function runCollectFeeding(config, panel) {
     "./templates/";
 
   floatyMod.appendLog(panel, "Checking main page...");
+
+  sleep(5000);
   var navDir = files.join(templateDir, "navigation");
   var commonDir = files.join(templateDir, "common");
   var navTemplates = [];

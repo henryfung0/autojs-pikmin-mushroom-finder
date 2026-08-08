@@ -945,6 +945,7 @@ function feedPikmin(config, panel) {
           floatyMod.appendLog(panel, "Collecting visible feeding items...");
           collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
             threshold: 0.7,
+            maxConsecutiveMisses: 1,
           });
         } else {
           floatyMod.appendLog(panel, "No collect templates in feeding/collect, skipping collect loop");

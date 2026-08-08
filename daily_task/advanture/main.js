@@ -90,10 +90,6 @@ function run(settings, panel) {
 
   console.info("Loaded " + allTemplates.length + " template(s)");
 
-  var panel = floatyMod.createControlPanel(function() {
-    floatyMod.destroy(panel);
-    exit();
-  });
   floatyMod.appendLog(panel, "Adventure mode started");
 
   // ===================================================================

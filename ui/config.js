@@ -299,6 +299,28 @@ var config = {
   },
 
   // ──────────────────────────────────────────────
+  // Feeding Settings
+  // ──────────────────────────────────────────────
+  /** @namespace feeding - Feed-pikmin calculation parameters. */
+  feeding: {
+    /**
+     * Flower cap used by the feed calculation — flowers never need to be
+     * topped up beyond this number. Set per account because the cap can
+     * differ between the main and second Pikmin Bloom account.
+     * @type {number}
+     * @default 1200
+     */
+    maxFlowerMain: 1200,
+
+    /**
+     * Flower cap for the second account (see maxFlowerMain).
+     * @type {number}
+     * @default 1200
+     */
+    maxFlowerSecond: 1200,
+  },
+
+  // ──────────────────────────────────────────────
   // Debug Settings
   // ──────────────────────────────────────────────
   /** @namespace debug - Logging and diagnostic controls. */

@@ -104,6 +104,12 @@ function showConfigDialog() {
                 <checkbox id="enableGift" text="Gift" checked="true" textSize="14sp" textColor="#212121" margin="24 0 0 4"/>
                 <checkbox id="enableSeedlingAdv" text="Seedling" checked="true" textSize="14sp" textColor="#212121" margin="24 0 0 4"/>
                 <checkbox id="enableFruit" text="Fruit" checked="true" textSize="14sp" textColor="#212121" margin="24 0 0 4"/>
+
+                <text text="Max Empty Loops: 10" textSize="13sp"
+                      textColor="#616161" margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
+                <text text="10" textSize="12sp" textColor="#757575"
+                      gravity="end" id="maxEmptyLoopsValue"/>
+                <seekbar id="maxEmptyLoops" progress="9" max="29" margin="0 0 0 8"/>
               </vertical>
 
               <horizontal gravity="center_vertical">
@@ -118,11 +124,20 @@ function showConfigDialog() {
                 <checkbox id="enableFeedPikmin" text="Feed Pikmin" checked="true"
                          textSize="14sp" textColor="#212121" margin="24 0 0 4"/>
 
-                <text text="Max Empty Loops: 10" textSize="13sp"
-                      textColor="#616161" margin="0 8 0 0" id="maxEmptyLoopsLabel"/>
-                <text text="10" textSize="12sp" textColor="#757575"
-                      gravity="end" id="maxEmptyLoopsValue"/>
-                <seekbar id="maxEmptyLoops" progress="9" max="29" margin="0 0 0 8"/>
+                <text text="Maximum Flower" textSize="13sp"
+                      textColor="#616161" margin="0 8 0 0"/>
+                <horizontal gravity="center_vertical">
+                  <text text="Main Ac" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="maxFlowerMain" text="1200" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical">
+                  <text text="Second Ac" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="maxFlowerSecond" text="1200" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
               </vertical>
             </vertical>
           </vertical>
@@ -335,6 +350,8 @@ function showConfigDialog() {
   if (typeof saved.pikminAccount === "number") {
     view.accountSelector.setSelection(_clamp(saved.pikminAccount - 1, 0, 2));
   }
+  if (typeof saved.maxFlowerMain === "number") view.maxFlowerMain.setText(String(saved.maxFlowerMain));
+  if (typeof saved.maxFlowerSecond === "number") view.maxFlowerSecond.setText(String(saved.maxFlowerSecond));
 
   view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
   view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
@@ -362,7 +379,9 @@ function showConfigDialog() {
       enableSeedling: view.enableSeedlingAdv.isChecked(),
       enableFruit: view.enableFruit.isChecked(),
       maxEmptyLoops: view.maxEmptyLoops.progress + 1,
-      pikminAccount: view.accountSelector.getSelectedItemPosition() + 1
+      pikminAccount: view.accountSelector.getSelectedItemPosition() + 1,
+      maxFlowerMain: parseInt(view.maxFlowerMain.text().toString(), 10) || 1200,
+      maxFlowerSecond: parseInt(view.maxFlowerSecond.text().toString(), 10) || 1200
     };
     settingsStore.save(dialogResult.values);
     d.dismiss();
@@ -402,6 +421,8 @@ function showConfigDialog() {
     view.toggleFeedingGroup.setText("▸");
     view.maxEmptyLoops.setProgress(9);
     view.maxEmptyLoopsValue.setText("10");
+    view.maxFlowerMain.setText("1200");
+    view.maxFlowerSecond.setText("1200");
     settingsStore.clear();
   });
 

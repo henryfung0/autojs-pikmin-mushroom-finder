@@ -37,7 +37,9 @@ var KEYS = [
   "enableGift",
   "enableSeedling",
   "enableFruit",
-  "pikminAccount"
+  "pikminAccount",
+  "maxFlowerMain",
+  "maxFlowerSecond"
 ];
 
 function _store() {

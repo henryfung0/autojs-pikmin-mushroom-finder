@@ -31,6 +31,12 @@ if (!captureGranted) {
 if (settings.pikminAccount !== undefined) {
   config.account.pikminAccount = settings.pikminAccount;
 }
+if (typeof settings.maxFlowerMain === "number") {
+  config.feeding.maxFlowerMain = settings.maxFlowerMain;
+}
+if (typeof settings.maxFlowerSecond === "number") {
+  config.feeding.maxFlowerSecond = settings.maxFlowerSecond;
+}
 
 var panel = floatyMod.createControlPanel(function() {
   floatyMod.destroy(panel);

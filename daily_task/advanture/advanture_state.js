@@ -130,9 +130,16 @@ function isOnMainPage(navTemplates, options) {
         if (tplName.indexOf("detector") === -1 && tplName.indexOf("page") === -1) {
           var dismissMatch = _matchOne(img, dismissTemplates[j], threshold);
           if (dismissMatch) {
-            var tapX = dismissMatch.x + Math.round(dismissMatch.w / 2);
-            var tapY = dismissMatch.y + Math.round(dismissMatch.h / 2);
-            console.info("isOnMainPage: clicking \"" + dismissTemplates[j].name + "\" at (" + tapX + ", " + tapY + ")");
+            var tapX, tapY;
+            if (dismissTemplates[j].name.indexOf("click middle") !== -1) {
+              tapX = Math.round(device.width / 2);
+              tapY = Math.round(device.height / 2);
+              console.info("isOnMainPage: \"" + dismissTemplates[j].name + "\" is click-middle — tapping screen center (" + tapX + ", " + tapY + ")");
+            } else {
+              tapX = dismissMatch.x + Math.round(dismissMatch.w / 2);
+              tapY = dismissMatch.y + Math.round(dismissMatch.h / 2);
+              console.info("isOnMainPage: clicking \"" + dismissTemplates[j].name + "\" at (" + tapX + ", " + tapY + ")");
+            }
             if (floaty) floatyMod.appendLog(floaty, "isOnMainPage: clicking " + dismissTemplates[j].name);
             floatyMod.withPanelHidden(floaty, function() {
               _showTap(tapX, tapY);
@@ -153,9 +160,16 @@ function isOnMainPage(navTemplates, options) {
           if (tplName.indexOf("detector") === -1 && tplName.indexOf("page") === -1) {
             var dismissMatch = _matchOne(img, dismissTemplates[j], threshold);
             if (dismissMatch) {
-              var tapX = dismissMatch.x + Math.round(dismissMatch.w / 2);
-              var tapY = dismissMatch.y + Math.round(dismissMatch.h / 2);
-              console.info("isOnMainPage: clicking \"" + dismissTemplates[j].name + "\" at (" + tapX + ", " + tapY + ")");
+              var tapX, tapY;
+              if (dismissTemplates[j].name.indexOf("click middle") !== -1) {
+                tapX = Math.round(device.width / 2);
+                tapY = Math.round(device.height / 2);
+                console.info("isOnMainPage: \"" + dismissTemplates[j].name + "\" is click-middle — tapping screen center (" + tapX + ", " + tapY + ")");
+              } else {
+                tapX = dismissMatch.x + Math.round(dismissMatch.w / 2);
+                tapY = dismissMatch.y + Math.round(dismissMatch.h / 2);
+                console.info("isOnMainPage: clicking \"" + dismissTemplates[j].name + "\" at (" + tapX + ", " + tapY + ")");
+              }
               if (floaty) floatyMod.appendLog(floaty, "isOnMainPage: clicking " + dismissTemplates[j].name);
               floatyMod.withPanelHidden(floaty, function() {
                 _showTap(tapX, tapY);

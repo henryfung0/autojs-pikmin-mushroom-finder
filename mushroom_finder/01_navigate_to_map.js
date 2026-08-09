@@ -375,10 +375,18 @@ function navigateToMap(navTemplates, config, floatyW) {
           match = _matchOne(img, dismissTemplates[d], 0.7, true);
         }
         if (match) {
-          var tapX = match.x + Math.round(match.w / 2);
-          var tapY = match.y + Math.round(match.h / 2);
-          console.info("navigateToMap: found dismiss \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
-          floatyMod.appendLog(floatyW, "Dismiss popup \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
+          var tapX, tapY;
+          if (match.name.indexOf("click middle") !== -1) {
+            tapX = Math.round(device.width / 2);
+            tapY = Math.round(device.height / 2);
+            console.info("navigateToMap: \"" + match.name + "\" is click-middle — tapping screen center (" + tapX + "," + tapY + ")");
+            floatyMod.appendLog(floatyW, "Click-middle \"" + match.name + "\" — tapping screen center (" + tapX + "," + tapY + ")");
+          } else {
+            tapX = match.x + Math.round(match.w / 2);
+            tapY = match.y + Math.round(match.h / 2);
+            console.info("navigateToMap: found dismiss \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
+            floatyMod.appendLog(floatyW, "Dismiss popup \"" + match.name + "\" at (" + tapX + "," + tapY + ")");
+          }
           _showTap(tapX, tapY);
           press(tapX, tapY, 1000);
           sleep(1500);

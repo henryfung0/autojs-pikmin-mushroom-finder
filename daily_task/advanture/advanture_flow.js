@@ -132,13 +132,20 @@ function _loadTemplatesFromDir(baseDir, subDir) {
 // ---------------------------------------------------------------------------
 
 function _tapAt(match, label, panel) {
-  var tapX = match.x + Math.round(match.w / 2);
-  var tapY = match.y + Math.round(match.h / 2);
-  // Clamp Y to stay above the navigation bar so taps land on the app
-  var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
-  var maxSafeY = device.height - navBarHeight;
-  if (tapY > maxSafeY) {
-    tapY = maxSafeY;
+  var tapX, tapY;
+  if (match.name.indexOf("click middle") !== -1) {
+    // click-middle templates: tap the screen center instead of the match location
+    tapX = Math.round(device.width / 2);
+    tapY = Math.round(device.height / 2);
+  } else {
+    tapX = match.x + Math.round(match.w / 2);
+    tapY = match.y + Math.round(match.h / 2);
+    // Clamp Y to stay above the navigation bar so taps land on the app
+    var navBarHeight = (advConfig.ui && advConfig.ui.navBarHeight) || Math.round(device.height * 0.07);
+    var maxSafeY = device.height - navBarHeight;
+    if (tapY > maxSafeY) {
+      tapY = maxSafeY;
+    }
   }
   floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")");
   floatyMod.withPanelHidden(panel, function() {

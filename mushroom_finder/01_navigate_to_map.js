@@ -18,6 +18,7 @@
 "auto";
 
 var floatyMod = require("../ui/floaty");
+var matcher = require("../lib/matcher");
 
 // ── Click feedback indicator ─────────────────────────────────────────────
 // A small red dot that appears at the press point for ~800ms so the user
@@ -105,15 +106,12 @@ function loadNavigationTemplates(templateDir) {
     if (tpl) templates.push(tpl);
   }
 
-  // Load from common/ subdirectory
+  // Load from common/ subdirectory (recursive — includes click/ and click middle/ subfolders)
   var commonDir = files.join(templateDir, "common");
-  var commonEntries = _listImages(commonDir);
-  for (var i = 0; i < commonEntries.length; i++) {
-    var tpl = _readImage(commonDir, commonEntries[i]);
-    if (tpl) {
-      templates.push(tpl);
-      commonTemplates.push(tpl);
-    }
+  var commonTpls = matcher.loadAllTemplates(commonDir, { excludeDirs: [] });
+  for (var i = 0; i < commonTpls.length; i++) {
+    templates.push(commonTpls[i]);
+    commonTemplates.push(commonTpls[i]);
   }
 
   // Attach common templates as a property so navigateToMap can use them

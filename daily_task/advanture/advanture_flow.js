@@ -390,7 +390,7 @@ function runAdvantureFlow(config, panel) {
 
   // Also load main navigation + common templates for state detection
   var mainNavTemplates = _loadTemplatesFromDir(templateDir, "navigation");  // templates/navigation/ (has store detector.jpg, Advanture detector)
-  var commonTemplates = _loadTemplatesFromDir(templateDir, "common");       // templates/common/ (has dismiss buttons)
+  var commonTemplates = matcher.loadAllTemplates(templateDir + "common", { excludeDirs: [] });  // recursive: click/ + click middle/ subfolders (dismiss buttons)
   var mainTemplates = mainNavTemplates.concat(commonTemplates);             // combined for state checks
 
   // Load advanture entry buttons from subfolder (Advanture.jpg, Collect.jpg, Mushroom.jpg)

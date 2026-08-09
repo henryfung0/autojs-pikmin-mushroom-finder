@@ -6,6 +6,7 @@ var advConfig = require("../../ui/config");
 var scroll = require("../../lib/gestures");
 var feedingActions = require("../../lib/feeding_actions");
 var collectFeedingMod = require("../advanture/collect_feeding");
+var matcher = require("../../lib/matcher");
 
 // Search keywords: the search filter is re-typed for each keyword, and the
 // full color rotation (white → yellow → red → blue) runs for every keyword.
@@ -193,7 +194,7 @@ function _navigateToMainPage(templateDir, panel) {
   sleep(5000);
 
   var navTemplates = _loadTemplatesFromDir(templateDir, "navigation");
-  var commonTemplates = _loadTemplatesFromDir(templateDir, "common");
+  var commonTemplates = matcher.loadAllTemplates(files.join(templateDir, "common"), { excludeDirs: [] });
   var allNav = navTemplates.concat(commonTemplates);
 
   var onMain = advState.isOnMainPage(allNav, {
@@ -498,7 +499,7 @@ function feedPikmin(config, panel) {
   // full common/ set (Confirm/Collect/Back would tap the wrong action).
   var closeDialogTemplates = [];
   (function () {
-    var allCommon = _loadTemplatesFromDir(templateDir, "common");
+    var allCommon = matcher.loadAllTemplates(files.join(templateDir, "common"), { excludeDirs: [] });
     for (var c = 0; c < allCommon.length; c++) {
       if (allCommon[c].name.toLowerCase().indexOf("close") !== -1) {
         closeDialogTemplates.push(allCommon[c]);

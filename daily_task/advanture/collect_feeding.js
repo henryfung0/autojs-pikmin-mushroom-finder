@@ -4,6 +4,7 @@ var floatyMod = require("../../ui/floaty");
 var advState = require("./advanture_state");
 var advConfig = require("../../ui/config");
 var feedingActions = require("../../lib/feeding_actions");
+var matcher = require("../../lib/matcher");
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -240,25 +241,7 @@ function runCollectFeeding(config, panel) {
       }
     }
   } catch (e) {}
-  try {
-    var commonFiles = files.listDir(commonDir, function (n) {
-      return (
-        typeof n === "string" &&
-        (n.toLowerCase().endsWith(".jpg") || n.toLowerCase().endsWith(".png"))
-      );
-    });
-    for (var j = 0; j < commonFiles.length; j++) {
-      var cImg = images.read(files.join(commonDir, commonFiles[j]));
-      if (cImg && cImg.getWidth() > 0 && cImg.getHeight() > 0) {
-        commonTemplates.push({
-          name: commonFiles[j],
-          image: cImg,
-          w: cImg.getWidth(),
-          h: cImg.getHeight(),
-        });
-      }
-    }
-  } catch (e) {}
+  commonTemplates = matcher.loadAllTemplates(commonDir, { excludeDirs: [] });
   var allNav = navTemplates.concat(commonTemplates);
   var onMain = advState.isOnMainPage(allNav, {
     threshold: 0.6,

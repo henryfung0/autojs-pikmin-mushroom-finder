@@ -9,6 +9,7 @@
 
 var floatyMod  = require("../../ui/floaty");
 var advConfig  = require("../../ui/config");
+var matcher    = require("../../lib/matcher");
 
 // ---------------------------------------------------------------------------
 // Volume Key Handler (idempotent)
@@ -163,7 +164,7 @@ function loadThrowRepeatedSeedlingTemplates(templateDir) {
     flow:             _loadTemplatesFromDir(templateDir, "seedlings/navigation"),
     confirm:           _loadTemplatesFromDir(templateDir, "seedlings/navigation"),
     collect:          _loadTemplatesFromDir(templateDir, "seedlings/collect"),
-    common:           _loadTemplatesFromDir(templateDir, "common"),
+    common:           matcher.loadAllTemplates(files.join(templateDir, "common"), { excludeDirs: [] }),
     mainNav:          _loadTemplatesFromDir(templateDir, "navigation")
   };
 }

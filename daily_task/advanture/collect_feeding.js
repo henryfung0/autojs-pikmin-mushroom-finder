@@ -67,22 +67,27 @@ function _loadSpecificTemplates(baseDir, subDir, fileNames) {
   return templates;
 }
 
-// Collectible templates are split into click/ and hold/ subfolders:
-//   click/ — matched images are simply tapped (existing collect behavior)
-//   hold/  — matched images require a 10s long-press to collect
+// Collectible templates are split into subfolders by interaction mode:
+//   click/              — matched images are simply tapped (existing collect behavior)
+//   hold/               — matched images require a 10s long-press to collect
+//   click + auto click/ — tap the item (e.g. gift.jpg), then keep clicking the
+//                         screen center every ~1s until Collect(1).jpg appears,
+//                         then tap it (mode "click+autoclick")
 // Each template is tagged with a `mode` field so collectVisibleItems()
 // knows how to interact with it. Any image still sitting directly in
 // feeding/collect/ (legacy layout) is treated as click-type.
 function loadCollectTemplates(templateDir) {
   var clickTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect/click");
   var holdTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect/hold");
+  var autoClickTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect/click + auto click");
   var legacyTemplates = _loadTemplatesFromDir(templateDir, "feeding/collect");
 
   for (var i = 0; i < clickTemplates.length; i++) clickTemplates[i].mode = "click";
   for (var j = 0; j < holdTemplates.length; j++) holdTemplates[j].mode = "hold";
+  for (var a = 0; a < autoClickTemplates.length; a++) autoClickTemplates[a].mode = "click+autoclick";
   for (var k = 0; k < legacyTemplates.length; k++) legacyTemplates[k].mode = "click";
 
-  return clickTemplates.concat(holdTemplates).concat(legacyTemplates);
+  return clickTemplates.concat(holdTemplates).concat(autoClickTemplates).concat(legacyTemplates);
 }
 
 // Per-template threshold overrides (filename → threshold)
@@ -142,12 +147,80 @@ function _findFirstMatch(screenImage, templates, threshold) {
   return null;
 }
 
+function _findCollectExitTemplates(collectTemplates) {
+  var exits = [];
+  for (var i = 0; i < collectTemplates.length; i++) {
+    var lower = collectTemplates[i].name.toLowerCase();
+    if (
+      lower === "collect(1).jpg" ||
+      lower === "collect(1).png" ||
+      lower === "collect(1).jpeg"
+    ) {
+      exits.push(collectTemplates[i]);
+    }
+  }
+  return exits;
+}
+
+function _handleAutoClickCollect(match, collectTemplates, panel, options) {
+  var threshold = (options && options.threshold) || 0.7;
+  var maxLoops = (options && options.maxAutoClickLoops) || 60;
+
+  floatyMod.appendLog(
+    panel,
+    "Auto-click collect: " + match.name + " → tap, then center-click loop until Collect(1)",
+  );
+  _tapAt(match, "Collect " + match.name, panel);
+  sleep(1000);
+
+  var exitTemplates = _findCollectExitTemplates(collectTemplates);
+  var midX = Math.round(device.width / 2);
+  var midY = Math.round(device.height / 2);
+
+  for (var loopCount = 1; loopCount <= maxLoops; loopCount++) {
+    var screenImg = null;
+    try {
+      screenImg = captureScreen();
+      if (screenImg) {
+        var exitMatch = _findFirstMatch(screenImg, exitTemplates, threshold);
+        if (exitMatch) {
+          _tapAt(exitMatch, "Collect " + exitMatch.name, panel);
+          floatyMod.appendLog(
+            panel,
+            "Auto-click collect finished — Collect(1) tapped, ending center-click loop",
+          );
+          return true;
+        }
+      }
+    } finally {
+      if (screenImg) screenImg.recycle();
+    }
+
+    floatyMod.appendLog(
+      panel,
+      "Auto-click center (" + midX + "," + midY + ") #" + loopCount + "/" + maxLoops,
+    );
+    floatyMod.withPanelHidden(panel, function () {
+      press(midX, midY, 1000);
+    });
+    sleep(1000);
+  }
+
+  floatyMod.appendLog(
+    panel,
+    "Auto-click collect: no Collect(1) after " + maxLoops + " center clicks — giving up",
+  );
+  return false;
+}
+
 /**
  * Scan the current screen for any template in `collectTemplates`
- * (templates/feeding/collect/ click/ + hold/) and interact with every one
- * found, until `maxConsecutiveMisses` consecutive frames contain no
- * collectible item. Click-type templates are tapped; hold-type templates
- * are long-pressed for 10s.
+ * (templates/feeding/collect/ click/ + hold/ + click + auto click/) and
+ * interact with every one found, until `maxConsecutiveMisses`
+ * consecutive frames contain no collectible item. Click-type templates
+ * are tapped; hold-type templates are long-pressed for 10s;
+ * click+autoclick templates run the gift sequence (tap → center-click
+ * loop until Collect(1).jpg).
  *
  * Shared by runCollectFeeding() (feed-collect mode) and the feed-pikmin
  * flow (feed_pikmin.js), which collects visible items after zooming out.
@@ -155,6 +228,8 @@ function _findFirstMatch(screenImage, templates, threshold) {
  * Options:
  *   threshold             — match confidence (default 0.7)
  *   maxConsecutiveMisses  — empty frames before giving up (default 3)
+ *   maxAutoClickLoops     — max center-clicks in the click+autoclick
+ *                           sequence (default 60)
  *
  * Returns the number of items collected in this call.
  */
@@ -186,6 +261,12 @@ function collectVisibleItems(collectTemplates, panel, options) {
         if (collectMatch.mode === "hold") {
           // Hold-type collectible (fruit/seedling): long-press 10s.
           _tapAt(collectMatch, "Hold " + collectMatch.name, panel, 10000);
+        } else if (collectMatch.mode === "click+autoclick") {
+          // Auto-click collectible (gift): tap it, then keep clicking the
+          // screen center every ~1s until Collect(1).jpg appears.
+          _handleAutoClickCollect(collectMatch, collectTemplates, panel, {
+            threshold: threshold,
+          });
         } else {
           // Click-type (e.g. UI buttons): normal collect tap.
           _tapAt(collectMatch, "Collect " + collectMatch.name, panel);
@@ -311,7 +392,21 @@ function runCollectFeeding(config, panel) {
     return;
   }
 
-  sleep(2000);
+  // Feeding page is open. Wait 3s for it to settle, then hold at
+  // (550,1380) for 2 minutes before scanning for collect items.
+  // Android caps press() at 60s per gesture, so the hold is split
+  // into four back-to-back 31s presses (4 x 31s = 124s).
+  sleep(3000);
+  floatyMod.appendLog(
+    panel,
+    "Holding (550,1380) for 2 minutes before scanning collect items...",
+  );
+  floatyMod.withPanelHidden(panel, function () {
+    press(550, 1380, 31000);
+    press(550, 1380, 31000);
+    press(550, 1380, 31000);
+    press(550, 1380, 31000);
+  });
 
   var collectThreshold = 0.7;
   var collectedCount = 0;

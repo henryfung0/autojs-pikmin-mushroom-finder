@@ -933,15 +933,13 @@ function feedPikmin(config, panel) {
       }
       sleep(500);
 
-      // 4. Only when can-feed was detected: zoom out → collect any visible
-      //    collectible items (feeding/collect) → feed nectar → collect flowers.
+      // 4. Only when can-feed was detected: collect any visible
+      //    collectible items (feeding/collect) → zoom out → feed nectar
+      //    → collect flowers.
       if (canFeed) {
-        scroll.zoom("out", 1, panel);
-        sleep(500);
-
-        // Collect every visible collectible item (fruit/seedling) on the
-        // zoomed-out view before the scroll gestures, reusing the shared
-        // collect loop from collect_feeding.js.
+        // Collect every visible collectible item (fruit/seedling) BEFORE
+        // zooming out, reusing the shared collect loop from
+        // collect_feeding.js.
         if (collectTemplates.length > 0) {
           floatyMod.appendLog(panel, "Collecting visible feeding items...");
           collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
@@ -952,9 +950,12 @@ function feedPikmin(config, panel) {
           floatyMod.appendLog(panel, "No collect templates in feeding/collect, skipping collect loop");
         }
 
+        scroll.zoom("out", 1, panel);
+        sleep(500);
+
         // NOTE: The scroll gestures below ALWAYS run after the collect loop,
-        // whether or not any collectible item matched — zoom-out → feed
-        // nectar → collect flowers, guaranteed.
+        // whether or not any collectible item matched — collect → zoom-out
+        // → feed nectar → collect flowers, guaranteed.
         floatyMod.appendLog(panel, "Feeding nectar...");
         try {
           gestures([10000].concat(feedNectar));

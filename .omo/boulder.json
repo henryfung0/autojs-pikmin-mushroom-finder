@@ -1,251 +1,59 @@
 {
   "schema_version": 2,
-  "active_work_id": "refactor-project-structure-d00fdd33",
+  "active_work_id": "feeding-editable-ocr-region-positions-f82ff6f1",
   "works": {
-    "refactor-project-structure-d00fdd33": {
-      "work_id": "refactor-project-structure-d00fdd33",
-      "active_plan": "/home/henry/code/autojs/.omo/plans/refactor-project-structure.md",
-      "plan_name": "refactor-project-structure",
-      "status": "completed",
-      "started_at": "2026-06-14T15:02:57.867Z",
-      "ended_at": "2026-06-15T13:53:38.649Z",
-      "updated_at": "2026-06-15T13:53:38.649Z",
+    "feeding-editable-ocr-region-positions-f82ff6f1": {
+      "work_id": "feeding-editable-ocr-region-positions-f82ff6f1",
+      "active_plan": "/home/henry/code/autojs/pikmin/.omo/plans/feeding-editable-ocr-region-positions.md",
+      "plan_name": "feeding-editable-ocr-region-positions",
+      "status": "active",
+      "started_at": "2026-09-11T13:29:37.929Z",
+      "updated_at": "2026-09-11T14:44:52.459Z",
       "session_ids": [
-        "opencode:ses_13a922ad2fferMAlsp0W2inJoo",
-        "opencode:ses_1347c0c33ffeOxfmIFwYR7h5ml"
+        "opencode:ses_f6f89d057ffe4hLnpfpoS7huDT"
       ],
       "session_origins": {
-        "opencode:ses_13a922ad2fferMAlsp0W2inJoo": "direct",
-        "opencode:ses_1347c0c33ffeOxfmIFwYR7h5ml": "direct"
+        "opencode:ses_f6f89d057ffe4hLnpfpoS7huDT": "direct"
       },
       "agent": "atlas",
       "task_sessions": {
-        "todo:1": {
-          "task_key": "todo:1",
-          "task_label": "1",
-          "task_title": "Create directories `lib/` and `mushroom_finder/`",
-          "session_id": "opencode:ses_13956ec9effeFgXHMJmOaQUAos",
-          "agent": "Sisyphus-Junior",
-          "category": "quick",
-          "updated_at": "2026-06-14T15:07:44.169Z",
-          "started_at": "2026-06-14T15:04:41.149Z",
-          "status": "completed",
-          "ended_at": "2026-06-14T15:07:44.169Z",
-          "elapsed_ms": 183020
-        },
-        "todo:5": {
-          "task_key": "todo:5",
-          "task_label": "5",
-          "task_title": "Move `navigator.js` → `mushroom_finder/01_navigate_to_map.js`",
-          "session_id": "opencode:ses_13952a83bffelxBG0oU0dytFzJ",
-          "agent": "Sisyphus-Junior",
-          "category": "quick",
-          "updated_at": "2026-06-14T15:10:48.376Z",
-          "started_at": "2026-06-14T15:09:10.159Z",
-          "status": "completed",
-          "ended_at": "2026-06-14T15:10:48.376Z",
-          "elapsed_ms": 98217
-        },
-        "todo:8": {
-          "task_key": "todo:8",
-          "task_label": "8",
-          "task_title": "Create `mushroom_finder/main.js` — pipeline orchestrator (calls 01→02→03)",
-          "session_id": "opencode:ses_139500b6fffeRRQjzYxWjvyN2k",
-          "agent": "Sisyphus-Junior",
-          "category": "unspecified-high",
-          "started_at": "2026-06-14T15:11:08.110Z",
-          "status": "completed",
-          "updated_at": "2026-06-14T15:12:49.740Z",
-          "ended_at": "2026-06-14T15:12:49.739Z",
-          "elapsed_ms": 101629
-        },
-        "todo:9": {
-          "task_key": "todo:9",
-          "task_label": "9",
-          "task_title": "Rewrite root `main.js` as ultra-thin dispatcher",
-          "session_id": "opencode:ses_1394e37fcffeIALSULLaWybkHW",
-          "agent": "Sisyphus-Junior",
-          "category": "quick",
-          "updated_at": "2026-06-14T15:14:57.842Z",
-          "started_at": "2026-06-14T15:14:05.814Z",
-          "status": "completed",
-          "ended_at": "2026-06-14T15:14:57.842Z",
-          "elapsed_ms": 52028
-        },
         "final-wave:f1": {
           "task_key": "final-wave:f1",
           "task_label": "F1",
-          "task_title": "**Plan Compliance Audit** — Read `.omo/plans/refactor-project-structure.md` end-to-end. For each \"Must Have\": verify implementation exists (grep exports, check file existence). For each \"Must NOT Have\": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in `.omo/evidence/`. Compare deliverables against plan.",
-          "session_id": "opencode:ses_134781d17fferT6ngzCvbmvJL6",
-          "agent": "oracle",
-          "started_at": "2026-06-14T15:19:38.430Z",
-          "status": "completed",
-          "updated_at": "2026-06-15T13:52:34.627Z",
-          "ended_at": "2026-06-15T13:52:34.627Z",
-          "elapsed_ms": 81176197
-        },
-        "final-wave:f3": {
-          "task_key": "final-wave:f3",
-          "task_label": "F3",
-          "task_title": "**Export/Function Integrity Check** — For each function in the refactored project files, verify that all module.exports match the plan's expected exports. Check that `findMushrooms` was renamed to `findTemplates` everywhere. Verify `lib/matcher.js` has zero references to global `getGameMapRegion` and uses the new `regionFn` pattern.",
-          "session_id": "opencode:ses_1347554e4ffenAWlMy3dq5NF33",
+          "task_title": "Open the config dialog on Pikmin Daily Task → Feeding section. Verify all 4 new boxes appear labeled \"White XY\" / \"Yellow XY\" / \"Red XY\" / \"Blue XY\" with default text \"0, 475\".",
+          "session_id": "opencode:ses_f6f14d72effeLWyWWQ3hzl0h2d",
           "agent": "Sisyphus-Junior",
-          "category": "unspecified-high",
-          "started_at": "2026-06-15T13:46:04.404Z",
-          "status": "completed",
-          "updated_at": "2026-06-15T13:52:41.514Z",
-          "ended_at": "2026-06-15T13:52:41.514Z",
-          "elapsed_ms": 397110
-        },
-        "final-wave:f4": {
-          "task_key": "final-wave:f4",
-          "task_label": "F4",
-          "task_title": "**Scope Fidelity Check** — For each task in `.omo/plans/refactor-project-structure.md`: read the task's \"What to do\", then verify the actual git commits match. Check that nothing was done beyond spec (no scope creep). Check all \"Must NOT do\" guardrails. Detect cross-task contamination.",
-          "session_id": "opencode:ses_1347524a5ffewg1gGyMYNnnKH0",
-          "agent": "Sisyphus-Junior",
-          "category": "unspecified-high",
-          "started_at": "2026-06-15T13:46:16.867Z",
-          "status": "completed",
-          "updated_at": "2026-06-15T13:52:44.777Z",
-          "ended_at": "2026-06-15T13:52:44.777Z",
-          "elapsed_ms": 387910
-        },
-        "final-wave:f2": {
-          "task_key": "final-wave:f2",
-          "task_label": "F2",
-          "task_title": "**File Structure & Path Audit** — Verify the exact file tree matches the planned structure. Check every `require()` path resolves to an existing file. Verify all old root files deleted. Check README tree matches actual tree.",
-          "session_id": "opencode:ses_13477f7b3ffeGMpaSEovEXPhIs",
-          "agent": "Sisyphus-Junior",
-          "category": "unspecified-high",
-          "updated_at": "2026-06-15T13:52:38.207Z",
-          "started_at": "2026-06-15T13:47:39.375Z",
-          "status": "completed",
-          "ended_at": "2026-06-15T13:52:38.207Z",
-          "elapsed_ms": 298832
+          "category": "unspecified-low",
+          "started_at": "2026-09-11T13:33:52.180Z",
+          "status": "running",
+          "updated_at": "2026-09-11T14:44:52.460Z"
         }
-      },
-      "elapsed_ms": 82240782
+      }
     }
   },
-  "active_plan": "/home/henry/code/autojs/.omo/plans/refactor-project-structure.md",
-  "started_at": "2026-06-14T15:02:57.867Z",
-  "ended_at": "2026-06-15T13:53:38.649Z",
-  "status": "completed",
-  "updated_at": "2026-06-15T13:53:38.649Z",
+  "active_plan": "/home/henry/code/autojs/pikmin/.omo/plans/feeding-editable-ocr-region-positions.md",
+  "started_at": "2026-09-11T13:29:37.929Z",
+  "status": "active",
+  "updated_at": "2026-09-11T14:44:52.459Z",
   "session_ids": [
-    "opencode:ses_13a922ad2fferMAlsp0W2inJoo",
-    "opencode:ses_1347c0c33ffeOxfmIFwYR7h5ml"
+    "opencode:ses_f6f89d057ffe4hLnpfpoS7huDT"
   ],
   "session_origins": {
-    "opencode:ses_13a922ad2fferMAlsp0W2inJoo": "direct",
-    "opencode:ses_1347c0c33ffeOxfmIFwYR7h5ml": "direct"
+    "opencode:ses_f6f89d057ffe4hLnpfpoS7huDT": "direct"
   },
-  "plan_name": "refactor-project-structure",
+  "plan_name": "feeding-editable-ocr-region-positions",
   "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "Create directories `lib/` and `mushroom_finder/`",
-      "session_id": "opencode:ses_13956ec9effeFgXHMJmOaQUAos",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-06-14T15:07:44.169Z",
-      "started_at": "2026-06-14T15:04:41.149Z",
-      "status": "completed",
-      "ended_at": "2026-06-14T15:07:44.169Z",
-      "elapsed_ms": 183020
-    },
-    "todo:5": {
-      "task_key": "todo:5",
-      "task_label": "5",
-      "task_title": "Move `navigator.js` → `mushroom_finder/01_navigate_to_map.js`",
-      "session_id": "opencode:ses_13952a83bffelxBG0oU0dytFzJ",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-06-14T15:10:48.376Z",
-      "started_at": "2026-06-14T15:09:10.159Z",
-      "status": "completed",
-      "ended_at": "2026-06-14T15:10:48.376Z",
-      "elapsed_ms": 98217
-    },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "Create `mushroom_finder/main.js` — pipeline orchestrator (calls 01→02→03)",
-      "session_id": "opencode:ses_139500b6fffeRRQjzYxWjvyN2k",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "started_at": "2026-06-14T15:11:08.110Z",
-      "status": "completed",
-      "updated_at": "2026-06-14T15:12:49.740Z",
-      "ended_at": "2026-06-14T15:12:49.739Z",
-      "elapsed_ms": 101629
-    },
-    "todo:9": {
-      "task_key": "todo:9",
-      "task_label": "9",
-      "task_title": "Rewrite root `main.js` as ultra-thin dispatcher",
-      "session_id": "opencode:ses_1394e37fcffeIALSULLaWybkHW",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-06-14T15:14:57.842Z",
-      "started_at": "2026-06-14T15:14:05.814Z",
-      "status": "completed",
-      "ended_at": "2026-06-14T15:14:57.842Z",
-      "elapsed_ms": 52028
-    },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
-      "task_title": "**Plan Compliance Audit** — Read `.omo/plans/refactor-project-structure.md` end-to-end. For each \"Must Have\": verify implementation exists (grep exports, check file existence). For each \"Must NOT Have\": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in `.omo/evidence/`. Compare deliverables against plan.",
-      "session_id": "opencode:ses_134781d17fferT6ngzCvbmvJL6",
-      "agent": "oracle",
-      "started_at": "2026-06-14T15:19:38.430Z",
-      "status": "completed",
-      "updated_at": "2026-06-15T13:52:34.627Z",
-      "ended_at": "2026-06-15T13:52:34.627Z",
-      "elapsed_ms": 81176197
-    },
-    "final-wave:f3": {
-      "task_key": "final-wave:f3",
-      "task_label": "F3",
-      "task_title": "**Export/Function Integrity Check** — For each function in the refactored project files, verify that all module.exports match the plan's expected exports. Check that `findMushrooms` was renamed to `findTemplates` everywhere. Verify `lib/matcher.js` has zero references to global `getGameMapRegion` and uses the new `regionFn` pattern.",
-      "session_id": "opencode:ses_1347554e4ffenAWlMy3dq5NF33",
+      "task_title": "Open the config dialog on Pikmin Daily Task → Feeding section. Verify all 4 new boxes appear labeled \"White XY\" / \"Yellow XY\" / \"Red XY\" / \"Blue XY\" with default text \"0, 475\".",
+      "session_id": "opencode:ses_f6f14d72effeLWyWWQ3hzl0h2d",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "started_at": "2026-06-15T13:46:04.404Z",
-      "status": "completed",
-      "updated_at": "2026-06-15T13:52:41.514Z",
-      "ended_at": "2026-06-15T13:52:41.514Z",
-      "elapsed_ms": 397110
-    },
-    "final-wave:f4": {
-      "task_key": "final-wave:f4",
-      "task_label": "F4",
-      "task_title": "**Scope Fidelity Check** — For each task in `.omo/plans/refactor-project-structure.md`: read the task's \"What to do\", then verify the actual git commits match. Check that nothing was done beyond spec (no scope creep). Check all \"Must NOT do\" guardrails. Detect cross-task contamination.",
-      "session_id": "opencode:ses_1347524a5ffewg1gGyMYNnnKH0",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "started_at": "2026-06-15T13:46:16.867Z",
-      "status": "completed",
-      "updated_at": "2026-06-15T13:52:44.777Z",
-      "ended_at": "2026-06-15T13:52:44.777Z",
-      "elapsed_ms": 387910
-    },
-    "final-wave:f2": {
-      "task_key": "final-wave:f2",
-      "task_label": "F2",
-      "task_title": "**File Structure & Path Audit** — Verify the exact file tree matches the planned structure. Check every `require()` path resolves to an existing file. Verify all old root files deleted. Check README tree matches actual tree.",
-      "session_id": "opencode:ses_13477f7b3ffeGMpaSEovEXPhIs",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-06-15T13:52:38.207Z",
-      "started_at": "2026-06-15T13:47:39.375Z",
-      "status": "completed",
-      "ended_at": "2026-06-15T13:52:38.207Z",
-      "elapsed_ms": 298832
+      "category": "unspecified-low",
+      "started_at": "2026-09-11T13:33:52.180Z",
+      "status": "running",
+      "updated_at": "2026-09-11T14:44:52.460Z"
     }
   },
-  "agent": "atlas",
-  "elapsed_ms": 82240782
+  "agent": "atlas"
 }

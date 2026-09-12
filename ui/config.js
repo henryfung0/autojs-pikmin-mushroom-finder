@@ -318,6 +318,38 @@ var config = {
      * @default 1200
      */
     maxFlowerSecond: 1200,
+
+    /**
+     * X coordinate for the flower count OCR region.
+     * Width=300, Height=100 stay constant.
+     * @type {number}
+     * @default 0
+     */
+    flowerX: 0,
+
+    /**
+     * Y coordinate for the flower count OCR region.
+     * Width=300, Height=100 stay constant.
+     * @type {number}
+     * @default 475
+     */
+    flowerY: 475,
+
+    /**
+     * X coordinate for the nectar count OCR region.
+     * Width=300, Height=100 stay constant.
+     * @type {number}
+     * @default 0
+     */
+    nectarX: 0,
+
+    /**
+     * Y coordinate for the nectar count OCR region.
+     * Width=300, Height=100 stay constant.
+     * @type {number}
+     * @default 660
+     */
+    nectarY: 660,
   },
 
   // ──────────────────────────────────────────────

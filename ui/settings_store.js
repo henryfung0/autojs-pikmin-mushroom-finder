@@ -39,7 +39,11 @@ var KEYS = [
   "enableFruit",
   "pikminAccount",
   "maxFlowerMain",
-  "maxFlowerSecond"
+"maxFlowerSecond",
+   "flowerX",
+   "flowerY",
+   "nectarX",
+   "nectarY"
 ];
 
 function _store() {

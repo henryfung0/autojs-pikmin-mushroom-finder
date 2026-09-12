@@ -244,6 +244,8 @@ function _paddleOcr(img) {
   return result;
 }
 
+/** ... */
+
 function OCR_flower_name(panel) {
   // Recursively cut merged names: when a token is longer than 5 chars and has
   // 花/草 in the middle (not first/last), split right after it — the OCR often
@@ -1119,29 +1121,43 @@ function feedPikmin(config, panel) {
           continue;
         }
 
-        // Adjust OCR regions: when keyword is not empty, search bar occupies space so shift y +100
-        var yOffset = keyword.length > 0 ? 100 : 0;
-        var flowersRegion = [0, 475 + yOffset, 300, 100];
+        var feedingCfg = (config && config.feeding) || {};
+        var flowersRegion = [
+          feedingCfg.flowerX || 0,
+          feedingCfg.flowerY || 475,
+          300, 100
+        ];
         var flowersResult = _paddleOcr(images.clip(colorScreenImg, flowersRegion[0], flowersRegion[1], flowersRegion[2], flowersRegion[3]));
         flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
         floatyMod.appendLog(panel, "Flowers: " + flowers);
 
-        var nectarRegion = [0, 660 + yOffset, 300, 100];
+        var nectarRegion = [
+          feedingCfg.nectarX || 0,
+          feedingCfg.nectarY || 660,
+          300, 100
+        ];
         var nectarResult = _paddleOcr(images.clip(colorScreenImg, nectarRegion[0], nectarRegion[1], nectarRegion[2], nectarRegion[3]));
         numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
         floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);
 
-        // Extract numbers from OCR results — strip all non-digits so that
-        // "1,044" (comma in thousand separator) parses as 1044, not 1.
-        var flowersNum = parseInt(flowers.replace(/[^\d]/g, ""), 10) || 0;
-        var nectarNum = parseInt(numberNectar.replace(/[^\d]/g, ""), 10) || 0;
-
-        // Calculate how many to feed
-        var feedingCfg = (config && config.feeding) || {};
+        // Calculate maxFlowers first so we can use it for the OCR-failure fallback below.
         var pikminAccount = (config && config.account && config.account.pikminAccount) || 1;
         var maxFlowers = pikminAccount === 2
           ? (feedingCfg.maxFlowerSecond || 1200)
           : (feedingCfg.maxFlowerMain || 1200);
+
+        // Extract numbers from OCR results — strip all non-digits so that
+        // "1,044" (comma in thousand separator) parses as 1044, not 1.
+        var flowersNum = parseInt(flowers.replace(/[^\d]/g, ""), 10);
+        if (isNaN(flowersNum)) {
+          // OCR returned no digits — assume flowers already at cap so the
+          // script skips this color instead of feeding 15 rounds based on
+          // flowersNum=0.
+          flowersNum = maxFlowers;
+          floatyMod.appendLog(panel, "Flowers OCR empty — assuming at max for " + colorName);
+        }
+        var nectarNum = parseInt(numberNectar.replace(/[^\d]/g, ""), 10) || 0;
+
         var flowersNeeded = Math.floor((maxFlowers - flowersNum) / 80);
         var nectarCanFeed = Math.floor(nectarNum / 40);
         feedCount = Math.min(flowersNeeded, nectarCanFeed);

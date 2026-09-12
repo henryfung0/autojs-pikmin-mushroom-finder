@@ -138,6 +138,30 @@ function showConfigDialog() {
                   <input id="maxFlowerSecond" text="1200" inputType="number" w="100"
                          textSize="14sp" textColor="#212121"/>
                 </horizontal>
+                <horizontal gravity="center_vertical">
+                  <text text="Flower X" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="flowerX" text="0" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical">
+                  <text text="Flower Y" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="flowerY" text="475" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical">
+                  <text text="Nectar X" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="nectarX" text="0" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical">
+                  <text text="Nectar Y" textSize="13sp" textColor="#616161"
+                        layout_weight="1" margin="24 0 0 0"/>
+                  <input id="nectarY" text="660" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
               </vertical>
             </vertical>
           </vertical>
@@ -352,6 +376,10 @@ function showConfigDialog() {
   }
   if (typeof saved.maxFlowerMain === "number") view.maxFlowerMain.setText(String(saved.maxFlowerMain));
   if (typeof saved.maxFlowerSecond === "number") view.maxFlowerSecond.setText(String(saved.maxFlowerSecond));
+  if (typeof saved.flowerX === "number") view.flowerX.setText(String(saved.flowerX));
+  if (typeof saved.flowerY === "number") view.flowerY.setText(String(saved.flowerY));
+  if (typeof saved.nectarX === "number") view.nectarX.setText(String(saved.nectarX));
+  if (typeof saved.nectarY === "number") view.nectarY.setText(String(saved.nectarY));
 
   view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
   view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
@@ -381,7 +409,11 @@ function showConfigDialog() {
       maxEmptyLoops: view.maxEmptyLoops.progress + 1,
       pikminAccount: view.accountSelector.getSelectedItemPosition() + 1,
       maxFlowerMain: parseInt(view.maxFlowerMain.text().toString(), 10) || 1200,
-      maxFlowerSecond: parseInt(view.maxFlowerSecond.text().toString(), 10) || 1200
+      maxFlowerSecond: parseInt(view.maxFlowerSecond.text().toString(), 10) || 1200,
+      flowerX: parseInt(view.flowerX.text().toString(), 10) || 0,
+      flowerY: parseInt(view.flowerY.text().toString(), 10) || 475,
+      nectarX: parseInt(view.nectarX.text().toString(), 10) || 0,
+      nectarY: parseInt(view.nectarY.text().toString(), 10) || 660
     };
     settingsStore.save(dialogResult.values);
     d.dismiss();
@@ -423,6 +455,10 @@ function showConfigDialog() {
     view.maxEmptyLoopsValue.setText("10");
     view.maxFlowerMain.setText("1200");
     view.maxFlowerSecond.setText("1200");
+    view.flowerX.setText("0");
+    view.flowerY.setText("475");
+    view.nectarX.setText("0");
+    view.nectarY.setText("660");
     settingsStore.clear();
   });
 

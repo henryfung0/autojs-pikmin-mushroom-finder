@@ -37,6 +37,10 @@ if (typeof settings.maxFlowerMain === "number") {
 if (typeof settings.maxFlowerSecond === "number") {
   config.feeding.maxFlowerSecond = settings.maxFlowerSecond;
 }
+if (typeof settings.flowerX === "number") config.feeding.flowerX = settings.flowerX;
+if (typeof settings.flowerY === "number") config.feeding.flowerY = settings.flowerY;
+if (typeof settings.nectarX === "number") config.feeding.nectarX = settings.nectarX;
+if (typeof settings.nectarY === "number") config.feeding.nectarY = settings.nectarY;
 
 var panel = floatyMod.createControlPanel(function() {
   floatyMod.destroy(panel);

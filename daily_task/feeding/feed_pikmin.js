@@ -11,8 +11,8 @@ var matcher = require("../../lib/matcher");
 // Search keywords: the search filter is re-typed for each keyword, and the
 // full color rotation (white → yellow → red → blue) runs for every keyword.
 var _baseKeywords = [
-  "", 
-  "扶桑花", "風鈴草", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花",
+  "",
+  "洋桔梗", "扶桑花", "風鈴草", "美人蕉", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花",
   "銀蓮花", "菊花", "大理花", "石竹", "曇花", "勿忘草", "小蒼蘭",
   "龍膽", "聖誕玫瑰", "風信子", "繡球花", "鳶尾花", "牽牛花", "蝴蝶蘭", "粉蝶花",
   "睡蓮", "三色堇", "牡丹", "矮牽牛", "聖誕紅", "櫻草花", "玫瑰", "週年紀念玫瑰",
@@ -62,7 +62,7 @@ function _saveExtraKeywords() {
   }
 }
 
-_loadExtraKeywords();
+// _loadExtraKeywords(); // DISABLED: persisted OCR garbage was bleeding into the search list
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -244,6 +244,96 @@ function _paddleOcr(img) {
   return result;
 }
 
+// Single-shot OCR for a fixed region. Returns {num, success}. Failure =
+// empty OCR text (no digits found) — anything else, including a parsed 0
+// or a value matching maxFlowers, is accepted as a real value.
+function _tryOcrRegion(label, x, y, w, h, screenImg, panel) {
+  var cropped = null;
+  var rawResult = null;
+  try {
+    cropped = images.clip(screenImg, x, y, w, h);
+    rawResult = _paddleOcr(cropped);
+  } finally {
+    if (cropped) cropped.recycle();
+  }
+
+  var rawText = rawResult ? rawResult.join(" ").trim() : "";
+  var digitsOnly = rawText.replace(/[^\d]/g, "");
+
+  if (digitsOnly === "") {
+    return { num: 0, success: false };
+  }
+
+  var num = parseInt(digitsOnly, 10);
+  floatyMod.appendLog(panel, label + " OCR found " + num + " at y=" + y);
+  return { num: num, success: true };
+}
+
+// Coordinated retry + Y-bump for the flowers and nectar regions. At each
+// Y, retries each region up to 3 times with a 1s wait between attempts.
+// Y is bumped by +100 ONLY when both regions fail to read — if one
+// succeeds, the other is accepted as-is (falling back to maxFlowers/0
+// respectively) without bumping, since a partially-successful OCR pass
+// indicates the regions are correctly aligned for at least one value.
+// Up to 4 Y bumps (offsets 0, +100, +200, +300, +400).
+function _ocrFlowersAndNectarWithBump(
+  flowersX, flowersYBase, flowersW, flowersH,
+  nectarX, nectarYBase, nectarW, nectarH,
+  screenImg, panel, maxFlowers
+) {
+  var MAX_Y_BUMPS = 4;
+  var RETRIES_PER_Y = 3;
+  var RETRY_WAIT_MS = 1000;
+
+  for (var bump = 0; bump <= MAX_Y_BUMPS; bump++) {
+    var yOffset = bump * 100;
+    var flowersY = flowersYBase + yOffset;
+    var nectarY = nectarYBase + yOffset;
+
+    var flowersResult = { num: 0, success: false };
+    for (var fr = 0; fr < RETRIES_PER_Y; fr++) {
+      if (fr > 0) sleep(RETRY_WAIT_MS);
+      flowersResult = _tryOcrRegion("Flowers", flowersX, flowersY, flowersW, flowersH, screenImg, panel);
+      if (flowersResult.success) break;
+    }
+
+    var nectarResult = { num: 0, success: false };
+    for (var nr = 0; nr < RETRIES_PER_Y; nr++) {
+      if (nr > 0) sleep(RETRY_WAIT_MS);
+      nectarResult = _tryOcrRegion("Number Nectar", nectarX, nectarY, nectarW, nectarH, screenImg, panel);
+      if (nectarResult.success) break;
+    }
+
+    if (flowersResult.success && nectarResult.success) {
+      return { flowersNum: flowersResult.num, nectarNum: nectarResult.num, yOffset: yOffset };
+    }
+
+    if (flowersResult.success || nectarResult.success) {
+      floatyMod.appendLog(panel, "Partial OCR — keeping current Y (no +100 bump). flowers=" + (flowersResult.success ? flowersResult.num : "fail") + ", nectar=" + (nectarResult.success ? nectarResult.num : "fail"));
+      if (!flowersResult.success) {
+        floatyMod.appendLog(panel, "Flowers OCR FAILED → using fallback maxFlowers=" + maxFlowers);
+      }
+      if (!nectarResult.success) {
+        floatyMod.appendLog(panel, "Number Nectar OCR FAILED → using fallback 0");
+      }
+      return {
+        flowersNum: flowersResult.success ? flowersResult.num : maxFlowers,
+        nectarNum: nectarResult.success ? nectarResult.num : 0,
+        yOffset: yOffset,
+      };
+    }
+
+    if (bump < MAX_Y_BUMPS) {
+      floatyMod.appendLog(panel, "Both OCR failed at y+" + yOffset + ", +100 to y+" + (yOffset + 100));
+    }
+  }
+
+  floatyMod.appendLog(panel, "OCR exhausted all Y bumps");
+  floatyMod.appendLog(panel, "Flowers OCR FAILED → using fallback maxFlowers=" + maxFlowers);
+  floatyMod.appendLog(panel, "Number Nectar OCR FAILED → using fallback 0");
+  return { flowersNum: maxFlowers, nectarNum: 0, yOffset: MAX_Y_BUMPS * 100 };
+}
+
 /** ... */
 
 function OCR_flower_name(panel) {
@@ -321,11 +411,9 @@ function feedPikmin(config, panel) {
     (config && config.detection && config.detection.templateDir) ||
     "./templates/";
 
-  // First ever run (nothing learned yet): show the whole search list once so
-  // the user can verify what will be searched.
-  if (_isFirstRun) {
-    floatyMod.appendLog(panel, "Search list (" + (searchKeywords.length - 1) + "): " + searchKeywords.slice(1).join(" / "));
-  }
+  // Log the full search list every run before feeding starts so the user
+  // can verify what will be searched.
+  floatyMod.appendLog(panel, "Search list (" + (searchKeywords.length - 1) + "): " + searchKeywords.slice(1).join(" / "));
 
   _navigateToMainPage(templateDir, panel);
 
@@ -1055,11 +1143,13 @@ function feedPikmin(config, panel) {
       var colorName = colorNames[ci];
 
       if (needReopen) {
-        // Previous color was fed → we are on the base screen. Reopen the
-        // color screen; the keyword persists in the field, so just close
-        // the search overlay (no retyping needed between colors).
+        // Previous color was fed → we are back on the base screen. Reopen
+        // the search dialog AND retype the keyword — the field does NOT
+        // persist across the feed cycle (the nectar page is reloaded), so
+        // without retyping the color filter would apply to an empty search
+        // and pick up no flowers.
         _reopenSearch();
-        _closeSearch();
+        _typeKeyword(keyword);
         needReopen = false;
       }
 
@@ -1103,15 +1193,14 @@ function feedPikmin(config, panel) {
 
       // Dump whole-page Chinese text once on the very first white-page click
       // (keyword 0 + color 0); later passes keep the fast region OCR only.
-      if (kwIdx === 0 && ci === 0) {
-        OCR_flower_name(panel);
-      }
+      // DISABLED: OCR-driven keyword discovery is temporarily turned off.
+      // if (kwIdx === 0 && ci === 0) {
+      //   OCR_flower_name(panel);
+      // }
 
       sleep(2000);
 
       // Read flowers/nectar numbers for this color via OCR.
-      var flowers = "0";
-      var numberNectar = "0";
       var feedCount = 0;
       var colorScreenImg = null;
       try {
@@ -1127,36 +1216,35 @@ function feedPikmin(config, panel) {
           feedingCfg.flowerY || 475,
           300, 100
         ];
-        var flowersResult = _paddleOcr(images.clip(colorScreenImg, flowersRegion[0], flowersRegion[1], flowersRegion[2], flowersRegion[3]));
-        flowers = flowersResult ? flowersResult.join(" ").trim() : "0";
-        floatyMod.appendLog(panel, "Flowers: " + flowers);
-
         var nectarRegion = [
           feedingCfg.nectarX || 0,
           feedingCfg.nectarY || 660,
           300, 100
         ];
-        var nectarResult = _paddleOcr(images.clip(colorScreenImg, nectarRegion[0], nectarRegion[1], nectarRegion[2], nectarRegion[3]));
-        numberNectar = nectarResult ? nectarResult.join(" ").trim() : "0";
-        floatyMod.appendLog(panel, "Number Nectar: " + numberNectar);
 
-        // Calculate maxFlowers first so we can use it for the OCR-failure fallback below.
+        // Calculate maxFlowers first so we can use it for the OCR-failure predicate.
         var pikminAccount = (config && config.account && config.account.pikminAccount) || 1;
         var maxFlowers = pikminAccount === 2
           ? (feedingCfg.maxFlowerSecond || 1200)
           : (feedingCfg.maxFlowerMain || 1200);
 
-        // Extract numbers from OCR results — strip all non-digits so that
-        // "1,044" (comma in thousand separator) parses as 1044, not 1.
-        var flowersNum = parseInt(flowers.replace(/[^\d]/g, ""), 10);
-        if (isNaN(flowersNum)) {
-          // OCR returned no digits — assume flowers already at cap so the
-          // script skips this color instead of feeding 15 rounds based on
-          // flowersNum=0.
-          flowersNum = maxFlowers;
-          floatyMod.appendLog(panel, "Flowers OCR empty — assuming at max for " + colorName);
+        var ocrResult = _ocrFlowersAndNectarWithBump(
+          flowersRegion[0], flowersRegion[1], flowersRegion[2], flowersRegion[3],
+          nectarRegion[0], nectarRegion[1], nectarRegion[2], nectarRegion[3],
+          colorScreenImg, panel, maxFlowers
+        );
+        var flowersNum = ocrResult.flowersNum;
+        var nectarNum = ocrResult.nectarNum;
+        // OCR may have bumped Y to find the numbers; shift the regions so
+        // _feedRounds' middle-tap lands on the actual location, not the
+        // base Y from the config.
+        if (ocrResult.yOffset > 0) {
+          flowersRegion[1] += ocrResult.yOffset;
+          nectarRegion[1] += ocrResult.yOffset;
+          floatyMod.appendLog(panel, "Middle-tap Y bumped +" + ocrResult.yOffset + " → flowersY=" + flowersRegion[1] + ", nectarY=" + nectarRegion[1]);
         }
-        var nectarNum = parseInt(numberNectar.replace(/[^\d]/g, ""), 10) || 0;
+        floatyMod.appendLog(panel, "Flowers: " + flowersNum);
+        floatyMod.appendLog(panel, "Number Nectar: " + nectarNum);
 
         var flowersNeeded = Math.floor((maxFlowers - flowersNum) / 80);
         var nectarCanFeed = Math.floor(nectarNum / 40);

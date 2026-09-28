@@ -1,5 +1,16 @@
 "auto";
 
+// Unlock phone screen and handle starting page before game operations
+require("./unlock");
+
+// Ensure phone is unlocked BEFORE launching the app
+// This runs the full unlock sequence immediately when script starts
+var panel = require("./ui/floaty").createControlPanel(function() {
+  require("./ui/floaty").destroy(panel);
+  exit();
+});
+require("./unlock").ensureUnlockedBeforeLaunch(panel);
+
 var config    = require("./ui/config");
 var configUi  = require("./ui/config_ui");
 var floatyMod = require("./ui/floaty");

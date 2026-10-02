@@ -331,9 +331,9 @@ var config = {
      * Y coordinate for the flower count OCR region.
      * Width=300, Height=100 stay constant.
      * @type {number}
-     * @default 475
+     * @default 660
      */
-    flowerY: 475,
+    flowerY: 660,
 
     /**
      * X coordinate for the nectar count OCR region.
@@ -347,9 +347,9 @@ var config = {
      * Y coordinate for the nectar count OCR region.
      * Width=300, Height=100 stay constant.
      * @type {number}
-     * @default 660
+     * @default 860
      */
-    nectarY: 660,
+    nectarY: 860,
   },
 
   // ──────────────────────────────────────────────

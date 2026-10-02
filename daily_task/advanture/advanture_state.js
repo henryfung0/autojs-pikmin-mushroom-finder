@@ -44,6 +44,43 @@ function _safePress(x, y, duration) {
 }
 
 /**
+ * Load entry button templates from templates/navigation/to_advanture/
+ * (e.g. Advanture.jpg, Collect.jpg, Mushroom.jpg). Returns empty array on failure.
+ */
+function _loadEntryTemplates(templateDir) {
+  var dir = files.join(templateDir, "navigation", "to_advanture");
+  var entries = [];
+  try {
+    entries = files.listDir(dir, function (name) {
+      if (typeof name !== "string") return false;
+      var lower = name.toLowerCase();
+      return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+    });
+  } catch (e) {
+    console.warn("_loadEntryTemplates: cannot list '" + dir + "': " + e);
+    return [];
+  }
+  var templates = [];
+  for (var i = 0; i < entries.length; i++) {
+    var filePath = files.join(dir, entries[i]);
+    try {
+      var img = images.read(filePath);
+      if (!img) continue;
+      var w = img.getWidth();
+      var h = img.getHeight();
+      if (w > 0 && h > 0) {
+        templates.push({ name: entries[i], image: img, w: w, h: h });
+      } else {
+        img.recycle();
+      }
+    } catch (e) {
+      console.warn("_loadEntryTemplates: error reading '" + filePath + "': " + e);
+    }
+  }
+  return templates;
+}
+
+/**
  * Try to match a single template against the screen image.
  * @param {Image} screenImage - Current screenshot.
  * @param {{name: string, image: Image}} tpl - Template descriptor.
@@ -228,6 +265,22 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
   var floaty = opts.floaty;
   var deadline = Date.now() + timeout;
 
+  // Resolve entry templates: prefer opts.entryTemplates, otherwise load from
+  // templates/navigation/to_advanture/ (Advanture.jpg, Collect.jpg, Mushroom.jpg).
+  // Fallback to filtering mainTemplates only if to_advanture/ is empty.
+  var resolvedEntryTemplates = opts.entryTemplates;
+  if (!resolvedEntryTemplates) {
+    var templateDir = (advConfig.detection && advConfig.detection.templateDir) || "./templates/";
+    resolvedEntryTemplates = _loadEntryTemplates(templateDir);
+    if (resolvedEntryTemplates.length > 0) {
+      console.info("isOnAdvanturePage: loaded " + resolvedEntryTemplates.length + " entry templates from to_advanture/");
+      if (floaty) floatyMod.appendLog(floaty, "Loaded " + resolvedEntryTemplates.length + " entry templates from to_advanture/");
+    }
+  }
+
+  var MAX_ENTRY_FAILURES = 20;
+  var consecutiveEntryFailures = 0;
+
   while (Date.now() < deadline) {
     var img = null;
     try {
@@ -265,12 +318,17 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
       }
 
       // Step 3: On main page — click entry button(s) to enter advanture
-      // Uses dedicated entry templates (Advanture.jpg, Collect.jpg, Mushroom.jpg) if provided
+      // Uses dedicated entry templates from templates/navigation/to_advanture/
+      // (Advanture.jpg, Collect.jpg, Mushroom.jpg) loaded as resolvedEntryTemplates.
+      // Falls back to filtering mainTemplates only if to_advanture/ is empty.
       var clicked = false;
-      var entryList = opts.entryTemplates || mainTemplates;
+      var entryList = resolvedEntryTemplates && resolvedEntryTemplates.length > 0
+        ? resolvedEntryTemplates
+        : mainTemplates;
+      var usingFilteredMain = !(resolvedEntryTemplates && resolvedEntryTemplates.length > 0);
       for (var j = 0; j < entryList.length; j++) {
-        // If using mainTemplates (no dedicated entry templates), filter by name
-        if (!opts.entryTemplates) {
+        // If falling back to mainTemplates, exclude non-entry templates by name
+        if (usingFilteredMain) {
           var checkName = entryList[j].name.toLowerCase();
           if (checkName.indexOf("advanture") === -1 ||
               checkName.indexOf("start") !== -1 ||
@@ -307,8 +365,15 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
       if (!clicked) {
         console.info("isOnAdvanturePage: no entry button found to click");
         if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: no entry button found");
+        consecutiveEntryFailures++;
+        if (consecutiveEntryFailures >= MAX_ENTRY_FAILURES) {
+          console.warn("isOnAdvanturePage: failed to click entry button " + MAX_ENTRY_FAILURES + " times in a row, ending adventure function");
+          if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: failed " + MAX_ENTRY_FAILURES + " times — ending adventure function");
+          return false;
+        }
         sleep(1000);
       } else {
+        consecutiveEntryFailures = 0;
         // Step 3b: Wait up to 3 seconds for adventure detector to appear after clicking
         var detectorTimeout = 3000;
         var detectorStart = Date.now();
@@ -346,6 +411,12 @@ function isOnAdvanturePage(mainTemplates, advNavTemplates, options) {
         }
         console.info("isOnAdvanturePage: Adventure detector not found after click, waiting " + (Date.now() - detectorStart) + "ms");
         if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: Adventure detector not found after click, waiting " + (Date.now() - detectorStart) + "ms");
+        consecutiveEntryFailures++;
+        if (consecutiveEntryFailures >= MAX_ENTRY_FAILURES) {
+          console.warn("isOnAdvanturePage: failed entry verification " + MAX_ENTRY_FAILURES + " times in a row, ending adventure function");
+          if (floaty) floatyMod.appendLog(floaty, "isOnAdvanturePage: failed " + MAX_ENTRY_FAILURES + " times — ending adventure function");
+          return false;
+        }
       }
 
       // Loop back to step 1 (check if we're now on advanture page)

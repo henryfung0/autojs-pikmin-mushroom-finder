@@ -1032,10 +1032,10 @@ function feedPikmin(config, panel) {
         // collect_feeding.js.
         if (collectTemplates.length > 0) {
           floatyMod.appendLog(panel, "Collecting visible feeding items...");
-          collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
-            threshold: 0.7,
-            maxConsecutiveMisses: 1,
-          });
+collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
+          threshold: 0.85,
+          maxConsecutiveMisses: 1,
+        });
         } else {
           floatyMod.appendLog(panel, "No collect templates in feeding/collect, skipping collect loop");
         }
@@ -1222,11 +1222,45 @@ function feedPikmin(config, panel) {
           300, 100
         ];
 
+        // Empty-keyword pass uses base Y values directly — no -40 filter
+        // offset, no +220 activity offset. The activity banner only
+        // appears on the filtered (non-empty keyword) screen layout, so
+        // its Y shift must not leak into the unfiltered pass.
+        if (keyword !== "") {
+          flowersRegion[1] -= 40;
+          nectarRegion[1] -= 40;
+
+          var activityTemplates = _loadSpecificTemplates(templateDir, "feeding", ["activity.jpg"]);
+          // Reuse colorScreenImg for the activity check instead of calling
+          // captureScreen() again — AutoJS6 returns the same underlying Java
+          // Bitmap on back-to-back captures with no sleep between them, so a
+          // second capture here would alias colorScreenImg and its recycle()
+          // would invalidate the image used by the OCR pass below
+          // (IllegalStateException: Image has been recycled in images.clip).
+          if (activityTemplates.length > 0) {
+            var activityMatch = _findFirstMatch(colorScreenImg, activityTemplates, 0.7);
+            if (activityMatch) {
+              flowersRegion[1] += 170;
+              nectarRegion[1] += 170;
+              floatyMod.appendLog(panel, "Activity detected — Y +170 for flowers and nectar");
+            } else {
+              floatyMod.appendLog(panel, "Activity not detected — using base Y values");
+            }
+          } else {
+            floatyMod.appendLog(panel, "activity.jpg template not found — skipping activity check");
+          }
+        } else {
+          floatyMod.appendLog(panel, "Empty keyword — using base Y values (no activity offset)");
+        }
+
         // Calculate maxFlowers first so we can use it for the OCR-failure predicate.
         var pikminAccount = (config && config.account && config.account.pikminAccount) || 1;
         var maxFlowers = pikminAccount === 2
           ? (feedingCfg.maxFlowerSecond || 1200)
           : (feedingCfg.maxFlowerMain || 1200);
+
+        floatyMod.appendLog(panel, "OCR flower region: x=" + flowersRegion[0] + " y=" + flowersRegion[1] + " w=" + flowersRegion[2] + " h=" + flowersRegion[3]);
+        floatyMod.appendLog(panel, "OCR nectar region: x=" + nectarRegion[0] + " y=" + nectarRegion[1] + " w=" + nectarRegion[2] + " h=" + nectarRegion[3]);
 
         var ocrResult = _ocrFlowersAndNectarWithBump(
           flowersRegion[0], flowersRegion[1], flowersRegion[2], flowersRegion[3],

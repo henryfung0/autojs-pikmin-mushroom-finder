@@ -210,27 +210,17 @@ function ensureOnSeedlingPage1(templates, panel) {
 
     floatyMod.appendLog(panel, "ensureOnSeedlingPage1: not on seedling page 1 (attempt " + (navAttempt + 1) + "/" + maxNavAttempts + ")");
 
-    // Try to progress using common dismiss buttons first
-    var progressMade = false;
-    var img = captureScreen();
-    if (img) {
-      try {
-        // Try non-close/back common buttons first
-        for (var i = 0; i < templates.common.length && !progressMade; i++) {
-          var cn = templates.common[i].name.toLowerCase();
-          if (cn.indexOf("close") !== -1 || cn.indexOf("back") !== -1) continue;
-          var m = _matchOne(img, templates.common[i], threshold);
-          if (m) {
-            _tapAt(m, "ensureOnSeedlingPage1: common dismiss: " + templates.common[i].name, panel);
-            progressMade = true;
-            sleep(1500);
-          }
-        }
-        // Fallback to close/back
-        if (!progressMade) {
+    // Hide panel during template matching to prevent panel UI from matching templates
+    floatyMod.withPanelHidden(panel, function() {
+      // Try to progress using common dismiss buttons first
+      var progressMade = false;
+      var img = captureScreen();
+      if (img) {
+        try {
+          // Try non-close/back common buttons first
           for (var i = 0; i < templates.common.length && !progressMade; i++) {
             var cn = templates.common[i].name.toLowerCase();
-            if (cn.indexOf("close") === -1 && cn.indexOf("back") === -1) continue;
+            if (cn.indexOf("close") !== -1 || cn.indexOf("back") !== -1) continue;
             var m = _matchOne(img, templates.common[i], threshold);
             if (m) {
               _tapAt(m, "ensureOnSeedlingPage1: common dismiss: " + templates.common[i].name, panel);
@@ -238,30 +228,43 @@ function ensureOnSeedlingPage1(templates, panel) {
               sleep(1500);
             }
           }
-        }
-      } finally {
-        img.recycle();
-      }
-    }
-
-    if (!isOnSeedlingPage1(templates, panel)) {
-      // Try clicking "seedling page.jpg" to enter
-      img = captureScreen();
-      if (img) {
-        try {
-          for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
-            var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
-            if (m) {
-              _tapAt(m, "ensureOnSeedlingPage1: click: " + templates.seedlingPageClicker[i].name, panel);
-              sleep(2000);
-              break;
+          // Fallback to close/back
+          if (!progressMade) {
+            for (var i = 0; i < templates.common.length && !progressMade; i++) {
+              var cn = templates.common[i].name.toLowerCase();
+              if (cn.indexOf("close") === -1 && cn.indexOf("back") === -1) continue;
+              var m = _matchOne(img, templates.common[i], threshold);
+              if (m) {
+                _tapAt(m, "ensureOnSeedlingPage1: common dismiss: " + templates.common[i].name, panel);
+                progressMade = true;
+                sleep(1500);
+              }
             }
           }
         } finally {
           img.recycle();
         }
       }
-    }
+
+      if (!isOnSeedlingPage1(templates, panel)) {
+        // Try clicking "seedling page.jpg" to enter
+        img = captureScreen();
+        if (img) {
+          try {
+            for (var i = 0; i < templates.seedlingPageClicker.length; i++) {
+              var m = _matchOne(img, templates.seedlingPageClicker[i], threshold);
+              if (m) {
+                _tapAt(m, "ensureOnSeedlingPage1: click: " + templates.seedlingPageClicker[i].name, panel);
+                sleep(2000);
+                break;
+              }
+            }
+          } finally {
+            img.recycle();
+          }
+        }
+      }
+    });
 
     sleep(1500);
   }

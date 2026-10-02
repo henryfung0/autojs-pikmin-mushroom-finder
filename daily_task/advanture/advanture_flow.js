@@ -423,16 +423,25 @@ function runAdvantureFlow(config, panel) {
   var seedlingFull = false;
   var maxEmptyLoops = (config && config.advanture && config.advanture.maxEmptyLoops) || 10;
   var pageBottomY = null;
+  var reachPageFailures = 0;
+  var MAX_REACH_PAGE_FAILURES = 3;
 
   while (!_shutdownRequested) {
     loopCount++;
 
     // ── Step 1: Ensure we're on advanture page ────────────────────────
     if (!advState.isOnAdvanturePage(mainTemplates, templates.nav, { floaty: panel, threshold: 0.7, dismissTemplates: commonTemplates, entryTemplates: advEntryTemplates })) {
-      floatyMod.appendLog(panel, "Could not reach advanture page — retrying...");
+      reachPageFailures++;
+      if (reachPageFailures >= MAX_REACH_PAGE_FAILURES) {
+        floatyMod.appendLog(panel, "Could not reach advanture page " + MAX_REACH_PAGE_FAILURES + " times in a row — ending adventure flow");
+        console.warn("runAdvantureFlow: failed to reach advanture page " + MAX_REACH_PAGE_FAILURES + " times, ending adventure function");
+        break;
+      }
+      floatyMod.appendLog(panel, "Could not reach advanture page — retrying... (" + reachPageFailures + "/" + MAX_REACH_PAGE_FAILURES + ")");
       sleep(2000);
       continue;
     }
+    reachPageFailures = 0;
 
     // ── Step 2: Capture and scan for items ─────────────────────────────
     var img = null;

@@ -393,19 +393,14 @@ function runCollectFeeding(config, panel) {
   }
 
   // Feeding page is open. Wait 3s for it to settle, then hold at
-  // (550,1380) for 2 minutes before scanning for collect items.
-  // Android caps press() at 60s per gesture, so the hold is split
-  // into four back-to-back 31s presses (4 x 31s = 124s).
+  // (550,1380) for 30 seconds before scanning for collect items.
   sleep(3000);
   floatyMod.appendLog(
     panel,
-    "Holding (550,1380) for 2 minutes before scanning collect items...",
+    "Holding (550,1380) for 30 seconds before scanning collect items...",
   );
   floatyMod.withPanelHidden(panel, function () {
-    press(550, 1380, 31000);
-    press(550, 1380, 31000);
-    press(550, 1380, 31000);
-    press(550, 1380, 31000);
+    press(550, 1380, 30000);
   });
 
   var collectThreshold = 0.7;

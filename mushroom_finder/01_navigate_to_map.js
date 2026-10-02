@@ -119,7 +119,7 @@ function loadNavigationTemplates(templateDir) {
   // that need the full template list.
   templates.common = commonTemplates;
 
-  console.info("loadNavigationTemplates: loaded " + templates.length + " template(s) (nav:" + navEntries.length + " + common:" + commonEntries.length + ")");
+  console.info("loadNavigationTemplates: loaded " + templates.length + " template(s) (nav:" + navEntries.length + " + common:" + commonTemplates.length + ")");
   return templates;
 }
 

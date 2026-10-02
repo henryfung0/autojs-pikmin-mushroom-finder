@@ -944,8 +944,8 @@ function feedPikmin(config, panel) {
       }
       sleep(500);
 
-      // 2. Scan can-feed templates (up to 3 attempts, raised threshold
-      //    0.8 for stricter matching to avoid false positives) BEFORE any zoom.
+// 2. Scan can-feed templates (up to 3 attempts, raised threshold
+//    0.9 for stricter matching to avoid false positives) BEFORE any zoom.
       var canFeed = false;
       for (var scan = 0; scan < 3; scan++) {
         var canFeedImg = null;
@@ -953,7 +953,7 @@ function feedPikmin(config, panel) {
         try {
           canFeedImg = captureScreen();
           if (canFeedImg) {
-            canFeedMatch = _findFirstMatch(canFeedImg, canFeedTemplates, 0.8);
+            canFeedMatch = _findFirstMatch(canFeedImg, canFeedTemplates, 0.9);
           }
         } finally {
           if (canFeedImg) canFeedImg.recycle();

@@ -46,6 +46,7 @@ var settings = {
   enableFeedPikmin: true,
   maxFlowerMain: typeof saved.maxFlowerMain === "number" ? saved.maxFlowerMain : 1200,
   maxFlowerSecond: typeof saved.maxFlowerSecond === "number" ? saved.maxFlowerSecond : 1200,
+  searchKeywords: Array.isArray(saved.searchKeywords) ? saved.searchKeywords : config.feeding.searchKeywords,
   // OCR positions — read from settings store (tuned via config dialog)
   flowerX: typeof saved.flowerX === "number" ? saved.flowerX : config.feeding.flowerX,
   flowerY: typeof saved.flowerY === "number" ? saved.flowerY : config.feeding.flowerY,

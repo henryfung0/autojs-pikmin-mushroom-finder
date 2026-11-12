@@ -8,62 +8,24 @@ var feedingActions = require("../../lib/feeding_actions");
 var collectFeedingMod = require("../advanture/collect_feeding");
 var matcher = require("../../lib/matcher");
 
-// Search keywords: the search filter is re-typed for each keyword, and the
-// full color rotation (white → yellow → red → blue) runs for every keyword.
-var _baseKeywords = [
-  "",
-  "薊花", "萬壽菊",
-  "洋桔梗", "扶桑花", "風鈴草", "美人蕉", "九重葛", "海芋", "山茶花", "油菜花", "康乃馨", "雞冠花", "櫻花", "鐵線蓮", "彼岸花", "鈴蘭", "大波斯菊", "兔耳花",
-  "銀蓮花", "菊花", "大理花", "石竹", "曇花", "勿忘草", "小蒼蘭",
-  "龍膽", "聖誕玫瑰", "風信子", "繡球花", "鳶尾花", "牽牛花", "蝴蝶蘭", "粉蝶花",
-  "睡蓮", "三色堇", "牡丹", "矮牽牛", "聖誕紅", "櫻草花", "玫瑰", "週年紀念玫瑰",
-  "鼠尾草", "金魚草", "豌豆花", "鬱金香", "鸚鵡鬱金香"
-];
+// Search keywords come from the config dialog (config.feeding.searchKeywords,
+// up to 10). The empty string always runs first as the unfiltered pass, then
+// the configured words in order — each with the full color rotation
+// (white → yellow → red → blue).
+var MAX_SEARCH_KEYWORDS = 10;
+var searchKeywords = [""];
 
-// Working list: base catalog + OCR-discovered extras persisted in the
-// pikmin_config store. New words found by OCR_flower_name are inserted right
-// after the empty string and saved back, so they survive script restarts.
-var searchKeywords = _baseKeywords.slice();
-
-// True until the first OCR discovery is persisted — the very first run logs
-// the whole list once so the user can verify what will be searched.
-var _isFirstRun = false;
-
-function _loadExtraKeywords() {
-  try {
-    var store = storages.create("pikmin_config");
-    // Missing key = first run (nothing learned yet); show the full list once.
-    var existing = store.get("searchKeywordsExtra", null);
-    _isFirstRun = existing === null;
-    var extra = existing === null ? [] : existing;
-    if (!Array.isArray(extra)) return;
-    // Reverse insertion at index 1 reproduces the persisted list order
-    // (newest discovery first, matching how new words are added at runtime).
-    for (var i = extra.length - 1; i >= 0; i--) {
-      var w = String(extra[i]).trim();
-      if (w && searchKeywords.indexOf(w) === -1) {
-        searchKeywords.splice(1, 0, w);
-      }
-    }
-  } catch (e) {
-    console.warn("feed_pikmin: cannot load extra keywords: " + e);
+function _buildSearchKeywords(config) {
+  var configured = (config && config.feeding && config.feeding.searchKeywords) || [];
+  var list = [""];
+  if (!Array.isArray(configured)) return list;
+  for (var i = 0; i < configured.length; i++) {
+    if (list.length > MAX_SEARCH_KEYWORDS) break;
+    var word = String(configured[i] === undefined || configured[i] === null ? "" : configured[i]).trim();
+    if (word && list.indexOf(word) === -1) list.push(word);
   }
+  return list;
 }
-
-function _saveExtraKeywords() {
-  try {
-    var store = storages.create("pikmin_config");
-    var extras = searchKeywords.filter(function (w) {
-      return w !== "" && _baseKeywords.indexOf(w) === -1;
-    });
-    store.put("searchKeywordsExtra", extras);
-    _isFirstRun = false;
-  } catch (e) {
-    console.warn("feed_pikmin: cannot save extra keywords: " + e);
-  }
-}
-
-// _loadExtraKeywords(); // DISABLED: persisted OCR garbage was bleeding into the search list
 
 function _loadTemplatesFromDir(baseDir, subDir) {
   var dir = files.join(baseDir, subDir);
@@ -335,79 +297,9 @@ function _ocrFlowersAndNectarWithBump(
   return { flowersNum: maxFlowers, nectarNum: 0, yOffset: MAX_Y_BUMPS * 100 };
 }
 
-/** ... */
-
-function OCR_flower_name(panel) {
-  // Recursively cut merged names: when a token is longer than 5 chars and has
-  // 花/草 in the middle (not first/last), split right after it — the OCR often
-  // concatenates two names ("扶桑花風鈴草" → 扶桑花 + 風鈴草).
-  function _splitLongNames(word) {
-    if (word.length <= 5) return [word];
-    for (var i = 1; i < word.length - 1; i++) {
-      var ch = word.charAt(i);
-      if (ch === "花" || ch === "草") {
-        return _splitLongNames(word.substring(0, i + 1))
-          .concat(_splitLongNames(word.substring(i + 1)));
-      }
-    }
-    return [word];
-  }
-
-  sleep(1000);
-  var img = null;
-  try {
-    img = captureScreen();
-    if (!img) {
-      floatyMod.appendLog(panel, "OCR_flower_name: capture failed");
-      return;
-    }
-    var ocrResult = _paddleOcr(img);
-    floatyMod.appendLog(panel, "── Whole-page OCR (white, first click) ──");
-    if (ocrResult && ocrResult.length > 0) {
-      var addedNew = false;
-      for (var oi = 0; oi < ocrResult.length; oi++) {
-        var word = String(ocrResult[oi]).trim();
-        if (word.length === 0) continue;
-        // Keep only pure Chinese lines — drop any token containing a digit or
-        // Latin letter (counts, coordinates, timestamps, panel log echoes).
-        if (/[0-9A-Za-z]/.test(word)) continue;
-        // Drop the nectar-essence UI label and strip the white color prefix so
-        // only flower names remain (the whole-page dump only runs on white).
-        if (word.indexOf("精華") !== -1) continue;
-        word = word.replace(/白色/g, "");
-        // Split multi-name tokens on spaces into separate lines and drop
-        // single-character pieces ("菊") — only real flower names (2+ chars).
-        var pieces = word.split(/\s+/);
-        for (var pi = 0; pi < pieces.length; pi++) {
-          var piece = pieces[pi].trim();
-          if (piece.length <= 1) continue;
-          var subPieces = _splitLongNames(piece);
-          for (var si = 0; si < subPieces.length; si++) {
-            var name = subPieces[si];
-            if (name.length <= 1) continue;
-            // Only words missing from the list are reported; each becomes a
-            // search keyword for this run and future runs (persisted below).
-            if (searchKeywords.indexOf(name) === -1) {
-              searchKeywords.splice(1, 0, name);
-              floatyMod.appendLog(panel, "NEW OCR: " + name);
-              addedNew = true;
-            }
-          }
-        }
-      }
-      if (addedNew) _saveExtraKeywords();
-    } else {
-      floatyMod.appendLog(panel, "OCR: (no text recognized)");
-    }
-    floatyMod.appendLog(panel, "── End whole-page OCR ──");
-  } catch (e) {
-    floatyMod.appendLog(panel, "Whole-page OCR failed: " + e);
-  } finally {
-    if (img) img.recycle();
-  }
-}
-
 function feedPikmin(config, panel) {
+  searchKeywords = _buildSearchKeywords(config);
+
   var templateDir =
     (config && config.detection && config.detection.templateDir) ||
     "./templates/";
@@ -1191,13 +1083,6 @@ collectFeedingMod.collectVisibleItems(collectTemplates, panel, {
         floatyMod.appendLog(panel, "Could not find " + colorName + " on screen, trying next color");
         continue;
       }
-
-      // Dump whole-page Chinese text once on the very first white-page click
-      // (keyword 0 + color 0); later passes keep the fast region OCR only.
-      // DISABLED: OCR-driven keyword discovery is temporarily turned off.
-      // if (kwIdx === 0 && ci === 0) {
-      //   OCR_flower_name(panel);
-      // }
 
       sleep(2000);
 

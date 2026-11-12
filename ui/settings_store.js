@@ -43,7 +43,8 @@ var KEYS = [
    "flowerX",
    "flowerY",
    "nectarX",
-   "nectarY"
+   "nectarY",
+   "searchKeywords"
 ];
 
 function _store() {

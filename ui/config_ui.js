@@ -10,6 +10,7 @@
  */
 
 var settingsStore = require("./settings_store");
+var config = require("./config");
 
 /**
  * Show the combined config dialog.
@@ -160,6 +161,59 @@ function showConfigDialog() {
                   <text text="Nectar Y" textSize="13sp" textColor="#616161"
                         layout_weight="1" margin="24 0 0 0"/>
                   <input id="nectarY" text="660" inputType="number" w="100"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+
+                <text text="Search Keywords (up to 10 — empty search runs first)"
+                      textSize="13sp" textColor="#616161" margin="0 8 0 2"/>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="1." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword1" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="2." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword2" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="3." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword3" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="4." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword4" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="5." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword5" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="6." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword6" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="7." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword7" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="8." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword8" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="9." textSize="13sp" textColor="#616161" w="24"/>
+                  <input id="feedKeyword9" text="" inputType="text" layout_weight="1"
+                         textSize="14sp" textColor="#212121"/>
+                </horizontal>
+                <horizontal gravity="center_vertical" margin="24 0 0 0">
+                  <text text="10." textSize="13sp" textColor="#616161" w="28"/>
+                  <input id="feedKeyword10" text="" inputType="text" layout_weight="1"
                          textSize="14sp" textColor="#212121"/>
                 </horizontal>
               </vertical>
@@ -381,6 +435,16 @@ function showConfigDialog() {
   if (typeof saved.nectarX === "number") view.nectarX.setText(String(saved.nectarX));
   if (typeof saved.nectarY === "number") view.nectarY.setText(String(saved.nectarY));
 
+  var defaultKeywords = (config.feeding && config.feeding.searchKeywords) || [];
+  var savedKeywords = Array.isArray(saved.searchKeywords) ? saved.searchKeywords : defaultKeywords;
+  var keywordInputs = [
+    view.feedKeyword1, view.feedKeyword2, view.feedKeyword3, view.feedKeyword4, view.feedKeyword5,
+    view.feedKeyword6, view.feedKeyword7, view.feedKeyword8, view.feedKeyword9, view.feedKeyword10
+  ];
+  for (var ki = 0; ki < keywordInputs.length; ki++) {
+    keywordInputs[ki].setText(savedKeywords[ki] || "");
+  }
+
   view.enableSeedlingGroup.setChecked(view.enableCollect.isChecked() && view.enableFarm.isChecked() && view.enableThrowRepeated.isChecked());
   view.enableAdventureGroup.setChecked(view.enableGift.isChecked() && view.enableSeedlingAdv.isChecked() && view.enableFruit.isChecked());
   view.enableFeedingGroup.setChecked(view.enableCollectFeeding.isChecked() && view.enableFeedPikmin.isChecked());
@@ -413,7 +477,19 @@ function showConfigDialog() {
       flowerX: parseInt(view.flowerX.text().toString(), 10) || 0,
       flowerY: parseInt(view.flowerY.text().toString(), 10) || 475,
       nectarX: parseInt(view.nectarX.text().toString(), 10) || 0,
-      nectarY: parseInt(view.nectarY.text().toString(), 10) || 660
+      nectarY: parseInt(view.nectarY.text().toString(), 10) || 660,
+      searchKeywords: [
+        view.feedKeyword1.text().toString().trim(),
+        view.feedKeyword2.text().toString().trim(),
+        view.feedKeyword3.text().toString().trim(),
+        view.feedKeyword4.text().toString().trim(),
+        view.feedKeyword5.text().toString().trim(),
+        view.feedKeyword6.text().toString().trim(),
+        view.feedKeyword7.text().toString().trim(),
+        view.feedKeyword8.text().toString().trim(),
+        view.feedKeyword9.text().toString().trim(),
+        view.feedKeyword10.text().toString().trim()
+      ].filter(function(word) { return word !== ""; })
     };
     settingsStore.save(dialogResult.values);
     d.dismiss();
@@ -459,6 +535,9 @@ function showConfigDialog() {
     view.flowerY.setText("475");
     view.nectarX.setText("0");
     view.nectarY.setText("660");
+    for (var ki = 0; ki < keywordInputs.length; ki++) {
+      keywordInputs[ki].setText(defaultKeywords[ki] || "");
+    }
     settingsStore.clear();
   });
 

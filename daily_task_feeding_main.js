@@ -113,6 +113,7 @@ function applyFeedingSettings(settings) {
   if (typeof settings.flowerY === "number") config.feeding.flowerY = settings.flowerY;
   if (typeof settings.nectarX === "number") config.feeding.nectarX = settings.nectarX;
   if (typeof settings.nectarY === "number") config.feeding.nectarY = settings.nectarY;
+  if (Array.isArray(settings.searchKeywords)) config.feeding.searchKeywords = settings.searchKeywords;
   if (typeof settings.pikminAccount === "number") {
     config.account.pikminAccount = settings.pikminAccount;
   }

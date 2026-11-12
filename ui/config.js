@@ -350,6 +350,19 @@ var config = {
      * @default 860
      */
     nectarY: 860,
+
+    /**
+     * Flower-name search keywords entered in the config dialog (max 10).
+     * The feed flow always searches the empty string (unfiltered) first,
+     * then these keywords in order, rotating through all four colors for
+     * each one.
+     * @type {string[]}
+     * @default ["薊花", "萬壽菊", "洋桔梗", "扶桑花", "風鈴草", "美人蕉", "九重葛", "海芋", "山茶花", "油菜花"]
+     */
+    searchKeywords: [
+      "薊花", "萬壽菊", "洋桔梗", "扶桑花", "風鈴草",
+      "美人蕉", "九重葛", "海芋", "山茶花", "油菜花",
+    ],
   },
 
   // ──────────────────────────────────────────────

@@ -47,6 +47,7 @@ if (typeof settings.flowerX === "number") config.feeding.flowerX = settings.flow
 if (typeof settings.flowerY === "number") config.feeding.flowerY = settings.flowerY;
 if (typeof settings.nectarX === "number") config.feeding.nectarX = settings.nectarX;
 if (typeof settings.nectarY === "number") config.feeding.nectarY = settings.nectarY;
+if (Array.isArray(settings.searchKeywords)) config.feeding.searchKeywords = settings.searchKeywords;
 
 var panel = floatyMod.createControlPanel(function() {
   floatyMod.destroy(panel);

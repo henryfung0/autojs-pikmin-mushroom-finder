@@ -82,19 +82,23 @@ function collectSeedlings(templates, panel) {
     sleep(2000);
 
     var confirmClicked = false;
+    var returnedToSeedlingPage = false;
     var middleTapAttempts = 0;
-    while (middleTapAttempts < 20 && !confirmClicked && !seedlingUtils.isShutdownRequested()) {
+    while (middleTapAttempts < 20 && !confirmClicked && !returnedToSeedlingPage &&
+           !seedlingUtils.isShutdownRequested()) {
       floatyMod.appendLog(panel, "Collect seedlings: tapping middle of screen...");
       var midX = Math.round(device.width * 0.5);
       var midY = Math.round(device.height * 0.5);
       floatyMod.withPanelHidden(panel, function() {
         press(midX, midY, 500);
       });
+      middleTapAttempts++;
       sleep(1500);
 
       img = captureScreen();
-      if (!img) { middleTapAttempts++; continue; }
+      if (!img) continue;
       try {
+        var confirmFound = false;
         for (var i = 0; i < templates.collect.length; i++) {
           var cn = templates.collect[i].name.toLowerCase();
           if (cn === "confirm.jpg") {
@@ -104,22 +108,35 @@ function collectSeedlings(templates, panel) {
               confirmClicked = true;
               totalCollected++;
               sleep(2000);
+              confirmFound = true;
               break;
             }
           }
         }
-        if (!confirmClicked) middleTapAttempts++;
+
+        // After the first 5 taps, the dialog may close on its own: being back
+        // on seedling page 1 means the collection finished.
+        if (!confirmFound && middleTapAttempts > 5 &&
+            seedlingUtils.isOnSeedlingPage1Image(img, templates)) {
+          returnedToSeedlingPage = true;
+          totalCollected++;
+          floatyMod.appendLog(panel, "Collect seedlings: back on seedling page after " +
+            middleTapAttempts + " taps — collect finished");
+        }
       } finally {
         if (img) img.recycle();
       }
     }
 
-    if (!confirmClicked) {
+    if (returnedToSeedlingPage) {
+      floatyMod.appendLog(panel, "Collect seedlings: round " + (round + 1) +
+        " finished (returned to seedling page)");
+    } else if (confirmClicked) {
+      floatyMod.appendLog(panel, "Collect seedlings: round " + (round + 1) + " done");
+    } else {
       floatyMod.appendLog(panel, "Collect seedlings: confirm not found, stopping");
       break;
     }
-
-    floatyMod.appendLog(panel, "Collect seedlings: round " + (round + 1) + " done");
     sleep(1000);
   }
 

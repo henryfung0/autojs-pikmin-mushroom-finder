@@ -179,23 +179,37 @@ function loadThrowRepeatedSeedlingTemplates(templateDir) {
 // Seedling page navigation
 // ---------------------------------------------------------------------------
 
-function isOnSeedlingPage1(templates, panel) {
+/**
+ * Check whether the given screenshot shows seedling page 1.
+ * Reuses an already-captured frame so callers that already hold one do not
+ * pay for a second captureScreen().
+ *
+ * @param {Image} img       - Captured screenshot.
+ * @param {Object} templates - Template object from loadThrowRepeatedSeedlingTemplates().
+ * @returns {boolean}
+ */
+function isOnSeedlingPage1Image(img, templates) {
+  if (!img || !templates || !templates.seedlingPageChecker) return false;
   var threshold = 0.7;
+  for (var i = 0; i < templates.seedlingPageChecker.length; i++) {
+    var name = templates.seedlingPageChecker[i].name.toLowerCase();
+    if (name.indexOf("to seedling page") !== -1) {
+      var m = _matchOne(img, templates.seedlingPageChecker[i], threshold);
+      if (m) return true;
+    }
+  }
+  return false;
+}
+
+function isOnSeedlingPage1(templates, panel) {
   var img = null;
   try {
     img = captureScreen();
     if (!img) return false;
-    for (var i = 0; i < templates.seedlingPageChecker.length; i++) {
-      var name = templates.seedlingPageChecker[i].name.toLowerCase();
-      if (name.indexOf("to seedling page") !== -1) {
-        var m = _matchOne(img, templates.seedlingPageChecker[i], threshold);
-        if (m) return true;
-      }
-    }
+    return isOnSeedlingPage1Image(img, templates);
   } finally {
     if (img) img.recycle();
   }
-  return false;
 }
 
 function ensureOnSeedlingPage1(templates, panel) {
@@ -428,6 +442,7 @@ module.exports = {
   _tapAt: _tapAt,
   loadThrowRepeatedSeedlingTemplates: loadThrowRepeatedSeedlingTemplates,
   isOnSeedlingPage1: isOnSeedlingPage1,
+  isOnSeedlingPage1Image: isOnSeedlingPage1Image,
   ensureOnSeedlingPage1: ensureOnSeedlingPage1,
   ensureOnSeedlingPage2: ensureOnSeedlingPage2,
   returnToSeedlingPage: returnToSeedlingPage

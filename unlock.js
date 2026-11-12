@@ -1,21 +1,21 @@
 /**
  * unlock.js — Pikmin Bloom Auto-JS6 Unlock Utility
  *
- * GUARANTEE: Runs BEFORE app launch to ensure phone is unlocked.
- * If phone is locked, it WILL unlock it before attempting to launch the app.
+ * Runs BEFORE app launch. When the screen is off, it wakes the device and
+ * draws the user's unlock pattern.
  *
- * MUST be required at the very start of main.js or main-headless.js
- * (at line 4, right after "auto";)
+ * The pattern is NOT stored in this file. It is entered once in the settings
+ * dialog and persisted on-device via settings_store ("unlockPattern").
+ * With no pattern configured, a swipe-up gesture is attempted instead.
  *
  * HOW IT WORKS:
- * 1. wakeScreen() - Ensures screen is on (may wake it if off)
- * 2. unlockByPattern() - Draws the unlock pattern (redacted)
- * 3. isDeviceUnlocked() - Verifies device is unlocked
- * 4. If still locked after pattern → retry once more
- * 5. Only after successful unlock → script proceeds to config/launch
+ * 1. getUnlockPattern() - Reads the pattern from on-device settings
+ * 2. wakeScreen() - Ensures screen is on (may wake it if off)
+ * 3. unlockByPattern() - Draws the configured pattern
+ * 4. isDeviceUnlocked() - Verifies device is unlocked
+ * 5. If still locked → retry once more
  *
- * Compatible with AutoJS6 — requires the game to be running and screen
- * capture permission to be granted later in the flow.
+ * Compatible with AutoJS6.
  */
 
 "use auto";
@@ -24,15 +24,30 @@
 // Configuration
 // ---------------------------------------------------------------------------
 
-/**
- * Default unlock pattern for the 9-dot grid.
- * Pattern: redacted
- * These correspond to the 9-dot grid layout:
- *   1 | 2 | 3
- *   4 | 5 | 6
- *   7 | 8 | 9
- */
-const PATTERN = [0];
+function getUnlockPattern() {
+  var pattern = [];
+  try {
+    var saved = require("./ui/settings_store").load();
+    if (saved && Array.isArray(saved.unlockPattern)) pattern = saved.unlockPattern;
+  } catch (e) {
+    console.warn("unlock: could not read saved settings: " + e);
+  }
+  if (pattern.length < 4) {
+    try {
+      var cfg = require("./ui/config");
+      pattern = (cfg && cfg.unlock && Array.isArray(cfg.unlock.pattern)) ? cfg.unlock.pattern : [];
+    } catch (e2) {
+      pattern = [];
+    }
+  }
+
+  var valid = [];
+  for (var i = 0; i < pattern.length && valid.length < 9; i++) {
+    var n = parseInt(pattern[i], 10);
+    if (n >= 1 && n <= 9 && valid.indexOf(n) === -1) valid.push(n);
+  }
+  return valid;
+}
 
 // ---------------------------------------------------------------------------
 // Core Functions
@@ -65,17 +80,23 @@ function wakeScreen() {
 }
 
 /**
- * Draw the unlock pattern on the screen.
- * Uses the default PATTERN defined above; adjust points if your device layout differs.
- * THIS WILL DRAW THE PATTERN TO UNLOCK THE PHONE.
+ * Draw the configured unlock pattern on the screen.
+ * Coordinates target a typical 3x3 pattern grid; adjust if the layout differs.
+ *
+ * @param {number[]} [pattern] - Pattern digits; defaults to the saved settings value.
+ * @returns {boolean} true when a gesture was drawn.
  */
-function unlockByPattern() {
-  // Calculate the 9 points of the pattern grid
-  let w = device.width;
-  let h = device.height;
+function unlockByPattern(pattern) {
+  pattern = pattern || getUnlockPattern();
+  if (!pattern || pattern.length < 2) {
+    console.warn("unlock: no unlock pattern configured in settings — skipping pattern draw");
+    return false;
+  }
 
-  // Pattern coordinates - measured for typical Android layout
-  let points = {
+  var w = device.width;
+  var h = device.height;
+
+  var points = {
     1: [w * 0.25, h * 0.55],
     2: [w * 0.50, h * 0.55],
     3: [w * 0.75, h * 0.55],
@@ -87,21 +108,20 @@ function unlockByPattern() {
     9: [w * 0.75, h * 0.82],
   };
 
-  // Build the gesture path using the user's pattern
-  let path = [];
-  for (let num of PATTERN) {
-    path.push(points[num]);
+  var path = [];
+  for (var p = 0; p < pattern.length; p++) {
+    var point = points[pattern[p]];
+    if (point) path.push(point);
   }
 
-  // Draw the pattern using gesture
-  var gestureArgs = [800]; // duration first
+  var gestureArgs = [800];
   for (var i = 0; i < path.length; i++) {
-    var point = path[i];
-    gestureArgs.push(point[0]); // x
-    gestureArgs.push(point[1]); // y
+    gestureArgs.push(path[i][0]);
+    gestureArgs.push(path[i][1]);
   }
   gesture.apply(null, gestureArgs);
   sleep(1500);
+  return true;
 }
 
 /**
@@ -166,10 +186,17 @@ function ensureUnlockedBeforeLaunch(panel) {
   sleep(500);
   log("Screen state check complete");
 
-  // Step 2: Draw unlock pattern
-  log("Step 2: Drawing unlock pattern...");
-  unlockByPattern();
-  log("Pattern drawn, waiting for animation...");
+  // Step 2: Draw the configured unlock pattern (or swipe up when unset)
+  var pattern = getUnlockPattern();
+  if (pattern.length > 0) {
+    log("Step 2: Drawing configured unlock pattern (" + pattern.length + " dots)...");
+    unlockByPattern(pattern);
+  } else {
+    log("Step 2: No unlock pattern configured — swiping up instead");
+    log("Set one in the settings dialog to enable pattern unlock");
+    swipeUpToUnlock();
+  }
+  log("Unlock gesture sent, waiting for animation...");
   sleep(1000);
 
   // Step 3: Verify unlocked
@@ -182,9 +209,13 @@ function ensureUnlockedBeforeLaunch(panel) {
     return true;
   }
 
-  // Step 4: If still locked, retry pattern once
-  log("Device still locked, retrying pattern...");
-  unlockByPattern();
+  // Step 4: If still locked, retry the same gesture once
+  log("Device still locked, retrying unlock gesture...");
+  if (pattern.length > 0) {
+    unlockByPattern(pattern);
+  } else {
+    swipeUpToUnlock();
+  }
   sleep(1000);
 
   unlocked = isDeviceUnlocked();
@@ -219,6 +250,5 @@ module.exports = {
   // Ensures phone is unlocked BEFORE app launch proceeds
   ensureUnlockedBeforeLaunch: ensureUnlockedBeforeLaunch,
 
-  // Configuration
-  PATTERN: PATTERN,
+  getUnlockPattern: getUnlockPattern,
 };

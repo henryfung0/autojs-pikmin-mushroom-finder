@@ -44,7 +44,8 @@ var KEYS = [
    "flowerY",
    "nectarX",
    "nectarY",
-   "searchKeywords"
+   "searchKeywords",
+   "unlockPattern"
 ];
 
 function _store() {

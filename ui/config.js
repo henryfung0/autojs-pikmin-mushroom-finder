@@ -366,6 +366,22 @@ var config = {
   },
 
   // ──────────────────────────────────────────────
+  // Unlock Settings
+  // ──────────────────────────────────────────────
+  /** @namespace unlock - Phone screen-unlock configuration. */
+  unlock: {
+    /**
+     * Unlock pattern digits (1–9) in drawing order.
+     * Deliberately empty so no real unlock secret lives in the repository.
+     * The settings dialog stores the user's pattern in on-device storage
+     * (settings_store → "unlockPattern"); unlock.js prefers that value.
+     * @type {number[]}
+     * @default []
+     */
+    pattern: [],
+  },
+
+  // ──────────────────────────────────────────────
   // Debug Settings
   // ──────────────────────────────────────────────
   /** @namespace debug - Logging and diagnostic controls. */

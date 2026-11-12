@@ -12,6 +12,19 @@
 var settingsStore = require("./settings_store");
 var config = require("./config");
 
+function parseUnlockPattern(text) {
+  var raw = String(text || "").trim();
+  if (raw === "") return [];
+  if (!/^[1-9]{4,9}$/.test(raw)) return null;
+  var pattern = [];
+  for (var i = 0; i < raw.length; i++) {
+    var digit = parseInt(raw.charAt(i), 10);
+    if (pattern.indexOf(digit) !== -1) return null;
+    pattern.push(digit);
+  }
+  return pattern;
+}
+
 /**
  * Show the combined config dialog.
  *
@@ -40,6 +53,11 @@ function showConfigDialog() {
 
         <ScrollView layout_weight="1">
           <vertical padding="0 0 0 8">
+            <text text="Phone unlock pattern (digits 1–9 in order, 4–9 digits; empty = skip). Applies on the next run."
+                  textSize="13sp" textColor="#616161" margin="0 8 0 2"/>
+            <input id="unlockPattern" text="" inputType="number" w="220"
+                   textSize="14sp" textColor="#212121" margin="0 8 0 8"/>
+
             <vertical id="mushroomSettings" visibility="gone">
               <text text="Confidence Threshold: 0.85" textSize="13sp"
                     textColor="#616161" margin="0 4 0 0" id="thresholdLabel"/>
@@ -435,6 +453,10 @@ function showConfigDialog() {
   if (typeof saved.nectarX === "number") view.nectarX.setText(String(saved.nectarX));
   if (typeof saved.nectarY === "number") view.nectarY.setText(String(saved.nectarY));
 
+  if (Array.isArray(saved.unlockPattern) && saved.unlockPattern.length > 0) {
+    view.unlockPattern.setText(saved.unlockPattern.join(""));
+  }
+
   var defaultKeywords = (config.feeding && config.feeding.searchKeywords) || [];
   var savedKeywords = Array.isArray(saved.searchKeywords) ? saved.searchKeywords : defaultKeywords;
   var keywordInputs = [
@@ -452,6 +474,11 @@ function showConfigDialog() {
   // ── Start button ─────────────────────────────────
   view.startBtn.on("click", function() {
     dialogResult.choice = "start";
+    var unlockPattern = parseUnlockPattern(view.unlockPattern.text());
+    if (unlockPattern === null) {
+      toast("Unlock pattern: 4–9 unique digits (1–9)");
+      return;
+    }
     dialogResult.values = {
       mode: view.modeSelector.getSelectedItem(),
       autoLaunch: view.autoLaunch.isChecked(),
@@ -489,7 +516,8 @@ function showConfigDialog() {
         view.feedKeyword8.text().toString().trim(),
         view.feedKeyword9.text().toString().trim(),
         view.feedKeyword10.text().toString().trim()
-      ].filter(function(word) { return word !== ""; })
+      ].filter(function(word) { return word !== ""; }),
+      unlockPattern: unlockPattern
     };
     settingsStore.save(dialogResult.values);
     d.dismiss();
@@ -535,6 +563,7 @@ function showConfigDialog() {
     view.flowerY.setText("475");
     view.nectarX.setText("0");
     view.nectarY.setText("660");
+    view.unlockPattern.setText("");
     for (var ki = 0; ki < keywordInputs.length; ki++) {
       keywordInputs[ki].setText(defaultKeywords[ki] || "");
     }

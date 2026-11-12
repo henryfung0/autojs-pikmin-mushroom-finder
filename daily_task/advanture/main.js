@@ -103,7 +103,8 @@ function run(settings, panel) {
   
   for (var accIdx = 0; accIdx < accountsToRun.length; accIdx++) {
     var currentAccount = accountsToRun[accIdx];
-    
+    config.account.pikminAccount = currentAccount;
+
     if (accIdx > 0) {
       floatyMod.appendLog(panel, "=== Starting account " + currentAccount + " ===");
     }

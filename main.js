@@ -12,6 +12,12 @@ engines.all().forEach(function(engine) {
   }
 });
 
+function accountLabel(account) {
+  if (account === 2) return "Second AC";
+  if (account === 3) return "Both AC";
+  return "Main AC";
+}
+
 var settings = configUi.showConfigDialog();
 if (!settings) {
   exit();
@@ -48,10 +54,11 @@ var panel = floatyMod.createControlPanel(function() {
 });
 
 if (settings.autoLaunch) {
+  var initialAccount = config.account.pikminAccount === 3 ? 1 : (config.account.pikminAccount || 1);
   pikminIcon.launchAndDetectIcon(
     config.app.packageName,
     config.detection.templateDir,
-    config.account.pikminAccount || 1,
+    initialAccount,
     panel
   );
 } else {
@@ -62,37 +69,72 @@ if (settings.autoLaunch) {
 if (settings.mode === "Advanture") {
   require("./daily_task/advanture/main").run(settings, panel);
 } else if (settings.mode === "Pikmin Daily Task") {
-  var throwFlow = require("./daily_task/seedlings/throw_repeated_seedling_flow");
-  var advFlow   = require("./daily_task/advanture/advanture_flow");
+  var throwFlow      = require("./daily_task/seedlings/throw_repeated_seedling_flow");
+  var advFlow        = require("./daily_task/advanture/advanture_flow");
+  var collectFeeding = require("./daily_task/advanture/collect_feeding");
+  var feedPikmin     = require("./daily_task/feeding/feed_pikmin");
 
-  if (settings.enableCollect || settings.enableFarm || settings.enableThrowRepeated) {
-    var trsResult = require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings, panel);
-  }
-  if (!throwFlow.isShutdownRequested() && (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
-    if (settings.enableGift !== undefined) config.advanture.enableGift = settings.enableGift;
-    if (settings.enableSeedling !== undefined) config.advanture.enableSeedling = settings.enableSeedling;
-    if (settings.enableFruit !== undefined) config.advanture.enableFruit = settings.enableFruit;
-    if (trsResult && trsResult.panel) {
-      floatyMod.appendLog(panel, "Starting adventure flow (continuing from throw repeated seedling)");
+  if (settings.threshold !== undefined) config.detection.threshold = settings.threshold;
+  if (settings.settleDelay !== undefined) config.scan.settleDelay = settings.settleDelay;
+  if (settings.maxEmptyLoops !== undefined) config.advanture.maxEmptyLoops = settings.maxEmptyLoops;
+  if (settings.enableGift !== undefined) config.advanture.enableGift = settings.enableGift;
+  if (settings.enableSeedling !== undefined) config.advanture.enableSeedling = settings.enableSeedling;
+  if (settings.enableFruit !== undefined) config.advanture.enableFruit = settings.enableFruit;
+
+  // Both Ac (3): run the full daily task for account 1, then account 2.
+  var selectedAccount = config.account.pikminAccount || 1;
+  var accountsToRun = selectedAccount === 3 ? [1, 2] : [selectedAccount];
+
+  for (var accIdx = 0; accIdx < accountsToRun.length; accIdx++) {
+    if (throwFlow.isShutdownRequested()) break;
+
+    var currentAccount = accountsToRun[accIdx];
+
+    // The first account was launched above. Switching accounts always needs
+    // a launch+tap, even when auto-launch is off — otherwise Both Ac would
+    // just re-run the account already in the foreground.
+    if (accIdx > 0) {
+      floatyMod.appendLog(panel, "=== Switching to " + accountLabel(currentAccount) + " ===");
+      pikminIcon.launchAndDetectIcon(
+        config.app.packageName,
+        config.detection.templateDir,
+        currentAccount,
+        panel
+      );
+      sleep(2000);
+    }
+
+    // feed_pikmin reads this to pick maxFlowerMain vs maxFlowerSecond.
+    config.account.pikminAccount = currentAccount;
+    floatyMod.appendLog(panel, "=== " + accountLabel(currentAccount) + ": seeding → adventure → feeding ===");
+
+    if (settings.enableCollect || settings.enableFarm || settings.enableThrowRepeated) {
+      require("./daily_task/seedlings/throw_repeated_seedling_main").run(settings, panel);
+    }
+
+    if (!throwFlow.isShutdownRequested() &&
+        (settings.enableGift || settings.enableSeedling || settings.enableFruit)) {
+      floatyMod.appendLog(panel, "Starting adventure flow...");
       floatyMod.updateStatus(panel, "Scanning...");
       advFlow.runAdvantureFlow(config, panel);
-    } else {
-      require("./daily_task/advanture/main").run(settings, panel);
+    }
+
+    if (!throwFlow.isShutdownRequested() && settings.enableCollectFeeding !== false) {
+      floatyMod.appendLog(panel, "Starting collect feeding...");
+      collectFeeding.runCollectFeeding(config, panel);
+    }
+
+    if (!throwFlow.isShutdownRequested() && settings.enableFeedPikmin) {
+      floatyMod.appendLog(panel, "Starting feed pikmin...");
+      feedPikmin.feedPikmin(config, panel);
     }
   }
-  if (!throwFlow.isShutdownRequested() && settings.enableCollectFeeding !== false) {
-    floatyMod.appendLog(panel, "Starting collect feeding...");
-    var collectFeeding = require("./daily_task/advanture/collect_feeding");
-    collectFeeding.runCollectFeeding(config, panel);
-  }
-  if (!throwFlow.isShutdownRequested() && settings.enableFeedPikmin) {
-    floatyMod.appendLog(panel, "Starting feed pikmin...");
-    var feedPikmin = require("./daily_task/feeding/feed_pikmin");
-    feedPikmin.feedPikmin(config, panel);
-  }
+
   floatyMod.appendLog(panel, "Pikmin Daily Task finished");
   sleep(3000);
   floatyMod.destroy(panel);
 } else {
   require("./mushroom_finder/main").run(settings, panel);
 }
+
+require("./lib/lock_screen").lockScreenAndExit();

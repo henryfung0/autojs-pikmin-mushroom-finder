@@ -11,14 +11,17 @@
  * HOW IT WORKS:
  * 1. getUnlockPattern() - Reads the pattern from on-device settings
  * 2. wakeScreen() - Ensures screen is on (may wake it if off)
- * 3. unlockByPattern() - Draws the configured pattern
- * 4. isDeviceUnlocked() - Verifies device is unlocked
- * 5. If still locked → retry once more
+ * 3. swipeUpToUnlock() - Swipes up to reveal the pattern entry screen
+ * 4. unlockByPattern() - Draws the configured pattern
+ * 5. isDeviceUnlocked() - Verifies device is unlocked
+ * 6. If still locked → retry once more
  *
  * Compatible with AutoJS6.
  */
 
 "use auto";
+
+var floatyMod = require("./ui/floaty");
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -47,6 +50,33 @@ function getUnlockPattern() {
     if (n >= 1 && n <= 9 && valid.indexOf(n) === -1) valid.push(n);
   }
   return valid;
+}
+
+// Rows as a fraction of screen height. "middle" is calibrated on a 1080×2400
+// lock screen: dot rows at y=1155 / 1427.5 / 1700 px.
+var GRID_ROWS = {
+  down: [0.55, 0.68, 0.82],
+  middle: [1155 / 2400, 1427.5 / 2400, 1700 / 2400],
+};
+var GRID_COLS = [0.25, 0.5, 0.75];
+
+function getUnlockGridPosition() {
+  var pos = null;
+  try {
+    var saved = require("./ui/settings_store").load();
+    if (saved) pos = saved.unlockGridPosition;
+  } catch (e) {
+    console.warn("unlock: could not read saved grid position: " + e);
+  }
+  if (pos !== "middle" && pos !== "down") {
+    try {
+      var cfg = require("./ui/config");
+      pos = (cfg && cfg.unlock) ? cfg.unlock.gridPosition : null;
+    } catch (e2) {
+      pos = null;
+    }
+  }
+  return pos === "middle" ? "middle" : "down";
 }
 
 // ---------------------------------------------------------------------------
@@ -95,18 +125,12 @@ function unlockByPattern(pattern) {
 
   var w = device.width;
   var h = device.height;
+  var rows = GRID_ROWS[getUnlockGridPosition()];
 
-  var points = {
-    1: [w * 0.25, h * 0.55],
-    2: [w * 0.50, h * 0.55],
-    3: [w * 0.75, h * 0.55],
-    4: [w * 0.25, h * 0.68],
-    5: [w * 0.50, h * 0.68],
-    6: [w * 0.75, h * 0.68],
-    7: [w * 0.25, h * 0.82],
-    8: [w * 0.50, h * 0.82],
-    9: [w * 0.75, h * 0.82],
-  };
+  var points = {};
+  for (var d = 1; d <= 9; d++) {
+    points[d] = [Math.round(w * GRID_COLS[(d - 1) % 3]), Math.round(h * rows[Math.floor((d - 1) / 3)])];
+  }
 
   var path = [];
   for (var p = 0; p < pattern.length; p++) {
@@ -167,7 +191,6 @@ function isDeviceUnlocked() {
  * @returns {boolean} true if device is unlocked and ready
  */
 function ensureUnlockedBeforeLaunch(panel) {
-  floatyMod = floatyMod || require("./ui/floaty");
   var log = panel ? function(msg) { floatyMod.appendLog(panel, "unlock: " + msg); }
                     : function(msg) { console.log("unlock: " + msg); };
 
@@ -180,27 +203,28 @@ function ensureUnlockedBeforeLaunch(panel) {
 
   log("Screen is OFF — running unlock sequence...");
 
-  // Step 1: Force wake screen
   log("Step 1: Waking screen...");
   wakeScreen();
-  sleep(500);
   log("Screen state check complete");
+  sleep(2000);
 
-  // Step 2: Draw the configured unlock pattern (or swipe up when unset)
+  log("Step 2: Swiping up to reveal unlock screen...");
+  swipeUpToUnlock();
+  log("Swipe up gesture sent");
+
   var pattern = getUnlockPattern();
   if (pattern.length > 0) {
-    log("Step 2: Drawing configured unlock pattern (" + pattern.length + " dots)...");
+    log("Step 3: Drawing configured unlock pattern (" + pattern.length + " dots, " +
+        getUnlockGridPosition() + " grid)...");
     unlockByPattern(pattern);
   } else {
-    log("Step 2: No unlock pattern configured — swiping up instead");
+    log("Step 3: No unlock pattern configured — swipe up only");
     log("Set one in the settings dialog to enable pattern unlock");
-    swipeUpToUnlock();
   }
   log("Unlock gesture sent, waiting for animation...");
   sleep(1000);
 
-  // Step 3: Verify unlocked
-  log("Step 3: Verifying device unlocked...");
+  log("Step 4: Verifying device unlocked...");
   var unlocked = isDeviceUnlocked();
 
   if (unlocked) {
@@ -209,7 +233,6 @@ function ensureUnlockedBeforeLaunch(panel) {
     return true;
   }
 
-  // Step 4: If still locked, retry the same gesture once
   log("Device still locked, retrying unlock gesture...");
   if (pattern.length > 0) {
     unlockByPattern(pattern);
@@ -225,8 +248,6 @@ function ensureUnlockedBeforeLaunch(panel) {
     return true;
   }
 
-  // Step 5: If still locked after two attempts, log warning but proceed
-  // The script may still work if user unlocks manually during execution
   log("WARNING: Device still locked after 2 attempts");
   log("The app may launch but screen interaction may fail");
   log("Please manually unlock your phone if needed");
@@ -251,4 +272,5 @@ module.exports = {
   ensureUnlockedBeforeLaunch: ensureUnlockedBeforeLaunch,
 
   getUnlockPattern: getUnlockPattern,
+  getUnlockGridPosition: getUnlockGridPosition,
 };

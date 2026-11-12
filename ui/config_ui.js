@@ -53,10 +53,20 @@ function showConfigDialog() {
 
         <ScrollView layout_weight="1">
           <vertical padding="0 0 0 8">
-            <text text="Phone unlock pattern (digits 1–9 in order, 4–9 digits; empty = skip). Applies on the next run."
-                  textSize="13sp" textColor="#616161" margin="0 8 0 2"/>
-            <input id="unlockPattern" text="" inputType="number" w="220"
-                   textSize="14sp" textColor="#212121" margin="0 8 0 8"/>
+            <horizontal gravity="center_vertical">
+              <text text="Unlock" textSize="14sp" textColor="#1976D2" textStyle="bold"
+                    layout_weight="1" margin="0 8 0 4"/>
+              <button id="toggleUnlockGroup" text="▸" textSize="16sp" textColor="#1976D2"
+                      style="Widget.AppCompat.Button.ButtonBar.AlertDialog" margin="0 8 0 4"/>
+            </horizontal>
+            <vertical id="unlockGroupOptions" visibility="gone">
+              <text text="Phone unlock pattern (digits 1–9 in order, 4–9 digits; empty = skip). Applies on the next run."
+                    textSize="13sp" textColor="#616161" margin="24 0 0 2"/>
+              <input id="unlockPattern" text="" inputType="number" w="220"
+                     textSize="14sp" textColor="#212121" margin="24 0 0 8"/>
+              <spinner id="unlockGridSelector" entries="Down|Middle"
+                       textSize="14sp" textColor="#212121" gravity="center" margin="24 0 0 8"/>
+            </vertical>
 
             <vertical id="mushroomSettings" visibility="gone">
               <text text="Confidence Threshold: 0.85" textSize="13sp"
@@ -378,6 +388,9 @@ function showConfigDialog() {
   view.toggleFeedingGroup.on("click", function() {
     toggleOptions(view.toggleFeedingGroup, view.feedingGroupOptions);
   });
+  view.toggleUnlockGroup.on("click", function() {
+    toggleOptions(view.toggleUnlockGroup, view.unlockGroupOptions);
+  });
 
   // ── Restore last-saved settings ─────────────────
   // Must run AFTER all listeners are attached so seekbar label updates and
@@ -455,7 +468,10 @@ function showConfigDialog() {
 
   if (Array.isArray(saved.unlockPattern) && saved.unlockPattern.length > 0) {
     view.unlockPattern.setText(saved.unlockPattern.join(""));
+    view.unlockGroupOptions.visibility = android.view.View.VISIBLE;
+    view.toggleUnlockGroup.setText("▾");
   }
+  view.unlockGridSelector.setSelection(saved.unlockGridPosition === "middle" ? 1 : 0);
 
   var defaultKeywords = (config.feeding && config.feeding.searchKeywords) || [];
   var savedKeywords = Array.isArray(saved.searchKeywords) ? saved.searchKeywords : defaultKeywords;
@@ -517,7 +533,8 @@ function showConfigDialog() {
         view.feedKeyword9.text().toString().trim(),
         view.feedKeyword10.text().toString().trim()
       ].filter(function(word) { return word !== ""; }),
-      unlockPattern: unlockPattern
+      unlockPattern: unlockPattern,
+      unlockGridPosition: view.unlockGridSelector.getSelectedItemPosition() === 1 ? "middle" : "down"
     };
     settingsStore.save(dialogResult.values);
     d.dismiss();
@@ -564,6 +581,9 @@ function showConfigDialog() {
     view.nectarX.setText("0");
     view.nectarY.setText("660");
     view.unlockPattern.setText("");
+    view.unlockGridSelector.setSelection(0);
+    view.unlockGroupOptions.visibility = android.view.View.GONE;
+    view.toggleUnlockGroup.setText("▸");
     for (var ki = 0; ki < keywordInputs.length; ki++) {
       keywordInputs[ki].setText(defaultKeywords[ki] || "");
     }

@@ -379,6 +379,14 @@ var config = {
      * @default []
      */
     pattern: [],
+    /**
+     * Vertical placement of the 3×3 unlock-pattern grid on the lock screen.
+     * "down"   - rows at 55% / 68% / 82% of screen height
+     * "middle" - rows at 48.1% / 59.5% / 70.8% (calibrated on 1080×2400)
+     * @type {string}
+     * @default "down"
+     */
+    gridPosition: "down",
   },
 
   // ──────────────────────────────────────────────

@@ -45,7 +45,8 @@ var KEYS = [
    "nectarX",
    "nectarY",
    "searchKeywords",
-   "unlockPattern"
+   "unlockPattern",
+   "unlockGridPosition"
 ];
 
 function _store() {

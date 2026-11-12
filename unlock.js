@@ -153,6 +153,13 @@ function ensureUnlockedBeforeLaunch(panel) {
 
   log("=== ENSURING UNLOCKED BEFORE LAUNCH ===");
 
+  if (device.isScreenOn()) {
+    log("Screen is ON — skipping unlock sequence");
+    return true;
+  }
+
+  log("Screen is OFF — running unlock sequence...");
+
   // Step 1: Force wake screen
   log("Step 1: Waking screen...");
   wakeScreen();

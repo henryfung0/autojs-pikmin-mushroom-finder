@@ -226,62 +226,7 @@ function run(settings, panel) {
   floatyMod.destroy(panel);
 
   // ── Phase 5: Lock the screen before exit ─────────────────────────────
-  console.info("Locking screen after Feeding Function #3 complete");
-  lockScreenAndExit();
-}
-
-function lockScreenAndExit() {
-  console.info("Locking screen before exit...");
-  if (typeof device.isScreenOn === "function" && !device.isScreenOn()) {
-    console.info("Screen already off");
-    sleep(500);
-    exit();
-    return;
-  }
-
-  var methods = [
-    { name: "shell keyevent 26", fn: function() { shell("input keyevent 26"); } },
-    { name: "shell keyevent KEYCODE_POWER", fn: function() { shell("input keyevent KEYCODE_POWER"); } },
-    { name: "shell input keyevent --longpress 26", fn: function() { shell("input keyevent --longpress 26"); } },
-    { name: "press top-left corner (physical power button area)", fn: function() {
-      var w = device.width;
-      var h = device.height;
-      var px = Math.round(w * 0.02);
-      var py = Math.round(h * 0.02);
-      press(px, py, 100);
-    } },
-    { name: "KeyCode.KEYCODE_POWER via Shell", fn: function() {
-      if (typeof KeyCode !== "undefined") {
-        shell("input keyevent " + KeyCode.KEYCODE_POWER);
-      } else {
-        shell("input keyevent 26");
-      }
-    } }
-  ];
-
-  var locked = false;
-  for (var i = 0; i < methods.length; i++) {
-    try {
-      console.info("Trying lock method: " + methods[i].name);
-      methods[i].fn();
-      sleep(2500);
-      if (typeof device.isScreenOn === "function" && !device.isScreenOn()) {
-        console.info("Screen locked via " + methods[i].name);
-        locked = true;
-        break;
-      } else {
-        console.warn("Method " + methods[i].name + " did not turn screen off");
-      }
-    } catch (e) {
-      console.warn("Method " + methods[i].name + " failed: " + e);
-    }
-  }
-
-  if (!locked && typeof device.isScreenOn === "function" && device.isScreenOn()) {
-    console.warn("All lock methods failed — screen still on");
-  }
-  sleep(500);
-  exit();
+  require("./lib/lock_screen").lockScreenAndExit();
 }
 
 module.exports = {

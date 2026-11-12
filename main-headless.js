@@ -67,3 +67,5 @@ pikminIcon.launchAndDetectIcon(
 );
 
 require("./mushroom_finder/main").run(settings, panel);
+
+require("./lib/lock_screen").lockScreenAndExit();

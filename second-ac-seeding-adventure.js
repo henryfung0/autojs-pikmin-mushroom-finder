@@ -104,19 +104,4 @@ try {
 }
 
 // Safety net: lock screen on exit (also called inside the pipeline on normal completion)
-if (typeof device.isScreenOn === "function" && device.isScreenOn()) {
-  try {
-    shell("input keyevent 26");
-    sleep(2500);
-    if (typeof device.isScreenOn === "function" && device.isScreenOn()) {
-      shell("input keyevent KEYCODE_POWER");
-      sleep(2500);
-    }
-    console.info("Screen locked after pipeline exit");
-  } catch (lockErr) {
-    console.warn("Screen lock failed: " + lockErr);
-  }
-}
-
-sleep(500);
-exit();
+require("./lib/lock_screen").lockScreenAndExit();

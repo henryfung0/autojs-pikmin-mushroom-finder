@@ -38,6 +38,7 @@ var KEYS = [
   "enableSeedling",
   "enableFruit",
   "pikminAccount",
+  "mushroomAccount",
   "maxFlowerMain",
 "maxFlowerSecond",
    "flowerX",

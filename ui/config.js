@@ -296,6 +296,14 @@ var config = {
      * @default 1
      */
     pikminAccount: 1,
+
+    /**
+     * Which Pikmin Bloom account the Mushroom Finder mode launches.
+     * 1 = Main Ac, 2 = Second Ac.
+     * @type {number}
+     * @default 2
+     */
+    mushroomAccount: 2,
   },
 
   // ──────────────────────────────────────────────

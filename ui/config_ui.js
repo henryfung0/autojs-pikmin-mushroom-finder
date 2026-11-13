@@ -69,6 +69,10 @@ function showConfigDialog() {
             </vertical>
 
             <vertical id="mushroomSettings" visibility="gone">
+              <text text="Account" textSize="13sp" textColor="#616161" margin="0 4 0 0"/>
+              <spinner id="mushroomAccountSelector" entries="Main Ac|Second Ac"
+                       textSize="14sp" textColor="#212121" gravity="center" margin="0 0 0 8"/>
+
               <text text="Confidence Threshold: 0.85" textSize="13sp"
                     textColor="#616161" margin="0 4 0 0" id="thresholdLabel"/>
               <text text="0.85" textSize="12sp" textColor="#757575"
@@ -459,6 +463,12 @@ function showConfigDialog() {
   if (typeof saved.pikminAccount === "number") {
     view.accountSelector.setSelection(_clamp(saved.pikminAccount - 1, 0, 2));
   }
+  var mushroomAccountDefault = (config.account && config.account.mushroomAccount) || 2;
+  view.mushroomAccountSelector.setSelection(_clamp(
+    (typeof saved.mushroomAccount === "number" ? saved.mushroomAccount : mushroomAccountDefault) - 1,
+    0,
+    1
+  ));
   if (typeof saved.maxFlowerMain === "number") view.maxFlowerMain.setText(String(saved.maxFlowerMain));
   if (typeof saved.maxFlowerSecond === "number") view.maxFlowerSecond.setText(String(saved.maxFlowerSecond));
   if (typeof saved.flowerX === "number") view.flowerX.setText(String(saved.flowerX));
@@ -513,6 +523,7 @@ function showConfigDialog() {
       enableFruit: view.enableFruit.isChecked(),
       maxEmptyLoops: view.maxEmptyLoops.progress + 1,
       pikminAccount: view.accountSelector.getSelectedItemPosition() + 1,
+      mushroomAccount: view.mushroomAccountSelector.getSelectedItemPosition() + 1,
       maxFlowerMain: parseInt(view.maxFlowerMain.text().toString(), 10) || 1200,
       maxFlowerSecond: parseInt(view.maxFlowerSecond.text().toString(), 10) || 1200,
       flowerX: parseInt(view.flowerX.text().toString(), 10) || 0,
@@ -582,6 +593,7 @@ function showConfigDialog() {
     view.unlockGridSelector.setSelection(0);
     view.unlockGroupOptions.visibility = android.view.View.GONE;
     view.toggleUnlockGroup.setText("▸");
+    view.mushroomAccountSelector.setSelection(_clamp(mushroomAccountDefault - 1, 0, 1));
     for (var ki = 0; ki < keywordInputs.length; ki++) {
       keywordInputs[ki].setText(defaultKeywords[ki] || "");
     }

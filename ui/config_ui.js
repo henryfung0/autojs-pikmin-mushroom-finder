@@ -468,8 +468,6 @@ function showConfigDialog() {
 
   if (Array.isArray(saved.unlockPattern) && saved.unlockPattern.length > 0) {
     view.unlockPattern.setText(saved.unlockPattern.join(""));
-    view.unlockGroupOptions.visibility = android.view.View.VISIBLE;
-    view.toggleUnlockGroup.setText("▾");
   }
   view.unlockGridSelector.setSelection(saved.unlockGridPosition === "middle" ? 1 : 0);
 

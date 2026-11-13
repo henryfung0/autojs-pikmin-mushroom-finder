@@ -152,8 +152,8 @@ function unlockByPattern(pattern) {
  * Swipe up from the bottom of the screen to dismiss lock screen swipe.
  */
 function swipeUpToUnlock() {
-  let w = device.width;
-  let h = device.height;
+  var w = device.width;
+  var h = device.height;
   // Swipe from bottom to up (adjust if needed)
   swipe(w / 2, h * 0.85, w / 2, h * 0.25, 600);
   sleep(1000);

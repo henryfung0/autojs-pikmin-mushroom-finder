@@ -34,7 +34,15 @@ if (!captureGranted) {
   exit();
 }
 
-if (settings.pikminAccount !== undefined) {
+var isMushroomFinder = settings.mode !== "Pikmin Daily Task" && settings.mode !== "Advanture";
+
+if (isMushroomFinder) {
+  config.account.pikminAccount = (typeof settings.mushroomAccount === "number")
+    ? settings.mushroomAccount
+    : (config.account.mushroomAccount || 2);
+  console.info("Mushroom Finder account: " + config.account.pikminAccount +
+    " (" + (config.account.pikminAccount === 2 ? "Second AC" : "Main AC") + ")");
+} else if (settings.pikminAccount !== undefined) {
   config.account.pikminAccount = settings.pikminAccount;
 }
 if (typeof settings.maxFlowerMain === "number") {

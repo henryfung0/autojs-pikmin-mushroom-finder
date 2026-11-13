@@ -33,7 +33,7 @@ var settings = {
   largeColorThreshold: config.detection.largeColorThreshold,
   largeElementThreshold: config.detection.largeElementThreshold,
   autoLaunch: true,
-  pikminAccount: config.account.pikminAccount
+  pikminAccount: config.account.mushroomAccount || 2
 };
 
 toast("Pikmin Bloom — headless mode");
@@ -62,7 +62,7 @@ floatyMod.appendLog(panel, "Headless mode starting...");
 pikminIcon.launchAndDetectIcon(
   config.app.packageName,
   config.detection.templateDir,
-  config.account.pikminAccount || 1,
+  config.account.mushroomAccount || 2,
   panel
 );
 

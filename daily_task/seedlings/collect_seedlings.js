@@ -72,9 +72,9 @@ function collectSeedlings(templates, panel) {
       press(tapX, tapY, 1500);
       sleep(300);
       swipe(
-        Math.round(device.width * 0.5),
+        tapX,
         tapY,
-        Math.round(device.width * 0.5),
+        tapX,
         Math.round(device.height * 0.2),
         800
       );

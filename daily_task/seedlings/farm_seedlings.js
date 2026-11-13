@@ -25,7 +25,7 @@ var floatyMod = require("../../ui/floaty");
  * @returns {boolean} true if farming succeeded
  */
 function farmSeedlings(templates, panel) {
-  var threshold = 0.7;
+  var threshold = 0.8;
   var totalFarmed = 0;
 
   for (var round = 0; round < 2; round++) {

@@ -73,28 +73,90 @@ function _showTap(x, y) {
 // Matching helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Score floor for the probe search.  Probing below the required threshold
+ * keeps the best candidate's score known so the log can report how close the
+ * match came to the threshold instead of only success or failure.
+ */
+var _PROBE_THRESHOLD = 0.4;
+
+/**
+ * Match one template against the screen and report the achieved score.
+ *
+ * Returns a match only when the score reaches the required threshold; the
+ * best candidate's score and the click / skip decision are logged either way.
+ *
+ * @param {Image} screenImage - Current screenshot.
+ * @param {{name: string, image: Image, w: number, h: number}} tpl - Template.
+ * @param {number} [threshold=0.8] - Required confidence (0–1).
+ * @param {number[]} [region] - Search region [x, y, w, h].
+ * @returns {Object|null} Match with x, y, w, h, name, confidence, threshold;
+ *   null when the score did not reach the threshold.
+ */
 function _matchOne(screenImage, tpl, threshold, region) {
   if (!screenImage || !tpl || !tpl.image) return null;
+  var required = threshold || 0.8;
+  var searchRegion = region || [0, 0, screenImage.getWidth(), screenImage.getHeight()];
+  var best = null;
+  var result = null;
+
   try {
-    var searchRegion = region || [0, 0, screenImage.getWidth(), screenImage.getHeight()];
-    var result = images.findImage(screenImage, tpl.image, {
-      threshold: threshold || 0.8,
-      region: searchRegion
-    });
-    if (result) {
-      var confidence = result.confidence !== undefined ? result.confidence : threshold;
-      return {
-        x: result.x,
-        y: result.y,
-        w: tpl.w,
-        h: tpl.h,
-        name: tpl.name,
-        confidence: confidence
-      };
+    if (typeof images.findImages === "function") {
+      var candidates = images.findImages(screenImage, tpl.image, {
+        threshold: Math.min(required, _PROBE_THRESHOLD),
+        limit: 1,
+        region: searchRegion
+      });
+      if (candidates && candidates.length > 0) {
+        best = candidates[0];
+        if (typeof best.confidence === "number") {
+          if (best.confidence >= required) {
+            result = best;
+          }
+        } else {
+          result = images.findImage(screenImage, tpl.image, {
+            threshold: required,
+            region: searchRegion
+          });
+          if (result) best = result;
+        }
+      }
+    } else {
+      result = images.findImage(screenImage, tpl.image, {
+        threshold: required,
+        region: searchRegion
+      });
+      if (result) best = result;
     }
   } catch (e) {
     console.warn("_matchOne: error matching \"" + tpl.name + "\": " + e);
+    return null;
   }
+
+  var score = null;
+  if (best && typeof best.confidence === "number") {
+    score = best.confidence;
+  } else if (result) {
+    score = required;
+  }
+
+  if (result) {
+    console.info("[match] " + tpl.name + " " + score.toFixed(3) +
+      " ≥ " + required.toFixed(2) + " → CLICK");
+    return {
+      x: result.x,
+      y: result.y,
+      w: tpl.w,
+      h: tpl.h,
+      name: tpl.name,
+      confidence: score,
+      threshold: required
+    };
+  }
+
+  console.info("[match] " + tpl.name + " " +
+    (score !== null ? score.toFixed(3) : "no candidate ≥ " + _PROBE_THRESHOLD.toFixed(2)) +
+    " < " + required.toFixed(2) + " → skip");
   return null;
 }
 
@@ -151,7 +213,12 @@ function _tapAt(match, label, panel) {
       tapY = maxSafeY;
     }
   }
-  floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")");
+  var rateInfo = "";
+  if (typeof match.confidence === "number" && typeof match.threshold === "number") {
+    rateInfo = " [match " + match.confidence.toFixed(3) +
+      " ≥ " + match.threshold.toFixed(2) + "]";
+  }
+  floatyMod.appendLog(panel, label + " at (" + tapX + "," + tapY + ")" + rateInfo);
   floatyMod.withPanelHidden(panel, function() {
     _showTap(tapX, tapY);
     press(tapX, tapY, 1000);

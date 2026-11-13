@@ -145,11 +145,15 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
 
     while (captureAttempts < maxCaptureAttempts && !screenImage) {
       captureAttempts++;
-      try {
-        screenImage = captureScreen();
-      } catch (e) {
-        screenImage = null;
-      }
+      // Keep the log panel out of the captured frame — its red text sits over
+      // the map area and can hide (or look like) a mushroom.
+      floatyMod.withPanelHidden(floatyW, function() {
+        try {
+          screenImage = captureScreen();
+        } catch (e) {
+          screenImage = null;
+        }
+      });
       if (!screenImage && captureAttempts < maxCaptureAttempts) {
         try {
           images.requestScreenCapture(false);
@@ -205,13 +209,17 @@ function startScanning(config, templates, onFound, floatyW, extraOptions) {
 
           if (scanPhase === "left") {
             floatyMod.appendLog(floatyW, "Left side empty — re-centering for right sweep");
-            navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            floatyMod.withPanelHidden(floatyW, function() {
+              navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            });
             sleep(2000);
             scanPhase = "right";
             floatyMod.appendLog(floatyW, "Resuming → at same Y");
           } else {
             floatyMod.appendLog(floatyW, "Right side empty — scrolling down " + verticalScrollCount + "×");
-            navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            floatyMod.withPanelHidden(floatyW, function() {
+              navigator.waitForAndClickOwnPosition(navTemplates, floatyW);
+            });
             sleep(2000);
             scroll.scrollDown(verticalScrollCount, verticalShiftPercent, swipeDuration, floatyW);
             sleep(settleDelay);
